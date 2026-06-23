@@ -5,7 +5,7 @@
 > 목표 패키지 구조입니다. 도메인별 책임을 분리하고, 담당 도메인 외 로직 수정을 제한합니다.
 
 ```text
-src/main/java/com/project/
+src/main/java/com/example/thetunais4joteamproject/
 │
 ├── global                         # 공통 보안, 에러 핸들링, 유틸 인프라
 │   ├── config                     # Security, Redis, Redisson, Querydsl 설정
