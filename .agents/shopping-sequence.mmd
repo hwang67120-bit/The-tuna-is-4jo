@@ -1,0 +1,105 @@
+﻿sequenceDiagram
+    actor User as 사용자
+    actor Admin as 관리자
+    participant FE as 프론트엔드
+    participant Auth as 인증/사용자 서비스
+    participant Product as 상품 서비스
+    participant Cart as 장바구니 서비스
+    participant Order as 주문 서비스
+    participant Payment as 결제 서비스
+    participant Coupon as 쿠폰 서비스
+    participant Refund as 환불 서비스
+    participant Chat as 채팅 서비스
+    participant PortOne as PortOne
+
+    User->>FE: 회원가입 요청
+    FE->>Auth: 이메일, 아이디, 비밀번호 전달
+    Auth-->>FE: 사용자 아이디 반환
+
+    User->>FE: 로그인 요청
+    FE->>Auth: 아이디, 비밀번호 전달
+    Auth-->>FE: Access Token, Refresh Token 반환
+
+    User->>FE: 상품 탐색
+    FE->>Product: 상품 목록/상세/카테고리 조회
+    Product-->>FE: 상품 정보 반환
+
+    User->>FE: 쿠폰 발급/조회
+    FE->>Coupon: 쿠폰 발급 또는 보유 쿠폰 조회
+    Coupon-->>FE: 쿠폰 정보 반환
+
+    User->>FE: 장바구니 담기
+    FE->>Cart: 상품, 옵션, 수량 전달
+    Cart->>Product: 상품/옵션 상태와 재고 확인
+    Product-->>Cart: 상품/옵션 정보 반환
+    Cart-->>FE: 장바구니 상품 아이디 반환
+
+    User->>FE: 주문서 미리보기
+    FE->>Order: 장바구니와 쿠폰 정보 전달
+    Order->>Cart: 장바구니 상품 조회
+    Cart-->>Order: 상품 목록과 수량 반환
+    Order->>Coupon: 쿠폰 사용 가능 여부 확인
+    Coupon-->>Order: 쿠폰 할인 정보 반환
+    Order-->>FE: 상품 목록, 할인 금액, 최종 결제 금액 반환
+
+    User->>FE: 주문 생성
+    FE->>Order: 장바구니 기준 주문 요청
+    Order->>Cart: 장바구니 상품 조회
+    Order->>Product: 상품/옵션 재고 확인
+    Order->>Coupon: 쿠폰 사용 처리
+    Order->>Payment: 결제 대기 생성 요청
+    Payment-->>Order: 결제 대기 정보 반환
+    Order-->>FE: 주문 아이디, 결제 아이디, 결제 대기 상태 반환
+
+    User->>FE: PortOne 결제 진행
+    FE->>PortOne: 결제 요청
+    PortOne-->>FE: 결제 진행 결과 표시
+
+    PortOne->>Payment: 결제 결과 웹훅 전송
+    Payment->>Order: 주문 상태 변경 요청
+
+    alt 결제 성공
+        Payment-->>Payment: 결제 완료 상태 저장
+        Order-->>Order: 주문 완료 상태 저장
+    else 결제 실패
+        Payment-->>Payment: 결제 실패 상태 저장
+        Order-->>Order: 주문 실패 상태 저장
+    end
+
+    User->>FE: 주문 목록/상세 조회
+    FE->>Order: 주문 조회 요청
+    Order-->>FE: 주문 정보 반환
+
+    opt 문의가 필요한 경우
+        User->>FE: 채팅 문의 생성
+        FE->>Chat: 문의 제목과 내용 전달
+        Chat-->>FE: 채팅방 아이디 반환
+
+        Admin->>FE: 채팅방 목록 조회
+        FE->>Chat: 관리자 채팅방 목록 조회
+        Chat-->>FE: 채팅방 목록 반환
+
+        Admin->>FE: 채팅 참여/응답
+        FE->>Chat: 채팅 참여 및 메시지 조회
+        Chat-->>FE: 채팅 내역 반환
+    end
+
+    opt 환불이 필요한 경우
+        User->>FE: 환불 요청
+        FE->>Refund: 주문 아이디와 환불 사유 전달
+        Refund->>Order: 주문 상태와 소유 여부 확인
+        Refund-->>FE: 환불 요청 아이디 반환
+
+        Admin->>FE: 환불 승인
+        FE->>Refund: 환불 승인 요청
+        Refund->>PortOne: 결제 취소/환불 요청
+        PortOne-->>Refund: 환불 처리 결과 반환
+        Refund->>Order: 주문 환불 상태 변경
+        Refund->>Coupon: 사용 쿠폰 복구
+        Refund->>Product: 상품 옵션 재고 복구
+        Refund-->>FE: 환불 승인 결과 반환
+    end
+
+    User->>FE: 로그아웃 요청
+    FE->>Auth: Refresh Token 삭제 요청
+    Auth-->>FE: 로그아웃 성공
