@@ -145,9 +145,7 @@ public class ProductService {
 
         // 조회된 상품 엔티티 목록을 하위 응답 DTO 규격으로 변환
         List<GetCategoryProductsResponse.CategoryProductResponse> productResponses = products.stream()
-                .map((Product product) -> {
-                    return GetCategoryProductsResponse.CategoryProductResponse.from(product);
-                })
+                .map(GetCategoryProductsResponse.CategoryProductResponse::from)
                 .toList();
 
         // 카테고리 정보와 상품 목록 결합 객체 반환
