@@ -2,20 +2,18 @@ package com.example.thetunais4joteamproject.domain.product.dto;
 
 import com.example.thetunais4joteamproject.domain.product.entity.OptionStatus;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor
 public class UpdateOptionRequest {
+	private Long optionId;
+	private int optionStock;
+	private int additionalPrice;
+	private OptionStatus status;
 
-    private Long optionId;
-    private int optionStock;
-    private int additionalPrice;
-    private OptionStatus status;
-
-    private UpdateOptionRequest(Long optionId, int optionStock, int additionalPrice, OptionStatus status) {
+	private UpdateOptionRequest(Long optionId, int optionStock, int additionalPrice, OptionStatus status) {
         this.optionId = optionId;
         this.optionStock = optionStock;
         this.additionalPrice = additionalPrice;

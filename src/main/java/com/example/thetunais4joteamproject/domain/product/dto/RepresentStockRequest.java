@@ -6,5 +6,5 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class RepresentStockRequest {
-    private int stockQuantity;
+	private int stockQuantity;
 }
