@@ -1,5 +1,6 @@
 package com.example.thetunais4joteamproject.global.util;
 
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
@@ -28,6 +29,23 @@ public class PasswordEncryptor {
                 + Base64.getEncoder().encodeToString(salt)
                 + DELIMITER
                 + Base64.getEncoder().encodeToString(hash);
+    }
+
+    public boolean matches(String rawPassword, String encryptedPassword) {
+        try {
+            String[] passwordParts = encryptedPassword.split(DELIMITER);
+            if (passwordParts.length != 3) {
+                return false;
+            }
+
+            byte[] salt = Base64.getDecoder().decode(passwordParts[1]);
+            byte[] savedHash = Base64.getDecoder().decode(passwordParts[2]);
+            byte[] rawHash = hash(rawPassword, salt);
+
+            return MessageDigest.isEqual(savedHash, rawHash);
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
     }
 
     private byte[] createSalt() {

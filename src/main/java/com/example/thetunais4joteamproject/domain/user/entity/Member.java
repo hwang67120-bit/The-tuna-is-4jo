@@ -51,4 +51,12 @@ public class Member extends BaseEntity {
     public Long getId() {
         return id;
     }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getRole() {
+        return role;
+    }
 }

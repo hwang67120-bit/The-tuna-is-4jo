@@ -3,6 +3,8 @@ package com.example.thetunais4joteamproject.domain.user.controller;
 import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberRequest;
 import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberResponse;
 import com.example.thetunais4joteamproject.domain.user.dto.GetMemberEmailCheckResponse;
+import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberRequest;
+import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberResponse;
 import com.example.thetunais4joteamproject.domain.user.service.MemberService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -35,6 +37,15 @@ public class MemberController {
             @Pattern(regexp = "^[A-Za-z0-9]+@[A-Za-z0-9]+(\\.[A-Za-z0-9]+)+$") String email
     ) {
         GetMemberEmailCheckResponse response = memberService.getEmailAvailability(email);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginMemberResponse> login(
+            @Valid @RequestBody LoginMemberRequest request
+    ) {
+        LoginMemberResponse response = memberService.login(request);
 
         return ResponseEntity.ok(response);
     }
