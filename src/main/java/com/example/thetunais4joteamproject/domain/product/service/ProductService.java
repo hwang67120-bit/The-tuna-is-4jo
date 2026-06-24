@@ -127,8 +127,6 @@ public class ProductService {
         Page<Product> products = productRepository.findByStatusOrderByCreatedAtDesc(ProductStatus.ON_SALE, pageable);
 
         // 정적 팩토리 메서드를 활용해 엔티티 리스트를 DTO 리스트로 매핑.
-        return products.map((Product product) -> {
-            return GetAllProductResponse.from(product);
-        });
+        return products.map(GetAllProductResponse::from);
     }
 }
