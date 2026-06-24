@@ -143,14 +143,11 @@ public class ProductService {
         // 해당 카테고리에 포함된 판매 중 상태의 상품 목록 조회
         List<Product> products = productRepository.findAllByCategoryIdAndStatus(categoryId, ProductStatus.ON_SALE);
 
-        // 실패 조건 검증
-        if (products.isEmpty()) {
-            throw BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
-        }
-
         // 조회된 상품 엔티티 목록을 하위 응답 DTO 규격으로 변환
         List<GetCategoryProductsResponse.CategoryProductResponse> productResponses = products.stream()
-                .map(GetCategoryProductsResponse.CategoryProductResponse::from)
+                .map((Product product) -> {
+                    return GetCategoryProductsResponse.CategoryProductResponse.from(product);
+                })
                 .toList();
 
         // 카테고리 정보와 상품 목록 결합 객체 반환
