@@ -1,10 +1,11 @@
 package com.example.thetunais4joteamproject.domain.user.dto;
 
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
+import com.example.thetunais4joteamproject.domain.user.entity.MemberRole;
 
 public record LoginMemberResponse(
         Long memberId,
-        String role
+        MemberRole role
 ) {
 
     public static LoginMemberResponse from(Member member) {
