@@ -39,8 +39,8 @@ public class Product extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private ProductStatus status;
 
-    @Builder
-    public Product(Category category, String name, int price, String description, ProductStatus status) {
+    // 정적 팩토리 메서드 사용을 강제하기 위해 외부 생성자를 private으로 차단
+    private Product(Category category, String name, int price, String description, ProductStatus status) {
         this.category = category;
         this.name = name;
         this.price = price;
@@ -48,7 +48,11 @@ public class Product extends BaseEntity {
         this.status = status;
     }
 
-    // 비즈니스 로직: 상품 마스터 정보 수정 메서드
+    // 정적 팩토리 메서드
+    public static Product of(Category category, String name, int price, String description, ProductStatus status) {
+        return new Product(category, name, price, description, status);
+    }
+
     public void updateProduct(Category category, String name, int price, String description) {
         this.category = category;
         this.name = name;
@@ -56,7 +60,6 @@ public class Product extends BaseEntity {
         this.description = description;
     }
 
-    // 비즈니스 로직: 상품 상태 변경
     public void changeStatus(ProductStatus status) {
         this.status = status;
     }
