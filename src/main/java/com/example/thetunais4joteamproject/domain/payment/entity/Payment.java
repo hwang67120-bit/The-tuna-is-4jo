@@ -54,6 +54,7 @@ public class Payment extends BaseTimeEntity {
 	@Column(name = "paid_at")
 	private LocalDateTime paidAt;
 
+	// todo - 주석 제거
 	private Payment(/*Order order,*/ String portonePaymentId, Integer requestedAmount, Integer pgAmount,
 
 		PaymentStatus status) {
@@ -64,16 +65,17 @@ public class Payment extends BaseTimeEntity {
 		this.status = status;
 	}
 
+	// todo - 주석 제거
 	public static Payment createPendingPayment(
 		// Order order,
 		String portonePaymentId,
-		Integer requestedAmount,
+		// Integer requestedAmount,
 		Integer pgAmount
 	) {
 		return new Payment(
 			//order,
 			portonePaymentId,
-			requestedAmount,
+			0 /*requestedAmount*/,
 			pgAmount,
 			PaymentStatus.PENDING
 		);
