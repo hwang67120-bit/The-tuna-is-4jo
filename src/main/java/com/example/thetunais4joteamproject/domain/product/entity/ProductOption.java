@@ -35,13 +35,18 @@ public class ProductOption extends BaseEntity {
     @Column(nullable = false, length = 20)
     private OptionStatus status;
 
-    @Builder
-    public ProductOption(Product product, String optionName, int optionStock, int additionalPrice, OptionStatus status) {
+    // 정적 팩토리 메서드 사용을 위해 기본 생성 구조를 private으로 처리한다.
+    private ProductOption(Product product, String optionName, int optionStock, int additionalPrice, OptionStatus status) {
         this.product = product;
         this.optionName = optionName;
         this.optionStock = optionStock;
         this.additionalPrice = additionalPrice;
         this.status = status;
+    }
+
+    // 정적 팩토리 메서드
+    public static ProductOption of(Product product, String optionName, int optionStock, int additionalPrice, OptionStatus status) {
+        return new ProductOption(product, optionName, optionStock, additionalPrice, status);
     }
 
     // 비즈니스 로직: 옵션 수정 기능
@@ -51,7 +56,7 @@ public class ProductOption extends BaseEntity {
         this.status = status;
     }
 
-    // 비즈니스 로직: 재고 변경 위임 기능 (관리자 전용 기능 시나리오 12, 13번 매칭)
+    // 비즈니스 로직: 재고 변경 위임 기능
     public void updateStock(int optionStock) {
         this.optionStock = optionStock;
     }
