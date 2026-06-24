@@ -11,6 +11,8 @@ import com.example.thetunais4joteamproject.domain.cart.repository.CartItemReposi
 import com.example.thetunais4joteamproject.domain.cart.repository.CartRepository;
 import com.example.thetunais4joteamproject.domain.product.entity.ProductOption;
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
+import com.example.thetunais4joteamproject.global.error.BusinessException;
+import com.example.thetunais4joteamproject.global.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -47,10 +49,19 @@ public class CartService {
 		return cartItem;
 	}
 
-	public GetCartResponse getCart(Long memberId) {
-		return cartRepository.findByMemberId(memberId)
-			.map(this::getCartResponse)
-			.orElseGet(GetCartResponse::empty);
+	public CartItem updateCartItemQuantity(Long memberId, Long cartItemId, Integer quantity) {
+		CartItem cartItem = cartItemRepository.findByIdAndMemberIdWithProductOptionAndProduct(
+				cartItemId,
+				memberId
+			)
+			.orElseThrow(() -> BusinessException.from(ErrorCode.CART_ITEM_NOT_FOUND));
+
+		ProductOption productOption = cartItem.getProductOption();
+
+		productOption.validateEnoughStock(quantity);
+		cartItem.updateQuantity(quantity);
+
+		return cartItem;
 	}
 
 	private GetCartResponse getCartResponse(Cart cart) {
@@ -64,5 +75,11 @@ public class CartService {
 		}
 
 		return GetCartResponse.of(items);
+	}
+
+	public GetCartResponse getCart(Long memberId) {
+		return cartRepository.findByMemberId(memberId)
+			.map(this::getCartResponse)
+			.orElseGet(GetCartResponse::empty);
 	}
 }
