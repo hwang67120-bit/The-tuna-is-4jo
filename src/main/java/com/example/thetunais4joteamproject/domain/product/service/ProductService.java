@@ -33,29 +33,31 @@ public class ProductService {
      * 상품 생성
      */
     @Transactional // 데이터 변경이 일어나므로 쓰기 트랜잭션 선언
-    public Long createProduct(CreateProductRequest request) {
+    public Long createProduct(Long memberId, CreateProductRequest createProductRequest) {
         // 1. 카테고리 존재 여부 확인 (없으면 예외 처리)
-        Category category = categoryRepository.findById(request.getCategoryId())
+        Category category = categoryRepository.findById(createProductRequest.getCategoryId())
                 .orElseThrow(() -> BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND));
 
         // 2. 상품 마스터 생성 및 저장
-        Product product = Product.builder()
-                .category(category)
-                .name(request.getName())
-                .price(request.getPrice())
-                .description(request.getDescription())
-                .status(ProductStatus.ON_SALE) // 초기 상태는 판매 중
-                .build();
+        Product product = Product.of(
+                memberId,
+                category,
+                createProductRequest.getName(),
+                createProductRequest.getPrice(),
+                createProductRequest.getDescription(),
+                ProductStatus.ON_SALE
+        );
 
         Product savedProduct = productRepository.save(product);
 
-        // 3. 단일 재고 위임 처리를 위한 '기본 옵션' 자동 최초 생성
-        ProductOption defaultOption = ProductOption.builder()
-                .product(savedProduct)
-                .optionName("기본 옵션")
-                .optionStock(0) // 초기 재고는 0
-                .status(OptionStatus.SOLDOUT) // 재고가 0이므로 초기 상태는 품절
-                .build();
+        // 단일 재고 제어 진입점 확보를 위한 기본 옵션 자동 생성 룰을 적용
+        ProductOption defaultOption = ProductOption.of(
+                savedProduct,
+                "기본 옵션",
+                0,
+                0,
+                OptionStatus.SOLDOUT
+        );
 
         productOptionRepository.save(defaultOption);
 
@@ -70,6 +72,7 @@ public class ProductService {
     public void updateOptionStocks(Long productId, List<UpdateOptionRequest> requests) {
         productRepository.findById(productId)
                 .orElseThrow(() -> BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND));
+
         for (UpdateOptionRequest request : requests) {
             ProductOption option = productOptionRepository.findById(request.getOptionId())
                     .orElseThrow(() -> BusinessException.from(ErrorCode.OPTION_NOT_FOUND));
