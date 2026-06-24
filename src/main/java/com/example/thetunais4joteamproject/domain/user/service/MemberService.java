@@ -5,10 +5,12 @@ import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberResponse;
 import com.example.thetunais4joteamproject.domain.user.dto.GetMemberEmailCheckResponse;
 import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberRequest;
 import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberResponse;
+import com.example.thetunais4joteamproject.domain.user.dto.LogoutMemberResponse;
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
 import com.example.thetunais4joteamproject.domain.user.repository.MemberRepository;
 import com.example.thetunais4joteamproject.global.error.BusinessException;
 import com.example.thetunais4joteamproject.global.error.ErrorCode;
+import com.example.thetunais4joteamproject.global.util.JwtProvider;
 import com.example.thetunais4joteamproject.global.util.PasswordEncryptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncryptor passwordEncryptor;
+    private final JwtProvider jwtProvider;
 
     public GetMemberEmailCheckResponse getEmailAvailability(String email) {
         boolean available = !memberRepository.existsByEmail(email);
@@ -35,7 +38,16 @@ public class MemberService {
             throw BusinessException.from(ErrorCode.UNAUTHORIZED);
         }
 
-        return LoginMemberResponse.from(member);
+        String accessToken = jwtProvider.createAccessToken(member.getId(), member.getRole());
+
+        return LoginMemberResponse.from(member, accessToken);
+    }
+
+    public LogoutMemberResponse logout(String authorizationHeader) {
+        String accessToken = jwtProvider.extractToken(authorizationHeader);
+        jwtProvider.validateToken(accessToken);
+
+        return new LogoutMemberResponse(true);
     }
 
     /** 회원가입 **/

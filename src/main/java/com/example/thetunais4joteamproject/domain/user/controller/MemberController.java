@@ -1,4 +1,4 @@
-﻿package com.example.thetunais4joteamproject.domain.user.controller;
+package com.example.thetunais4joteamproject.domain.user.controller;
 
 import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberRequest;
 import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberResponse;
@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,8 +48,10 @@ public class MemberController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<LogoutMemberResponse>> logout() {
-        LogoutMemberResponse response = memberService.logout();
+    public ResponseEntity<ApiResponse<LogoutMemberResponse>> logout(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        LogoutMemberResponse response = memberService.logout(authorizationHeader);
 
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
