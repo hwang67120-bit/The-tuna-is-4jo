@@ -5,10 +5,11 @@ import com.example.thetunais4joteamproject.domain.user.entity.MemberRole;
 
 public record LoginMemberResponse(
         Long memberId,
-        MemberRole role
+        MemberRole role,
+        String accessToken
 ) {
 
-    public static LoginMemberResponse from(Member member) {
-        return new LoginMemberResponse(member.getId(), member.getRole());
+    public static LoginMemberResponse from(Member member, String accessToken) {
+        return new LoginMemberResponse(member.getId(), member.getRole(), accessToken);
     }
 }
