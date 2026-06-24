@@ -1,5 +1,10 @@
 package com.example.thetunais4joteamproject.domain.cart.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.example.thetunais4joteamproject.domain.cart.dto.GetCartItemResponse;
+import com.example.thetunais4joteamproject.domain.cart.dto.GetCartResponse;
 import com.example.thetunais4joteamproject.domain.cart.entity.Cart;
 import com.example.thetunais4joteamproject.domain.cart.entity.CartItem;
 import com.example.thetunais4joteamproject.domain.cart.repository.CartItemRepository;
@@ -40,5 +45,24 @@ public class CartService {
 		cartItem.increaseQuantity(quantity);
 
 		return cartItem;
+	}
+
+	public GetCartResponse getCart(Long memberId) {
+		return cartRepository.findByMemberId(memberId)
+			.map(this::getCartResponse)
+			.orElseGet(GetCartResponse::empty);
+	}
+
+	private GetCartResponse getCartResponse(Cart cart) {
+		List<CartItem> cartItems =
+			cartItemRepository.findAllByCartIdWithProductOptionAndProduct(cart.getId());
+
+		List<GetCartItemResponse> items = new ArrayList<>();
+
+		for (CartItem cartItem : cartItems) {
+			items.add(GetCartItemResponse.from(cartItem));
+		}
+
+		return GetCartResponse.of(items);
 	}
 }
