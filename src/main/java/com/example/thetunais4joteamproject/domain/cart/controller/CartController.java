@@ -2,6 +2,7 @@ package com.example.thetunais4joteamproject.domain.cart.controller;
 
 import com.example.thetunais4joteamproject.domain.cart.dto.CreateCartItemRequest;
 import com.example.thetunais4joteamproject.domain.cart.dto.CreateCartItemResponse;
+import com.example.thetunais4joteamproject.domain.cart.dto.GetCartResponse;
 import com.example.thetunais4joteamproject.domain.cart.facade.CartFacade;
 import com.example.thetunais4joteamproject.global.common.ApiResponse;
 import jakarta.validation.Valid;
@@ -26,5 +27,14 @@ public class CartController {
 		CreateCartItemResponse response = cartFacade.createCartItem(memberId, request);
 
 		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(response));
+	}
+
+	@GetMapping
+	public ResponseEntity<ApiResponse<GetCartResponse>> getCart(
+		@AuthenticationPrincipal Long memberId
+	) {
+		GetCartResponse response = cartFacade.getCart(memberId);
+
+		return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(response));
 	}
 }
