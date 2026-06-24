@@ -1,4 +1,4 @@
-﻿# The Tuna Is 4jo Team Project
+# The Tuna Is 4jo Team Project
 
 ## 프로젝트 파일 구조
 
@@ -88,6 +88,7 @@ src/main/java/com/example/thetunais4joteamproject/
 
 | 기능 | Method | API Path | 인증 | 요청 | 응답 |
 | --- | --- | --- | --- | --- | --- |
+| 이메일 중복 확인 | GET | `/api/members/email-check` | X | 이메일 중복 확인 요청 | 이메일 사용 가능 여부 반환 |
 | 회원가입 | POST | `/api/members/signup` | X | 회원가입 정보 전달 | 회원 ID 반환 |
 | 로그인 | POST | `/api/members/login` | X | 로그인 정보 전달 | 인증 토큰 반환 |
 | 로그아웃 | POST | `/api/members/logout` | O | 로그아웃 요청 | 로그아웃 성공 반환 |
