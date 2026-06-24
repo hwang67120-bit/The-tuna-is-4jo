@@ -2,6 +2,8 @@ package com.example.thetunais4joteamproject.domain.product.dto;
 
 import com.example.thetunais4joteamproject.domain.product.entity.OptionStatus;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
