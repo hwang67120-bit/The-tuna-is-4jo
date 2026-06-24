@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.example.thetunais4joteamproject.domain.product.dto.CreateProductRequest;
 import com.example.thetunais4joteamproject.domain.product.dto.GetAllProductResponse;
+import com.example.thetunais4joteamproject.domain.product.dto.GetProductDetailResponse;
 import com.example.thetunais4joteamproject.domain.product.dto.RepresentStockRequest;
 import com.example.thetunais4joteamproject.domain.product.dto.UpdateOptionRequest;
 import com.example.thetunais4joteamproject.domain.product.entity.Category;
@@ -128,5 +129,27 @@ public class ProductService {
 
         // 정적 팩토리 메서드를 활용해 엔티티 리스트를 DTO 리스트로 매핑.
         return products.map(GetAllProductResponse::from);
+    }
+
+    /**
+     * 상품 상세 조회
+     */
+    public GetProductDetailResponse getProductDetail(Long productId) {
+        // // 상품이 존재하지 않으면 비즈니스 예외를 던집니다.
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> {
+                    return BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
+                });
+
+        // 해당 상품에 등록된 모든 세부 옵션 리스트를 조회.
+        List<ProductOption> wpOptions = productOptionRepository.findAllByProductId(productId);
+
+        // 옵션 엔티티 리스트를 정적 팩토리 메서드를 통해 응답 DTO 규격으로 변환.
+        List<GetProductDetailResponse.ProductOptionResponse> optionResponses = wpOptions.stream()
+                .map(GetProductDetailResponse.ProductOptionResponse::from)
+                .toList();
+
+        // 최종 상세 조회 결합 DTO를 반환.
+        return GetProductDetailResponse.of(product, optionResponses);
     }
 }
