@@ -21,9 +21,6 @@ public class Product extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long memberId;
-
     // N:1 연관관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
@@ -42,9 +39,8 @@ public class Product extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private ProductStatus status;
 
-    // 정적 팩토리 메서드 사용을 강제하기 위해 외부 생성자를 private으로 차단
-    private Product(Long memberId, Category category, String name, int price, String description, ProductStatus status) {
-        this.memberId = memberId;
+    @Builder
+    public Product(Category category, String name, int price, String description, ProductStatus status) {
         this.category = category;
         this.name = name;
         this.price = price;
@@ -52,11 +48,7 @@ public class Product extends BaseEntity {
         this.status = status;
     }
 
-    // 정적 팩토리 메서드
-    public static Product of(Long memberId, Category category, String name, int price, String description, ProductStatus status) {
-        return new Product(memberId, category, name, price, description, status);
-    }
-
+    // 비즈니스 로직: 상품 마스터 정보 수정 메서드
     public void updateProduct(Category category, String name, int price, String description) {
         this.category = category;
         this.name = name;
@@ -64,6 +56,7 @@ public class Product extends BaseEntity {
         this.description = description;
     }
 
+    // 비즈니스 로직: 상품 상태 변경
     public void changeStatus(ProductStatus status) {
         this.status = status;
     }
