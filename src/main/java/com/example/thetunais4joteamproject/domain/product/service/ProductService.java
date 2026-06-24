@@ -3,6 +3,7 @@ package com.example.thetunais4joteamproject.domain.product.service;
 import java.util.List;
 
 import com.example.thetunais4joteamproject.domain.product.dto.CreateProductRequest;
+import com.example.thetunais4joteamproject.domain.product.dto.GetAllProductResponse;
 import com.example.thetunais4joteamproject.domain.product.dto.RepresentStockRequest;
 import com.example.thetunais4joteamproject.domain.product.dto.UpdateOptionRequest;
 import com.example.thetunais4joteamproject.domain.product.entity.Category;
@@ -17,6 +18,8 @@ import com.example.thetunais4joteamproject.global.error.BusinessException;
 import com.example.thetunais4joteamproject.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -110,5 +113,22 @@ public class ProductService {
         } else {
             defaultOption.changeStatus(OptionStatus.ON_SALE);
         }
+    }
+
+    /**
+     * 상품 목록 조회
+     */
+    public Page<GetAllProductResponse> getAllProducts(Pageable pageable) {
+        // 페이지 번호가 음수로 들어오는 비정상적인 접근을 사전에 방어.
+        if (pageable.getPageNumber() < 0) {
+            throw BusinessException.from(ErrorCode.BAD_REQUEST);
+        }
+
+        Page<Product> products = productRepository.findByStatusOrderByCreatedAtDesc(ProductStatus.ON_SALE, pageable);
+
+        // 정적 팩토리 메서드를 활용해 엔티티 리스트를 DTO 리스트로 매핑.
+        return products.map((Product product) -> {
+            return GetAllProductResponse.from(product);
+        });
     }
 }

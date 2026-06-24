@@ -1,12 +1,17 @@
 package com.example.thetunais4joteamproject.domain.product.controller;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import com.example.thetunais4joteamproject.domain.product.dto.CreateProductRequest;
 import com.example.thetunais4joteamproject.domain.product.dto.CreateProductResponse;
+import com.example.thetunais4joteamproject.domain.product.dto.GetAllProductResponse;
 import com.example.thetunais4joteamproject.domain.product.dto.RepresentStockRequest;
 import com.example.thetunais4joteamproject.domain.product.dto.UpdateOptionRequest;
 import com.example.thetunais4joteamproject.domain.product.service.ProductService;
@@ -67,5 +72,18 @@ public class ProductController {
         productService.updateRepresentativeStock(productId, representStockRequest);
 
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(null));
+    }
+
+    /**
+     * 상품 목록 조회 (시나리오 반영)
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<GetAllProductResponse>>> getAllProducts(
+            @PageableDefault(size = 10)
+			Pageable pageable
+    ) {
+        Page<GetAllProductResponse> getAllProductResponse = productService.getAllProducts(pageable);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(getAllProductResponse));
     }
 }
