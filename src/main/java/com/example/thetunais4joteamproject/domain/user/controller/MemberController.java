@@ -7,8 +7,6 @@ import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberRequest;
 import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberResponse;
 import com.example.thetunais4joteamproject.domain.user.service.MemberService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,9 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.validation.annotation.Validated;
 
-@Validated
 @RestController
 @RequestMapping("/api/members")
 public class MemberController {
@@ -32,9 +28,7 @@ public class MemberController {
 
     @GetMapping("/email-check")
     public ResponseEntity<GetMemberEmailCheckResponse> getEmailAvailability(
-            @RequestParam
-            @NotBlank
-            @Pattern(regexp = "^[A-Za-z0-9]+@[A-Za-z0-9]+(\\.[A-Za-z0-9]+)+$") String email
+            @RequestParam String email
     ) {
         GetMemberEmailCheckResponse response = memberService.getEmailAvailability(email);
 
