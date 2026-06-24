@@ -20,8 +20,13 @@ public class Category extends BaseEntity {
     @Column(name = "name", length = 50)
     private String name;
 
-    // 빌더 패턴을 통한 안전한 객체 생성
-    public Category(String name) {
+    // 정적 팩토리 메서드 사용을 강제하기 위해 외부 생성자를 private으로 통제.
+    private Category(String name) {
         this.name = name;
+    }
+
+    // 단일 인자를 받아 인스턴스를 반환하는 정적 팩토리 생성 메서드.
+    public static Category from(String name) {
+        return new Category(name);
     }
 }
