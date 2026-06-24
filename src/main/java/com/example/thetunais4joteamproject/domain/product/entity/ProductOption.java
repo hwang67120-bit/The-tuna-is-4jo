@@ -1,0 +1,63 @@
+package com.example.thetunais4joteamproject.domain.product.entity;
+
+import com.example.thetunais4joteamproject.global.common.BaseEntity;
+
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "product_option")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class ProductOption extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    @Column(nullable = false, length = 100)
+    private String optionName;
+
+    @Column(nullable = false)
+    private int optionStock;
+
+    @Column(nullable = false)
+    private int additionalPrice;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private OptionStatus status;
+
+    @Builder
+    public ProductOption(Product product, String optionName, int optionStock, int additionalPrice, OptionStatus status) {
+        this.product = product;
+        this.optionName = optionName;
+        this.optionStock = optionStock;
+        this.additionalPrice = additionalPrice;
+        this.status = status;
+    }
+
+    // 비즈니스 로직: 옵션 수정 기능
+    public void updateOptionDetails(int optionStock, int additionalPrice, OptionStatus status) {
+        this.optionStock = optionStock;
+        this.additionalPrice = additionalPrice;
+        this.status = status;
+    }
+
+    // 비즈니스 로직: 재고 변경 위임 기능 (관리자 전용 기능 시나리오 12, 13번 매칭)
+    public void updateStock(int optionStock) {
+        this.optionStock = optionStock;
+    }
+
+    // 비즈니스 로직: 상태 변경 위임 기능 (재고가 0이 되면 자동으로 SOLDOUT 처리할 때 사용)
+    public void changeStatus(OptionStatus status) {
+        this.status = status;
+    }
+}
