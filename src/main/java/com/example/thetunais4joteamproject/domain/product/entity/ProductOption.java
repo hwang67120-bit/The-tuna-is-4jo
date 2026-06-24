@@ -1,10 +1,11 @@
 package com.example.thetunais4joteamproject.domain.product.entity;
 
 import com.example.thetunais4joteamproject.global.common.BaseEntity;
+import com.example.thetunais4joteamproject.global.error.BusinessException;
+import com.example.thetunais4joteamproject.global.error.ErrorCode;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -64,5 +65,16 @@ public class ProductOption extends BaseEntity {
     // 비즈니스 로직: 상태 변경 위임 기능 (재고가 0이 되면 자동으로 SOLDOUT 처리할 때 사용)
     public void changeStatus(OptionStatus status) {
         this.status = status;
+    }
+
+    // 요청 수량이 판매 가능 상태와 재고 범위 안에 있는지 검증
+    public void validateEnoughStock(Integer quantity) {
+        if (this.optionStock < quantity) {
+            throw BusinessException.from(ErrorCode.OUT_OF_STOCK);
+        }
+
+        if (this.status != OptionStatus.ON_SALE) {
+            throw BusinessException.from(ErrorCode.PRODUCT_OPTION_NOT_ON_SALE);
+        }
     }
 }
