@@ -1,11 +1,13 @@
-package com.example.thetunais4joteamproject.domain.user.controller;
+﻿package com.example.thetunais4joteamproject.domain.user.controller;
 
 import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberRequest;
 import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberResponse;
 import com.example.thetunais4joteamproject.domain.user.dto.GetMemberEmailCheckResponse;
 import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberRequest;
 import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberResponse;
+import com.example.thetunais4joteamproject.domain.user.dto.LogoutMemberResponse;
 import com.example.thetunais4joteamproject.domain.user.service.MemberService;
+import com.example.thetunais4joteamproject.global.common.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,31 +29,38 @@ public class MemberController {
     }
 
     @GetMapping("/email-check")
-    public ResponseEntity<GetMemberEmailCheckResponse> getEmailAvailability(
+    public ResponseEntity<ApiResponse<GetMemberEmailCheckResponse>> getEmailAvailability(
             @RequestParam String email
     ) {
         GetMemberEmailCheckResponse response = memberService.getEmailAvailability(email);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginMemberResponse> login(
+    public ResponseEntity<ApiResponse<LoginMemberResponse>> login(
             @Valid @RequestBody LoginMemberRequest request
     ) {
         LoginMemberResponse response = memberService.login(request);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<LogoutMemberResponse>> logout() {
+        LogoutMemberResponse response = memberService.logout();
+
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<CreateMemberResponse> create(
+    public ResponseEntity<ApiResponse<CreateMemberResponse>> create(
             @Valid @RequestBody CreateMemberRequest request
     ) {
         CreateMemberResponse response = memberService.create(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(response);
+                .body(ApiResponse.ok(response));
     }
 }
