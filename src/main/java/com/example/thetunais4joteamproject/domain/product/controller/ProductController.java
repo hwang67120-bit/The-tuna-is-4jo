@@ -4,11 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
 import com.example.thetunais4joteamproject.domain.product.dto.CreateProductRequest;
 import com.example.thetunais4joteamproject.domain.product.dto.CreateProductResponse;
 import com.example.thetunais4joteamproject.domain.product.dto.RepresentStockRequest;
