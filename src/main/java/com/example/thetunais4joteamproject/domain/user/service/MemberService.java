@@ -1,4 +1,4 @@
-﻿package com.example.thetunais4joteamproject.domain.user.service;
+package com.example.thetunais4joteamproject.domain.user.service;
 
 import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberRequest;
 import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberResponse;

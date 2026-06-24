@@ -1,4 +1,4 @@
-﻿package com.example.thetunais4joteamproject.domain.user.controller;
+package com.example.thetunais4joteamproject.domain.user.controller;
 
 import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberRequest;
 import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberResponse;
