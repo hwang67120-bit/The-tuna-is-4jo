@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.thetunais4joteamproject.domain.infra.portone.config.PortOneProperties;
 import com.example.thetunais4joteamproject.domain.infra.portone.dto.PortOneConfigResponse;
+import com.example.thetunais4joteamproject.global.common.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
 
