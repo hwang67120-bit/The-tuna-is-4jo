@@ -2,6 +2,9 @@ package com.example.thetunais4joteamproject.domain.cart.facade;
 
 import com.example.thetunais4joteamproject.domain.cart.dto.CreateCartItemRequest;
 import com.example.thetunais4joteamproject.domain.cart.dto.CreateCartItemResponse;
+import com.example.thetunais4joteamproject.domain.cart.dto.GetCartResponse;
+import com.example.thetunais4joteamproject.domain.cart.dto.UpdateCartItemRequest;
+import com.example.thetunais4joteamproject.domain.cart.dto.UpdateCartItemResponse;
 import com.example.thetunais4joteamproject.domain.cart.entity.Cart;
 import com.example.thetunais4joteamproject.domain.cart.entity.CartItem;
 import com.example.thetunais4joteamproject.domain.cart.service.CartService;
@@ -41,5 +44,31 @@ public class CartFacade {
 		);
 
 		return CreateCartItemResponse.from(cartItem);
+	}
+
+	@Transactional(readOnly = true)
+	public GetCartResponse getCart(Long memberId) {
+		memberRepository.findById(memberId)
+			.orElseThrow(() -> BusinessException.from(ErrorCode.MEMBER_NOT_FOUND));
+
+		return cartService.getCart(memberId);
+	}
+
+	@Transactional
+	public UpdateCartItemResponse updateCartItemQuantity(
+		Long memberId,
+		Long cartItemId,
+		UpdateCartItemRequest request
+	) {
+		memberRepository.findById(memberId)
+			.orElseThrow(() -> BusinessException.from(ErrorCode.MEMBER_NOT_FOUND));
+
+		CartItem cartItem = cartService.updateCartItemQuantity(
+			memberId,
+			cartItemId,
+			request.quantity()
+		);
+
+		return UpdateCartItemResponse.from(cartItem);
 	}
 }

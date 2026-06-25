@@ -1,11 +1,18 @@
 package com.example.thetunais4joteamproject.domain.cart.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.example.thetunais4joteamproject.domain.cart.dto.GetCartItemResponse;
+import com.example.thetunais4joteamproject.domain.cart.dto.GetCartResponse;
 import com.example.thetunais4joteamproject.domain.cart.entity.Cart;
 import com.example.thetunais4joteamproject.domain.cart.entity.CartItem;
 import com.example.thetunais4joteamproject.domain.cart.repository.CartItemRepository;
 import com.example.thetunais4joteamproject.domain.cart.repository.CartRepository;
 import com.example.thetunais4joteamproject.domain.product.entity.ProductOption;
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
+import com.example.thetunais4joteamproject.global.error.BusinessException;
+import com.example.thetunais4joteamproject.global.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -40,5 +47,39 @@ public class CartService {
 		cartItem.increaseQuantity(quantity);
 
 		return cartItem;
+	}
+
+	public CartItem updateCartItemQuantity(Long memberId, Long cartItemId, Integer quantity) {
+		CartItem cartItem = cartItemRepository.findByIdAndMemberIdWithProductOptionAndProduct(
+				cartItemId,
+				memberId
+			)
+			.orElseThrow(() -> BusinessException.from(ErrorCode.CART_ITEM_NOT_FOUND));
+
+		ProductOption productOption = cartItem.getProductOption();
+
+		productOption.validateEnoughStock(quantity);
+		cartItem.updateQuantity(quantity);
+
+		return cartItem;
+	}
+
+	private GetCartResponse getCartResponse(Cart cart) {
+		List<CartItem> cartItems =
+			cartItemRepository.findAllByCartIdWithProductOptionAndProduct(cart.getId());
+
+		List<GetCartItemResponse> items = new ArrayList<>();
+
+		for (CartItem cartItem : cartItems) {
+			items.add(GetCartItemResponse.from(cartItem));
+		}
+
+		return GetCartResponse.of(items);
+	}
+
+	public GetCartResponse getCart(Long memberId) {
+		return cartRepository.findByMemberId(memberId)
+			.map(this::getCartResponse)
+			.orElseGet(GetCartResponse::empty);
 	}
 }

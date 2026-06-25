@@ -56,4 +56,12 @@ public class CartItem extends BaseEntity {
 
 		this.quantity += quantity;
 	}
+
+	public void updateQuantity(Integer quantity) {
+		if (quantity == null || quantity < 1) {
+			throw BusinessException.from(ErrorCode.INVALID_CART_ITEM_QUANTITY);
+		}
+
+		this.quantity = quantity;
+	}
 }
