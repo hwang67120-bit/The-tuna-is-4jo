@@ -18,8 +18,11 @@ import com.example.thetunais4joteamproject.domain.product.dto.GetAllProductRespo
 import com.example.thetunais4joteamproject.domain.product.dto.GetCategoryProductsResponse;
 import com.example.thetunais4joteamproject.domain.product.dto.GetProductDetailResponse;
 import com.example.thetunais4joteamproject.domain.product.dto.RepresentStockRequest;
+import com.example.thetunais4joteamproject.domain.product.dto.SearchPopularResponse;
+import com.example.thetunais4joteamproject.domain.product.dto.SearchProductResponse;
 import com.example.thetunais4joteamproject.domain.product.dto.UpdateOptionRequest;
 import com.example.thetunais4joteamproject.domain.product.dto.UpdateProductRequest;
+import com.example.thetunais4joteamproject.domain.product.service.ProductSearchService;
 import com.example.thetunais4joteamproject.domain.product.service.ProductService;
 import com.example.thetunais4joteamproject.global.common.ApiResponse;
 
@@ -29,6 +32,7 @@ import com.example.thetunais4joteamproject.global.common.ApiResponse;
 public class ProductController {
 
     private final ProductService productService;
+    private final ProductSearchService productSearchService;
 
     /**
      * 상품 생성
@@ -148,5 +152,30 @@ public class ProductController {
         productService.deleteProduct(productId);
 
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(null));
+    }
+
+    /**
+     * 상품 통합 키워드 동적 검색 (Cache + QueryDSL 복합 인덱스)
+     */
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<SearchProductResponse>> searchProducts(
+        @RequestParam(name = "keyword")
+        String keyword,
+        @PageableDefault
+        Pageable pageable
+    ) {
+        SearchProductResponse response = productSearchService.searchProducts(keyword, pageable);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(response));
+    }
+
+    /**
+     * 실시간 인기 검색어 상위 TOP 10 순위 리스트 조회
+     */
+    @GetMapping("/popular-searches")
+    public ResponseEntity<ApiResponse<SearchPopularResponse>> getPopularSearches() {
+        SearchPopularResponse response = productSearchService.getPopularSearches();
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(response));
     }
 }
