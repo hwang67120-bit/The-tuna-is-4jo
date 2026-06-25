@@ -64,6 +64,23 @@ public class CartService {
 		return cartItem;
 	}
 
+	public void clearCart(Long memberId) {
+		Cart cart = cartRepository.findByMemberId(memberId)
+			.orElseThrow(() -> BusinessException.from(ErrorCode.CART_NOT_FOUND));
+
+		cartItemRepository.deleteAllByCartId(cart.getId());
+	}
+
+	public void deleteCartItem(Long memberId, Long cartItemId) {
+		CartItem cartItem = cartItemRepository.findByIdAndMemberId(
+				cartItemId,
+				memberId
+			)
+			.orElseThrow(() -> BusinessException.from(ErrorCode.CART_ITEM_NOT_FOUND));
+
+		cartItemRepository.delete(cartItem);
+	}
+
 	private GetCartResponse getCartResponse(Cart cart) {
 		List<CartItem> cartItems =
 			cartItemRepository.findAllByCartIdWithProductOptionAndProduct(cart.getId());
