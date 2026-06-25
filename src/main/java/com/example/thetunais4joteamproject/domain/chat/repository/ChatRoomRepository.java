@@ -1,7 +1,7 @@
 package com.example.thetunais4joteamproject.domain.chat.repository;
 
-import com.example.thetunais4joteamproject.domain.chat.ChatRoom;
-import com.example.thetunais4joteamproject.domain.chat.ChatRoomStatus;
+import com.example.thetunais4joteamproject.domain.chat.entity.ChatRoom;
+import com.example.thetunais4joteamproject.domain.chat.entity.ChatRoomStatus;
 import java.util.Collection;
 import org.springframework.data.jpa.repository.JpaRepository;
 
