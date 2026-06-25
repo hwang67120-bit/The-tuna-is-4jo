@@ -40,7 +40,7 @@ public class ProductSearchService {
      */
     @Transactional
     public SearchProductResponse searchProducts(String keyword, Pageable pageable) {
-        // 1. Redis Sorted Set 점수 가산 (ZINCRBY popular_search 1 keyword)
+        // 1. Redis Sorted Set 점수 가산
         redisTemplate.opsForZSet().incrementScore(POPULAR_SEARCH_KEY, keyword, 1.0);
 
         // 2. 검색 조건별 고유 캐시 키 생성 (product:search:키워드:페이지번호:페이지크기)
@@ -86,7 +86,7 @@ public class ProductSearchService {
      * 시나리오 2. 실시간 인기 검색어 상위 TOP 10 조회
      */
     public SearchPopularResponse getPopularSearches() {
-        // 1. 누적 점수가 높은 순으로 10개 키워드 추출 (ZREVRANGE popular_search 0 9 WITHSCORES)
+        // 1. 누적 점수가 높은 순으로 10개 키워드 추출
         Set<ZSetOperations.TypedTuple<String>> rankedSet = redisTemplate.opsForZSet()
                 .reverseRangeWithScores(POPULAR_SEARCH_KEY, 0, 9);
 
