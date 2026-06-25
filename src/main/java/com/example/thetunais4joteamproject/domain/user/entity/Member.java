@@ -49,6 +49,16 @@ public class Member extends BaseEntity {
         return new Member(email, password, name, phoneNumber, MemberRole.USER);
     }
 
+    public static Member create(
+            String email,
+            String password,
+            String name,
+            String phoneNumber,
+            MemberRole role
+    ) {
+        return new Member(email, password, name, phoneNumber, role);
+    }
+
     public Long getId() {
         return id;
     }
