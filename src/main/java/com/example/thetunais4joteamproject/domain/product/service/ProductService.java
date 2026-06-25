@@ -41,9 +41,7 @@ public class ProductService {
     public Long createProduct(Long memberId, CreateProductRequest request) {
         // 1. 카테고리 존재 여부 확인 (없으면 예외 처리)
         Category category = categoryRepository.findById(request.categoryId())
-            .orElseThrow(() -> {
-                return BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND);
-            });
+            .orElseThrow(() -> BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND));
 
         Product product = Product.of(
             null,
@@ -67,14 +65,20 @@ public class ProductService {
     public void updateOptionStocks(Long productId, List<UpdateOptionRequest> requests) {
         for (UpdateOptionRequest request : requests) {
             ProductOption option = productOptionRepository.findById(request.optionId())
-                .orElseThrow(() -> {
-                    return BusinessException.from(ErrorCode.OPTION_NOT_FOUND);
-                });
+                .orElseThrow(() -> BusinessException.from(ErrorCode.OPTION_NOT_FOUND));
+
+            // 재고가 0인지 체크하여 상태값을 유동적으로 보정.
+            int inputStock = request.optionStock();
+            OptionStatus finalizedStatus = request.status();
+
+            if (inputStock == 0) {
+                finalizedStatus = OptionStatus.SOLDOUT;
+            }
 
             option.updateOptionDetails(
-                request.optionStock(),
-                request.additionalPrice(),
-                request.status()
+                    inputStock,
+                    request.additionalPrice(),
+                    finalizedStatus
             );
         }
     }
@@ -85,9 +89,7 @@ public class ProductService {
     @Transactional
     public void updateRepresentativeStock(Long productId, RepresentStockRequest request) {
         ProductOption representativeOption = productOptionRepository.findTopByProductIdOrderByIdAsc(productId)
-            .orElseThrow(() -> {
-                return BusinessException.from(ErrorCode.OPTION_NOT_FOUND);
-            });
+            .orElseThrow(() -> BusinessException.from(ErrorCode.OPTION_NOT_FOUND));
 
         representativeOption.updateStock(request.stockQuantity());
     }
