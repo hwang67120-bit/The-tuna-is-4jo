@@ -45,7 +45,7 @@ public class ProductService {
             });
 
         Product product = Product.of(
-            null,
+            memberId,
             category,
             request.name(),
             request.price(),

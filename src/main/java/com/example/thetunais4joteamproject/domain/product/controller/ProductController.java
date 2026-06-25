@@ -8,6 +8,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import com.example.thetunais4joteamproject.domain.product.dto.CreateProductRequest;
@@ -50,9 +52,8 @@ public class ProductController {
      * 상품 세부 옵션, 상태, 추가금액 일괄 변경
      */
     @PutMapping("/{productId}/options")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> updateProductOptions(
-		@AuthenticationPrincipal
-        Long memberId,
         @PathVariable
         Long productId,
         @RequestBody
@@ -67,9 +68,8 @@ public class ProductController {
      * 상품 대표 재고 변경
      */
     @PutMapping("/{productId}/stock")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> updateProductStock(
-		@AuthenticationPrincipal
-        Long memberId,
         @PathVariable
         Long productId,
         @RequestBody
@@ -123,9 +123,8 @@ public class ProductController {
      * 상품 수정
      */
     @PutMapping("/{productId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> updateProduct(
-		@AuthenticationPrincipal
-        Long memberId,
         @PathVariable
         Long productId,
         @Valid
@@ -141,9 +140,8 @@ public class ProductController {
      * 상품 삭제
      */
     @DeleteMapping("/{productId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteProduct(
-        @AuthenticationPrincipal
-        Long memberId,
 		@PathVariable
         Long productId
     ) {
