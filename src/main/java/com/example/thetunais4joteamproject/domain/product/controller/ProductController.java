@@ -8,7 +8,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import com.example.thetunais4joteamproject.domain.product.dto.CreateProductRequest;
@@ -52,7 +51,7 @@ public class ProductController {
      */
     @PutMapping("/{productId}/options")
     public ResponseEntity<ApiResponse<Void>> updateProductOptions(
-        @AuthenticationPrincipal
+		@AuthenticationPrincipal
         Long memberId,
         @PathVariable
         Long productId,
@@ -69,7 +68,7 @@ public class ProductController {
      */
     @PutMapping("/{productId}/stock")
     public ResponseEntity<ApiResponse<Void>> updateProductStock(
-        @AuthenticationPrincipal
+		@AuthenticationPrincipal
         Long memberId,
         @PathVariable
         Long productId,
@@ -108,7 +107,7 @@ public class ProductController {
     }
 
     /**
-     * 상품 카테고리 조회
+     * 상품 카테고리 조회 (시나리오 반영)
      */
     @GetMapping("/categories/{categoryId}")
     public ResponseEntity<ApiResponse<GetCategoryProductsResponse>> getProductsByCategory(
@@ -125,13 +124,13 @@ public class ProductController {
      */
     @PutMapping("/{productId}")
     public ResponseEntity<ApiResponse<Void>> updateProduct(
-        @AuthenticationPrincipal
+		@AuthenticationPrincipal
         Long memberId,
         @PathVariable
         Long productId,
         @Valid
         @RequestBody
-        UpdateProductRequest updateProductRequest
+		UpdateProductRequest updateProductRequest
     ) {
         productService.updateProduct(productId, updateProductRequest);
 
@@ -145,7 +144,7 @@ public class ProductController {
     public ResponseEntity<ApiResponse<Void>> deleteProduct(
         @AuthenticationPrincipal
         Long memberId,
-        @PathVariable
+		@PathVariable
         Long productId
     ) {
         productService.deleteProduct(productId);
