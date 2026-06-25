@@ -33,14 +33,11 @@ public class ProductController {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<CreateProductResponse>> create(
-        @AuthenticationPrincipal
-        CustomUserDetails customUserDetails,
+        Long memberId,
+        @Valid
         @RequestBody
         CreateProductRequest createProductRequest
     ) {
-        // 인증 객체 내부에서 로그인한 관리자의 ID를 안전하게 적출
-        Long memberId = customUserDetails.getId();
-
         Long productId = productService.createProduct(memberId, createProductRequest);
 
         CreateProductResponse createProductResponse = CreateProductResponse.from(productId);
