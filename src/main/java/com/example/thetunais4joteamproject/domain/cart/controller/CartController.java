@@ -56,4 +56,23 @@ public class CartController {
 
 		return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(response));
 	}
+
+	@DeleteMapping("/items")
+	public ResponseEntity<ApiResponse<Void>> clearCart(
+		@AuthenticationPrincipal Long memberId
+	) {
+		cartFacade.clearCart(memberId);
+
+		return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("장바구니가 비워졌습니다."));
+	}
+
+	@DeleteMapping("/{cartItemId}")
+	public ResponseEntity<ApiResponse<Void>> deleteCartItem(
+		@AuthenticationPrincipal Long memberId,
+		@PathVariable Long cartItemId
+	) {
+		cartFacade.deleteCartItem(memberId, cartItemId);
+
+		return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("선택 상품이 삭제되었습니다."));
+	}
 }
