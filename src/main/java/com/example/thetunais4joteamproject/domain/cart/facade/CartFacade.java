@@ -71,4 +71,20 @@ public class CartFacade {
 
 		return UpdateCartItemResponse.from(cartItem);
 	}
+
+	@Transactional
+	public void clearCart(Long memberId) {
+		memberRepository.findById(memberId)
+			.orElseThrow(() -> BusinessException.from(ErrorCode.MEMBER_NOT_FOUND));
+
+		cartService.clearCart(memberId);
+	}
+
+	@Transactional
+	public void deleteCartItem(Long memberId, Long cartItemId) {
+		memberRepository.findById(memberId)
+			.orElseThrow(() -> BusinessException.from(ErrorCode.MEMBER_NOT_FOUND));
+
+		cartService.deleteCartItem(memberId, cartItemId);
+	}
 }
