@@ -12,6 +12,7 @@ import java.util.List;
 import com.example.thetunais4joteamproject.domain.product.dto.CreateProductRequest;
 import com.example.thetunais4joteamproject.domain.product.dto.CreateProductResponse;
 import com.example.thetunais4joteamproject.domain.product.dto.GetAllProductResponse;
+import com.example.thetunais4joteamproject.domain.product.dto.GetCategoryProductsResponse;
 import com.example.thetunais4joteamproject.domain.product.dto.GetProductDetailResponse;
 import com.example.thetunais4joteamproject.domain.product.dto.RepresentStockRequest;
 import com.example.thetunais4joteamproject.domain.product.dto.UpdateOptionRequest;
@@ -80,7 +81,7 @@ public class ProductController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<Page<GetAllProductResponse>>> getAllProducts(
-        @PageableDefault(size = 10)
+        @PageableDefault
         Pageable pageable
     ) {
         Page<GetAllProductResponse> getAllProductResponse = productService.getAllProducts(pageable);
@@ -99,5 +100,18 @@ public class ProductController {
         GetProductDetailResponse getProductDetailResponse = productService.getProductDetail(productId);
 
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(getProductDetailResponse));
+    }
+
+    /**
+     * 상품 카테고리 조회 (시나리오 반영)
+     */
+    @GetMapping("/categories/{categoryId}")
+    public ResponseEntity<ApiResponse<GetCategoryProductsResponse>> getProductsByCategory(
+            @PathVariable
+            Long categoryId
+    ) {
+        GetCategoryProductsResponse getCategoryProductsResponse = productService.getProductsByCategory(categoryId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(getCategoryProductsResponse));
     }
 }

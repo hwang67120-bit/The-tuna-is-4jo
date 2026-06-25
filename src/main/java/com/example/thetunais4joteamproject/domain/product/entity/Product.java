@@ -2,13 +2,8 @@ package com.example.thetunais4joteamproject.domain.product.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import com.example.thetunais4joteamproject.global.common.BaseEntity;
 
 @Entity
