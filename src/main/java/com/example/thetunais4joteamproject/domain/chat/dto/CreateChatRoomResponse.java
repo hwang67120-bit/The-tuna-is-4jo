@@ -1,7 +1,7 @@
 package com.example.thetunais4joteamproject.domain.chat.dto;
 
-import com.example.thetunais4joteamproject.domain.chat.ChatRoom;
-import com.example.thetunais4joteamproject.domain.chat.ChatRoomStatus;
+import com.example.thetunais4joteamproject.domain.chat.entity.ChatRoom;
+import com.example.thetunais4joteamproject.domain.chat.entity.ChatRoomStatus;
 
 public record CreateChatRoomResponse(
         Long chatRoomId,
