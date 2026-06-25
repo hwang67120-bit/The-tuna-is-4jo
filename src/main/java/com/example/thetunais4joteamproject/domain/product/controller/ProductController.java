@@ -1,5 +1,6 @@
 package com.example.thetunais4joteamproject.domain.product.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
@@ -16,6 +17,7 @@ import com.example.thetunais4joteamproject.domain.product.dto.GetCategoryProduct
 import com.example.thetunais4joteamproject.domain.product.dto.GetProductDetailResponse;
 import com.example.thetunais4joteamproject.domain.product.dto.RepresentStockRequest;
 import com.example.thetunais4joteamproject.domain.product.dto.UpdateOptionRequest;
+import com.example.thetunais4joteamproject.domain.product.dto.UpdateProductRequest;
 import com.example.thetunais4joteamproject.domain.product.service.ProductService;
 import com.example.thetunais4joteamproject.global.common.ApiResponse;
 
@@ -32,13 +34,11 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<ApiResponse<CreateProductResponse>> create(
         @AuthenticationPrincipal
-        CustomUserDetails customUserDetails,
+        Long memberId,
+        @Valid
         @RequestBody
         CreateProductRequest createProductRequest
     ) {
-        // 인증 객체 내부에서 로그인한 관리자의 ID를 안전하게 적출
-        Long memberId = customUserDetails.getId();
-
         Long productId = productService.createProduct(memberId, createProductRequest);
 
         CreateProductResponse createProductResponse = CreateProductResponse.from(productId);
@@ -51,6 +51,8 @@ public class ProductController {
      */
     @PutMapping("/{productId}/options")
     public ResponseEntity<ApiResponse<Void>> updateProductOptions(
+		@AuthenticationPrincipal
+        Long memberId,
         @PathVariable
         Long productId,
         @RequestBody
@@ -66,6 +68,8 @@ public class ProductController {
      */
     @PutMapping("/{productId}/stock")
     public ResponseEntity<ApiResponse<Void>> updateProductStock(
+		@AuthenticationPrincipal
+        Long memberId,
         @PathVariable
         Long productId,
         @RequestBody
@@ -113,5 +117,38 @@ public class ProductController {
         GetCategoryProductsResponse getCategoryProductsResponse = productService.getProductsByCategory(categoryId);
 
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(getCategoryProductsResponse));
+    }
+
+    /**
+     * 상품 수정
+     */
+    @PutMapping("/{productId}")
+    public ResponseEntity<ApiResponse<Void>> updateProduct(
+		@AuthenticationPrincipal
+        Long memberId,
+        @PathVariable
+        Long productId,
+        @Valid
+        @RequestBody
+		UpdateProductRequest updateProductRequest
+    ) {
+        productService.updateProduct(productId, updateProductRequest);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(null));
+    }
+
+    /**
+     * 상품 삭제
+     */
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<ApiResponse<Void>> deleteProduct(
+        @AuthenticationPrincipal
+        Long memberId,
+		@PathVariable
+        Long productId
+    ) {
+        productService.deleteProduct(productId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(null));
     }
 }
