@@ -71,7 +71,7 @@ public class ProductService {
         }
 
         return product.getId();
-    } // 🎯 범인이었던 createProduct 메서드의 닫는 중괄호 자리를 완벽히 찾아 고정했습니다!
+    }
 
     /**
      * 상품 세부 옵션 및 상태/추가금액 변경
@@ -136,12 +136,15 @@ public class ProductService {
                 return BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
             });
 
+        // 예외 방어선 구축: 이미 논리 삭제된 상품이라면 존재하지 않는 상품으로 간주하여 예외 처리
+        if (product.getStatus() == ProductStatus.DELETED) {
+            throw BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+
         List<ProductOption> wpOptions = productOptionRepository.findAllByProductId(productId);
 
         List<GetProductDetailResponse.ProductOptionResponse> optionResponses = wpOptions.stream()
-            .map((ProductOption option) -> {
-                return GetProductDetailResponse.ProductOptionResponse.from(option);
-            })
+            .map(GetProductDetailResponse.ProductOptionResponse::from)
             .toList();
 
         return GetProductDetailResponse.of(product, optionResponses);
