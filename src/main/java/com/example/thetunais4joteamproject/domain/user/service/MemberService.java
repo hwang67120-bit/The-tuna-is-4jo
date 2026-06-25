@@ -5,12 +5,17 @@ import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberResponse;
 import com.example.thetunais4joteamproject.domain.user.dto.GetMemberEmailCheckResponse;
 import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberRequest;
 import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberResponse;
+import com.example.thetunais4joteamproject.domain.user.dto.LogoutMemberResponse;
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
+import com.example.thetunais4joteamproject.domain.user.entity.MemberRole;
 import com.example.thetunais4joteamproject.domain.user.repository.MemberRepository;
 import com.example.thetunais4joteamproject.global.error.BusinessException;
 import com.example.thetunais4joteamproject.global.error.ErrorCode;
+import com.example.thetunais4joteamproject.global.util.JwtProvider;
 import com.example.thetunais4joteamproject.global.util.PasswordEncryptor;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +26,10 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncryptor passwordEncryptor;
+    private final JwtProvider jwtProvider;
+
+    @Value("${admin.whitelist.emails:}")
+    private String adminWhitelistEmails;
 
     public GetMemberEmailCheckResponse getEmailAvailability(String email) {
         boolean available = !memberRepository.existsByEmail(email);
@@ -35,7 +44,16 @@ public class MemberService {
             throw BusinessException.from(ErrorCode.UNAUTHORIZED);
         }
 
-        return LoginMemberResponse.from(member);
+        String accessToken = jwtProvider.createAccessToken(member.getId(), member.getRole());
+
+        return LoginMemberResponse.from(member, accessToken);
+    }
+
+    public LogoutMemberResponse logout(String authorizationHeader) {
+        String accessToken = jwtProvider.extractToken(authorizationHeader);
+        jwtProvider.validateToken(accessToken);
+
+        return new LogoutMemberResponse(true);
     }
 
     /** 회원가입 **/
@@ -45,8 +63,9 @@ public class MemberService {
 
         String encryptedPassword = passwordEncryptor.encrypt(request.password());
         String normalizedPhoneNumber = normalizePhoneNumber(request.phoneNumber());
+        MemberRole role = determineRole(request.email());
         Member savedMember = memberRepository.save(
-                Member.create(request.email(), encryptedPassword, request.name(), normalizedPhoneNumber)
+                Member.create(request.email(), encryptedPassword, request.name(), normalizedPhoneNumber, role)
         );
 
         return CreateMemberResponse.from(savedMember);
@@ -60,5 +79,22 @@ public class MemberService {
 
     private String normalizePhoneNumber(String phoneNumber) {
         return phoneNumber.replace("-", "");
+    }
+
+    private MemberRole determineRole(String email) {
+        if (adminWhitelistEmails == null || adminWhitelistEmails.isBlank()) {
+            return MemberRole.USER;
+        }
+
+        String requestEmail = email.trim().toLowerCase(Locale.ROOT);
+        String[] whitelistEmails = adminWhitelistEmails.split(",");
+        for (String whitelistEmail : whitelistEmails) {
+            String normalizedWhitelistEmail = whitelistEmail.trim().toLowerCase(Locale.ROOT);
+            if (requestEmail.equals(normalizedWhitelistEmail)) {
+                return MemberRole.ADMIN;
+            }
+        }
+
+        return MemberRole.USER;
     }
 }
