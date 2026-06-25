@@ -41,9 +41,7 @@ public class ProductService {
     public Long createProduct(Long memberId, CreateProductRequest request) {
         // 1. 카테고리 존재 여부 확인 (없으면 예외 처리)
         Category category = categoryRepository.findById(request.categoryId())
-            .orElseThrow(() -> {
-                return BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND);
-            });
+            .orElseThrow(() -> BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND));
 
         Product product = Product.of(
             null,
@@ -67,14 +65,20 @@ public class ProductService {
     public void updateOptionStocks(Long productId, List<UpdateOptionRequest> requests) {
         for (UpdateOptionRequest request : requests) {
             ProductOption option = productOptionRepository.findById(request.optionId())
-                .orElseThrow(() -> {
-                    return BusinessException.from(ErrorCode.OPTION_NOT_FOUND);
-                });
+                .orElseThrow(() -> BusinessException.from(ErrorCode.OPTION_NOT_FOUND));
+
+            // 재고가 0인지 체크하여 상태값을 유동적으로 보정.
+            int inputStock = request.optionStock();
+            OptionStatus finalizedStatus = request.status();
+
+            if (inputStock == 0) {
+                finalizedStatus = OptionStatus.SOLDOUT;
+            }
 
             option.updateOptionDetails(
-                request.optionStock(),
-                request.additionalPrice(),
-                request.status()
+                    inputStock,
+                    request.additionalPrice(),
+                    finalizedStatus
             );
         }
     }
@@ -85,9 +89,7 @@ public class ProductService {
     @Transactional
     public void updateRepresentativeStock(Long productId, RepresentStockRequest request) {
         ProductOption representativeOption = productOptionRepository.findTopByProductIdOrderByIdAsc(productId)
-            .orElseThrow(() -> {
-                return BusinessException.from(ErrorCode.OPTION_NOT_FOUND);
-            });
+            .orElseThrow(() -> BusinessException.from(ErrorCode.OPTION_NOT_FOUND));
 
         representativeOption.updateStock(request.stockQuantity());
     }
@@ -114,9 +116,7 @@ public class ProductService {
     public GetProductDetailResponse getProductDetail (Long productId){
         // 상품이 존재하지 않으면 비즈니스 예외를 던진다.
         Product product = productRepository.findById(productId)
-            .orElseThrow(() -> {
-                return BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
-            });
+            .orElseThrow(() -> BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND));
 
         // 해당 상품에 등록된 모든 세부 옵션 리스트를 조회.
         List<ProductOption> wpOptions = productOptionRepository.findAllByProductId(productId);
@@ -136,17 +136,10 @@ public class ProductService {
     public GetCategoryProductsResponse getProductsByCategory(Long categoryId) {
         // 입력된 카테고리 아이디로 카테고리를 조회.
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> {
-                    return BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND);
-                });
+                .orElseThrow(() -> BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND));
 
         // 해당 카테고리에 포함된 판매 중 상태의 상품 목록 조회
         List<Product> products = productRepository.findAllByCategoryIdAndStatus(categoryId, ProductStatus.ON_SALE);
-
-        // 실패 조건 검증
-        if (products.isEmpty()) {
-            throw BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
-        }
 
         // 조회된 상품 엔티티 목록을 하위 응답 DTO 규격으로 변환
         List<GetCategoryProductsResponse.CategoryProductResponse> productResponses = products.stream()
