@@ -59,12 +59,29 @@ public class Member extends BaseEntity {
         return new Member(email, password, name, phoneNumber, role);
     }
 
+    public void updateInfo(String name, String phoneNumber) {
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+    }
+
     public Long getId() {
         return id;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
     public String getPassword() {
         return password;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
     }
 
     public MemberRole getRole() {
