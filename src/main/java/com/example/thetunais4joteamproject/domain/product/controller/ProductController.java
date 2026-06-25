@@ -1,5 +1,6 @@
 package com.example.thetunais4joteamproject.domain.product.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
@@ -16,6 +17,7 @@ import com.example.thetunais4joteamproject.domain.product.dto.GetCategoryProduct
 import com.example.thetunais4joteamproject.domain.product.dto.GetProductDetailResponse;
 import com.example.thetunais4joteamproject.domain.product.dto.RepresentStockRequest;
 import com.example.thetunais4joteamproject.domain.product.dto.UpdateOptionRequest;
+import com.example.thetunais4joteamproject.domain.product.dto.UpdateProductRequest;
 import com.example.thetunais4joteamproject.domain.product.service.ProductService;
 import com.example.thetunais4joteamproject.global.common.ApiResponse;
 
@@ -113,5 +115,34 @@ public class ProductController {
         GetCategoryProductsResponse getCategoryProductsResponse = productService.getProductsByCategory(categoryId);
 
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(getCategoryProductsResponse));
+    }
+
+    /**
+     * 상품 수정
+     */
+    @PutMapping("/{productId}")
+    public ResponseEntity<ApiResponse<Void>> updateProduct(
+            @PathVariable
+            Long productId,
+            @Valid
+            @RequestBody
+			UpdateProductRequest updateProductRequest
+    ) {
+        productService.updateProduct(productId, updateProductRequest);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(null));
+    }
+
+    /**
+     * 상품 삭제
+     */
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<ApiResponse<Void>> deleteProduct(
+            @PathVariable
+            Long productId
+    ) {
+        productService.deleteProduct(productId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(null));
     }
 }

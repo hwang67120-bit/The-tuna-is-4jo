@@ -8,6 +8,7 @@ import com.example.thetunais4joteamproject.domain.product.dto.GetCategoryProduct
 import com.example.thetunais4joteamproject.domain.product.dto.GetProductDetailResponse;
 import com.example.thetunais4joteamproject.domain.product.dto.RepresentStockRequest;
 import com.example.thetunais4joteamproject.domain.product.dto.UpdateOptionRequest;
+import com.example.thetunais4joteamproject.domain.product.dto.UpdateProductRequest;
 import com.example.thetunais4joteamproject.domain.product.entity.Category;
 import com.example.thetunais4joteamproject.domain.product.entity.OptionStatus;
 import com.example.thetunais4joteamproject.domain.product.entity.Product;
@@ -45,11 +46,11 @@ public class ProductService {
 
         Product product = Product.of(
             null,
-                category,
-                request.name(),
-                request.price(),
-                request.description(),
-                ProductStatus.ON_SALE
+            category,
+            request.name(),
+            request.price(),
+            request.description(),
+            ProductStatus.ON_SALE
         );
 
         productRepository.save(product);
@@ -76,9 +77,9 @@ public class ProductService {
             }
 
             option.updateOptionDetails(
-                    inputStock,
-                    request.additionalPrice(),
-                    finalizedStatus
+                inputStock,
+                request.additionalPrice(),
+                finalizedStatus
             );
         }
     }
@@ -97,7 +98,7 @@ public class ProductService {
     /**
      * 상품 목록 조회
      */
-    public Page<GetAllProductResponse> getAllProducts (Pageable pageable){
+    public Page<GetAllProductResponse> getAllProducts(Pageable pageable) {
         // 페이지 번호가 음수로 들어오는 비정상적인 접근을 사전에 방어.
         if (pageable.getPageNumber() < 0) {
             throw BusinessException.from(ErrorCode.BAD_REQUEST);
@@ -113,7 +114,7 @@ public class ProductService {
     /**
      * 상품 상세 조회
      */
-    public GetProductDetailResponse getProductDetail (Long productId){
+    public GetProductDetailResponse getProductDetail(Long productId) {
         // 상품이 존재하지 않으면 비즈니스 예외를 던진다.
         Product product = productRepository.findById(productId)
             .orElseThrow(() -> BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND));
@@ -136,17 +137,70 @@ public class ProductService {
     public GetCategoryProductsResponse getProductsByCategory(Long categoryId) {
         // 입력된 카테고리 아이디로 카테고리를 조회.
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND));
+            .orElseThrow(() -> BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND));
 
         // 해당 카테고리에 포함된 판매 중 상태의 상품 목록 조회
         List<Product> products = productRepository.findAllByCategoryIdAndStatus(categoryId, ProductStatus.ON_SALE);
 
         // 조회된 상품 엔티티 목록을 하위 응답 DTO 규격으로 변환
         List<GetCategoryProductsResponse.CategoryProductResponse> productResponses = products.stream()
-                .map(GetCategoryProductsResponse.CategoryProductResponse::from)
-                .toList();
+            .map(GetCategoryProductsResponse.CategoryProductResponse::from)
+            .toList();
 
         // 카테고리 정보와 상품 목록 결합 객체 반환
         return GetCategoryProductsResponse.of(category, productResponses);
+    }
+
+    /**
+     * 상품 수정 (Admin)
+     */
+    @Transactional
+    public void updateProduct(Long productId, UpdateProductRequest request) {
+        // 1. 수정 대상 상품 존재 여부 검증
+        Product product = productRepository.findById(productId)
+            .orElseThrow(() -> {
+                return BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
+            });
+
+        // 2. 변경할 카테고리 존재 여부 검증
+        Category category = categoryRepository.findById(request.categoryId())
+            .orElseThrow(() -> {
+                return BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND);
+            });
+
+        // 3. 엔티티 내부 비즈니스 메서드를 통한 데이터 갱신
+        product.updateProduct(
+            category,
+            request.name(),
+            request.price(),
+            request.description()
+        );
+
+        // 이후 Redis 캐시 무효화가 들어설 자리.
+    }
+
+    /**
+     * 상품 삭제 (Admin - Soft Delete)
+     */
+    @Transactional
+    public void deleteProduct(Long productId) {
+        // 1. 삭제 대상 상품 존재 여부 검증
+        Product product = productRepository.findById(productId)
+            .orElseThrow(() -> {
+                return BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
+            });
+
+        // 2. 상품 상태를 DELETED로 변경 (논리 삭제)
+        product.changeStatus(ProductStatus.DELETED);
+
+        // 3. 연관된 하위 상품 옵션들 일괄 품절 및 격리 처리
+        List<ProductOption> options = productOptionRepository.findAllByProductId(productId);
+        for (ProductOption option : options) {
+            option.updateOptionDetails(
+                0,
+                option.getAdditionalPrice(),
+                OptionStatus.SOLDOUT
+            );
+        }
     }
 }

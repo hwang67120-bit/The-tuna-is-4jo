@@ -53,13 +53,18 @@ public class Product extends BaseEntity {
     }
 
     public void updateProduct(Category category, String name, int price, String description) {
-        this.category = category;
+        // 카테고리 참조 변경 무결성 보장
+        if (category != null) {
+            this.category = category;
+        }
         this.name = name;
         this.price = price;
         this.description = description;
     }
 
     public void changeStatus(ProductStatus status) {
-        this.status = status;
+        if (status != null) {
+            this.status = status;
+        }
     }
 }
