@@ -3,6 +3,8 @@ package com.example.thetunais4joteamproject.domain.user.entity;
 import com.example.thetunais4joteamproject.global.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -11,8 +13,6 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "member")
 public class Member extends BaseEntity {
-
-    private static final String DEFAULT_ROLE = "USER";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,13 +30,14 @@ public class Member extends BaseEntity {
     @Column(name = "phone_number", nullable = false, length = 20)
     private String phoneNumber;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
-    private String role;
+    private MemberRole role;
 
     protected Member() {
     }
 
-    private Member(String email, String password, String name, String phoneNumber, String role) {
+    private Member(String email, String password, String name, String phoneNumber, MemberRole role) {
         this.email = email;
         this.password = password;
         this.name = name;
@@ -45,7 +46,17 @@ public class Member extends BaseEntity {
     }
 
     public static Member create(String email, String password, String name, String phoneNumber) {
-        return new Member(email, password, name, phoneNumber, DEFAULT_ROLE);
+        return new Member(email, password, name, phoneNumber, MemberRole.USER);
+    }
+
+    public static Member create(
+            String email,
+            String password,
+            String name,
+            String phoneNumber,
+            MemberRole role
+    ) {
+        return new Member(email, password, name, phoneNumber, role);
     }
 
     public Long getId() {
@@ -56,7 +67,7 @@ public class Member extends BaseEntity {
         return password;
     }
 
-    public String getRole() {
+    public MemberRole getRole() {
         return role;
     }
 }
