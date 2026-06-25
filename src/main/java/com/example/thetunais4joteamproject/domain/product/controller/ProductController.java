@@ -33,6 +33,7 @@ public class ProductController {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<CreateProductResponse>> create(
+        @AuthenticationPrincipal
         Long memberId,
         @Valid
         @RequestBody
@@ -50,6 +51,8 @@ public class ProductController {
      */
     @PutMapping("/{productId}/options")
     public ResponseEntity<ApiResponse<Void>> updateProductOptions(
+		@AuthenticationPrincipal
+        Long memberId,
         @PathVariable
         Long productId,
         @RequestBody
@@ -65,6 +68,8 @@ public class ProductController {
      */
     @PutMapping("/{productId}/stock")
     public ResponseEntity<ApiResponse<Void>> updateProductStock(
+		@AuthenticationPrincipal
+        Long memberId,
         @PathVariable
         Long productId,
         @RequestBody
@@ -119,11 +124,13 @@ public class ProductController {
      */
     @PutMapping("/{productId}")
     public ResponseEntity<ApiResponse<Void>> updateProduct(
-            @PathVariable
-            Long productId,
-            @Valid
-            @RequestBody
-			UpdateProductRequest updateProductRequest
+		@AuthenticationPrincipal
+        Long memberId,
+        @PathVariable
+        Long productId,
+        @Valid
+        @RequestBody
+		UpdateProductRequest updateProductRequest
     ) {
         productService.updateProduct(productId, updateProductRequest);
 
@@ -135,8 +142,10 @@ public class ProductController {
      */
     @DeleteMapping("/{productId}")
     public ResponseEntity<ApiResponse<Void>> deleteProduct(
-            @PathVariable
-            Long productId
+        @AuthenticationPrincipal
+        Long memberId,
+		@PathVariable
+        Long productId
     ) {
         productService.deleteProduct(productId);
 
