@@ -45,7 +45,7 @@ public class ProductController {
 
         CreateProductResponse createProductResponse = CreateProductResponse.from(productId);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(createProductResponse));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(createProductResponse));
     }
 
     /**

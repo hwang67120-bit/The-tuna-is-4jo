@@ -34,6 +34,6 @@ public class CategoryController {
     ) {
         Long categoryId = categoryService.createCategory(createCategoryRequest);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(categoryId));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(categoryId));
     }
 }
