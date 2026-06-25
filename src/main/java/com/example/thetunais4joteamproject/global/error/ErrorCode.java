@@ -6,6 +6,7 @@ public enum ErrorCode {
 
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "요청 내용을 확인해 주세요"),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다"),
+    FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다"),
     NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다"),
     CONFLICT(HttpStatus.CONFLICT, "요청을 처리할 수 없습니다"),
     SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "현재 서비스를 이용할 수 없습니다"),
