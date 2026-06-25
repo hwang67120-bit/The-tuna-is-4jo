@@ -5,6 +5,7 @@ import java.util.List;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
@@ -24,7 +25,7 @@ public record CreateProductRequest(
         String description,
 
         @Valid
-        @NotNull(message = "옵션 목록은 필수입니다. 빈 배열이라도 채워주세요.")
+        @NotEmpty(message = "옵션 목록은 필수입니다. 빈 배열이라도 채워주세요.")
 		List<ProductOptionRequest> options
 ) {
     // 정적 팩토리 메서드 공통 규칙 반영

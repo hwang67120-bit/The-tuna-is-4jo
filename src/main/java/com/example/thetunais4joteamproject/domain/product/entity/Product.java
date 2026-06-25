@@ -49,7 +49,14 @@ public class Product extends BaseEntity {
 
     // 정적 팩토리 메서드
     public static Product of(Long memberId, Category category, String name, int price, String description, ProductStatus status) {
-        return new Product(memberId, category, name, price, description, status);
+        Product product = new Product();
+        product.memberId = memberId;
+        product.category = category;
+        product.name = name;
+        product.price = price;
+        product.description = description;
+        product.status = status;
+        return product;
     }
 
     public void updateProduct(Category category, String name, int price, String description) {
