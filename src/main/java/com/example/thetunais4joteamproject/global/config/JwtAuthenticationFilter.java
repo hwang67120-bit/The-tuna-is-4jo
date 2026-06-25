@@ -1,4 +1,4 @@
-﻿package com.example.thetunais4joteamproject.global.config;
+package com.example.thetunais4joteamproject.global.config;
 
 import com.example.thetunais4joteamproject.domain.user.entity.MemberRole;
 import com.example.thetunais4joteamproject.global.error.ErrorCode;
