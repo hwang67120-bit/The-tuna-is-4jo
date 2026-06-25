@@ -3,9 +3,12 @@ package com.example.thetunais4joteamproject.domain.user.service;
 import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberRequest;
 import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberResponse;
 import com.example.thetunais4joteamproject.domain.user.dto.GetMemberEmailCheckResponse;
+import com.example.thetunais4joteamproject.domain.user.dto.GetMemberInfoResponse;
 import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberRequest;
 import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberResponse;
 import com.example.thetunais4joteamproject.domain.user.dto.LogoutMemberResponse;
+import com.example.thetunais4joteamproject.domain.user.dto.UpdateMemberInfoRequest;
+import com.example.thetunais4joteamproject.domain.user.dto.UpdateMemberInfoResponse;
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
 import com.example.thetunais4joteamproject.domain.user.entity.MemberRole;
 import com.example.thetunais4joteamproject.domain.user.repository.MemberRepository;
@@ -56,6 +59,22 @@ public class MemberService {
         return new LogoutMemberResponse(true);
     }
 
+    public GetMemberInfoResponse getInfo(Long memberId) {
+        Member member = getMember(memberId);
+
+        return GetMemberInfoResponse.from(member);
+    }
+
+    /**회원 정보 수정  **/
+    @Transactional
+    public UpdateMemberInfoResponse updateInfo(Long memberId, UpdateMemberInfoRequest request) {
+        Member member = getMember(memberId);
+        String normalizedPhoneNumber = normalizePhoneNumber(request.phoneNumber());
+        member.updateInfo(request.name(), normalizedPhoneNumber);
+
+        return UpdateMemberInfoResponse.from(member);
+    }
+
     /** 회원가입 **/
     @Transactional
     public CreateMemberResponse create(CreateMemberRequest request) {
@@ -69,6 +88,12 @@ public class MemberService {
         );
 
         return CreateMemberResponse.from(savedMember);
+    }
+
+    /**회원 정보 조회 **/
+    private Member getMember(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> BusinessException.from(ErrorCode.MEMBER_NOT_FOUND));
     }
 
     private void validateDuplicateEmail(String email) {
