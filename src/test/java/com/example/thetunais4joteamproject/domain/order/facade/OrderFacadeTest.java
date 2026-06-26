@@ -1,17 +1,29 @@
 package com.example.thetunais4joteamproject.domain.order.facade;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import com.example.thetunais4joteamproject.domain.cart.entity.CartItem;
 import com.example.thetunais4joteamproject.domain.cart.service.CartService;
+import com.example.thetunais4joteamproject.domain.order.dto.CancelOrderResponse;
+import com.example.thetunais4joteamproject.domain.order.dto.CreateCartOrderRequest;
+import com.example.thetunais4joteamproject.domain.order.dto.CreateDirectOrderRequest;
+import com.example.thetunais4joteamproject.domain.order.dto.CreateOrderResponse;
+import com.example.thetunais4joteamproject.domain.order.dto.GetOrderDetailResponse;
+import com.example.thetunais4joteamproject.domain.order.dto.GetOrderResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.OrderPreviewResponse;
+import com.example.thetunais4joteamproject.domain.order.entity.Order;
+import com.example.thetunais4joteamproject.domain.order.entity.OrderItem;
 import com.example.thetunais4joteamproject.domain.order.service.OrderService;
+import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
 import com.example.thetunais4joteamproject.domain.payment.service.PaymentCommandService;
 import com.example.thetunais4joteamproject.domain.product.entity.Product;
 import com.example.thetunais4joteamproject.domain.product.entity.ProductOption;
@@ -20,6 +32,7 @@ import com.example.thetunais4joteamproject.domain.user.entity.Member;
 import com.example.thetunais4joteamproject.domain.user.repository.MemberRepository;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class OrderFacadeTest {
 
@@ -133,6 +146,301 @@ class OrderFacadeTest {
 		verify(cartItem.getProductOption()).validateEnoughStock(2);
 	}
 
+	@Test
+	void 장바구니_상품으로_주문과_결제대기_데이터를_생성한다() {
+		// given
+		CartService cartService = mock(CartService.class);
+		OrderService orderService = mock(OrderService.class);
+		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
+		MemberRepository memberRepository = mock(MemberRepository.class);
+		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+
+		OrderFacade orderFacade = new OrderFacade(
+			cartService,
+			orderService,
+			paymentCommandService,
+			memberRepository,
+			productOptionRepository
+		);
+
+		Long memberId = 1L;
+		Member member = mock(Member.class);
+		List<Long> cartItemIds = List.of(1L);
+		CreateCartOrderRequest request = new CreateCartOrderRequest(cartItemIds);
+
+		CartItem cartItem = createCartItem(
+			1L,
+			100L,
+			"테스트 상품",
+			1000L,
+			"XL",
+			10000,
+			1500,
+			2
+		);
+
+		Order order = createOrder(10L, member, "ORD-1234567890", 23000, 0, 3000, 26000);
+		OrderItem orderItem = createOrderItem(
+			100L,
+			order,
+			cartItem.getProductOption(),
+			1L,
+			100L,
+			"테스트 상품",
+			"XL",
+			11500,
+			2
+		);
+		Payment payment = createPayment(20L, order, "pay-123", 26000);
+
+		when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+		when(cartService.getPreviewItems(memberId, cartItemIds)).thenReturn(List.of(cartItem));
+		when(orderService.createOrder(member, 23000, 0, 3000, 26000)).thenReturn(order);
+		when(orderService.createOrderItemsFromCartItems(order, List.of(cartItem))).thenReturn(List.of(orderItem));
+		when(paymentCommandService.createPayment(order)).thenReturn(payment);
+
+		// when
+		CreateOrderResponse response = orderFacade.createCartOrder(memberId, request);
+
+		// then
+		assertThat(response.orderId()).isEqualTo(10L);
+		assertThat(response.paymentId()).isEqualTo(20L);
+		assertThat(response.orderPrice()).isEqualTo(23000);
+		assertThat(response.discountPrice()).isEqualTo(0);
+		assertThat(response.deliveryPrice()).isEqualTo(3000);
+		assertThat(response.totalAmount()).isEqualTo(26000);
+		assertThat(response.items()).hasSize(1);
+		assertThat(response.items().get(0).orderItemId()).isEqualTo(100L);
+
+		verify(cartItem.getProductOption()).decreaseStock(2);
+		verify(orderService).createOrderItemsFromCartItems(order, List.of(cartItem));
+		verify(paymentCommandService).createPayment(order);
+	}
+
+	@Test
+	void 상품_옵션으로_바로_주문과_결제대기_데이터를_생성한다() {
+		// given
+		CartService cartService = mock(CartService.class);
+		OrderService orderService = mock(OrderService.class);
+		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
+		MemberRepository memberRepository = mock(MemberRepository.class);
+		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+
+		OrderFacade orderFacade = new OrderFacade(
+			cartService,
+			orderService,
+			paymentCommandService,
+			memberRepository,
+			productOptionRepository
+		);
+
+		Long memberId = 1L;
+		Member member = mock(Member.class);
+		CreateDirectOrderRequest request = new CreateDirectOrderRequest(1000L, 2);
+		ProductOption productOption = createProductOption(
+			1000L,
+			100L,
+			"테스트 상품",
+			"XL",
+			10000,
+			1500
+		);
+
+		Order order = createOrder(10L, member, "ORD-1234567890", 23000, 0, 3000, 26000);
+		OrderItem orderItem = createOrderItem(
+			100L,
+			order,
+			productOption,
+			null,
+			100L,
+			"테스트 상품",
+			"XL",
+			11500,
+			2
+		);
+		Payment payment = createPayment(20L, order, "pay-123", 26000);
+
+		when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+		when(productOptionRepository.findById(1000L)).thenReturn(Optional.of(productOption));
+		when(orderService.createOrder(member, 23000, 0, 3000, 26000)).thenReturn(order);
+		when(orderService.createOrderItems(eq(order), any(), any())).thenReturn(List.of(orderItem));
+		when(paymentCommandService.createPayment(order)).thenReturn(payment);
+
+		// when
+		CreateOrderResponse response = orderFacade.createDirectOrder(memberId, request);
+
+		// then
+		assertThat(response.orderId()).isEqualTo(10L);
+		assertThat(response.paymentId()).isEqualTo(20L);
+		assertThat(response.totalAmount()).isEqualTo(26000);
+		assertThat(response.items()).hasSize(1);
+		assertThat(response.items().get(0).productOptionId()).isEqualTo(1000L);
+
+		verify(productOption).decreaseStock(2);
+		verify(orderService).createOrderItems(order, List.of(productOption), List.of(2));
+		verify(paymentCommandService).createPayment(order);
+	}
+
+	@Test
+	void 주문을_취소하면_재고를_원복하고_결제대기를_취소한다() {
+		// given
+		CartService cartService = mock(CartService.class);
+		OrderService orderService = mock(OrderService.class);
+		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
+		MemberRepository memberRepository = mock(MemberRepository.class);
+		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+
+		OrderFacade orderFacade = new OrderFacade(
+			cartService,
+			orderService,
+			paymentCommandService,
+			memberRepository,
+			productOptionRepository
+		);
+
+		Long memberId = 1L;
+		Long orderId = 10L;
+		Member member = mock(Member.class);
+		ProductOption productOption = createProductOption(
+			1000L,
+			100L,
+			"테스트 상품",
+			"XL",
+			10000,
+			1500
+		);
+		Order order = createOrder(orderId, member, "ORD-1234567890", 23000, 0, 3000, 26000);
+		OrderItem orderItem = createOrderItem(
+			100L,
+			order,
+			productOption,
+			1L,
+			100L,
+			"테스트 상품",
+			"XL",
+			11500,
+			2
+		);
+		Payment payment = createPayment(20L, order, "pay-123", 26000);
+		payment.cancel();
+
+		when(orderService.getOrder(memberId, orderId)).thenReturn(order);
+		when(orderService.getOrderItems(orderId)).thenReturn(List.of(orderItem));
+		when(paymentCommandService.cancelPayment(order)).thenReturn(payment);
+
+		// when
+		CancelOrderResponse response = orderFacade.cancelOrder(memberId, orderId);
+
+		// then
+		assertThat(response.orderId()).isEqualTo(orderId);
+		assertThat(response.orderStatus()).isEqualTo("CANCELED");
+		assertThat(response.paymentStatus()).isEqualTo("CANCELED");
+
+		verify(productOption).increaseStock(2);
+		verify(paymentCommandService).cancelPayment(order);
+	}
+
+	@Test
+	void 확정된_주문_목록을_조회한다() {
+		// given
+		CartService cartService = mock(CartService.class);
+		OrderService orderService = mock(OrderService.class);
+		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
+		MemberRepository memberRepository = mock(MemberRepository.class);
+		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+
+		OrderFacade orderFacade = new OrderFacade(
+			cartService,
+			orderService,
+			paymentCommandService,
+			memberRepository,
+			productOptionRepository
+		);
+
+		Long memberId = 1L;
+		Member member = mock(Member.class);
+		Order order = createOrder(10L, member, "ORD-1234567890", 23000, 0, 3000, 26000);
+		order.confirm();
+
+		when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+		when(orderService.getConfirmedOrders(memberId)).thenReturn(List.of(order));
+
+		// when
+		List<GetOrderResponse> response = orderFacade.getAll(memberId);
+
+		// then
+		assertThat(response).hasSize(1);
+		assertThat(response.get(0).orderId()).isEqualTo(10L);
+		assertThat(response.get(0).orderNumber()).isEqualTo("ORD-1234567890");
+		assertThat(response.get(0).orderStatus()).isEqualTo("CONFIRMED");
+		assertThat(response.get(0).totalAmount()).isEqualTo(26000);
+
+		verify(memberRepository).findById(memberId);
+		verify(orderService).getConfirmedOrders(memberId);
+	}
+
+	@Test
+	void 확정된_주문_상세를_조회한다() {
+		// given
+		CartService cartService = mock(CartService.class);
+		OrderService orderService = mock(OrderService.class);
+		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
+		MemberRepository memberRepository = mock(MemberRepository.class);
+		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+
+		OrderFacade orderFacade = new OrderFacade(
+			cartService,
+			orderService,
+			paymentCommandService,
+			memberRepository,
+			productOptionRepository
+		);
+
+		Long memberId = 1L;
+		Long orderId = 10L;
+		Member member = mock(Member.class);
+		ProductOption productOption = createProductOption(
+			1000L,
+			100L,
+			"테스트 상품",
+			"XL",
+			10000,
+			1500
+		);
+		Order order = createOrder(orderId, member, "ORD-1234567890", 23000, 0, 3000, 26000);
+		order.confirm();
+		OrderItem orderItem = createOrderItem(
+			100L,
+			order,
+			productOption,
+			1L,
+			100L,
+			"테스트 상품",
+			"XL",
+			11500,
+			2
+		);
+
+		when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+		when(orderService.getConfirmedOrder(memberId, orderId)).thenReturn(order);
+		when(orderService.getOrderItems(orderId)).thenReturn(List.of(orderItem));
+
+		// when
+		GetOrderDetailResponse response = orderFacade.getOne(memberId, orderId);
+
+		// then
+		assertThat(response.orderId()).isEqualTo(orderId);
+		assertThat(response.orderStatus()).isEqualTo("CONFIRMED");
+		assertThat(response.items()).hasSize(1);
+		assertThat(response.items().get(0).orderItemId()).isEqualTo(100L);
+		assertThat(response.items().get(0).productName()).isEqualTo("테스트 상품");
+		assertThat(response.items().get(0).totalPrice()).isEqualTo(23000);
+
+		verify(memberRepository).findById(memberId);
+		verify(orderService).getConfirmedOrder(memberId, orderId);
+		verify(orderService).getOrderItems(orderId);
+	}
+
 	private CartItem createCartItem(
 		Long cartItemId,
 		Long productId,
@@ -161,5 +469,89 @@ class OrderFacadeTest {
 		when(product.getPrice()).thenReturn(productPrice);
 
 		return cartItem;
+	}
+
+	private ProductOption createProductOption(
+		Long productOptionId,
+		Long productId,
+		String productName,
+		String optionName,
+		Integer productPrice,
+		Integer additionalPrice
+	) {
+		ProductOption productOption = mock(ProductOption.class);
+		Product product = mock(Product.class);
+
+		when(productOption.getId()).thenReturn(productOptionId);
+		when(productOption.getOptionName()).thenReturn(optionName);
+		when(productOption.getAdditionalPrice()).thenReturn(additionalPrice);
+		when(productOption.getProduct()).thenReturn(product);
+
+		when(product.getId()).thenReturn(productId);
+		when(product.getName()).thenReturn(productName);
+		when(product.getPrice()).thenReturn(productPrice);
+
+		return productOption;
+	}
+
+	private Order createOrder(
+		Long orderId,
+		Member member,
+		String orderNumber,
+		Integer orderPrice,
+		Integer discountPrice,
+		Integer deliveryPrice,
+		Integer totalAmount
+	) {
+		Order order = Order.of(
+			member,
+			orderNumber,
+			orderPrice,
+			discountPrice,
+			deliveryPrice,
+			totalAmount
+		);
+
+		ReflectionTestUtils.setField(order, "id", orderId);
+		ReflectionTestUtils.setField(order, "createdAt", LocalDateTime.of(2026, 6, 26, 10, 0));
+
+		return order;
+	}
+
+	private OrderItem createOrderItem(
+		Long orderItemId,
+		Order order,
+		ProductOption productOption,
+		Long cartItemId,
+		Long productId,
+		String productName,
+		String optionName,
+		Integer unitPrice,
+		Integer quantity
+	) {
+		OrderItem orderItem = OrderItem.of(order, productOption, quantity);
+
+		ReflectionTestUtils.setField(orderItem, "id", orderItemId);
+		ReflectionTestUtils.setField(orderItem, "cartItemId", cartItemId);
+
+		return orderItem;
+	}
+
+	private Payment createPayment(
+		Long paymentId,
+		Order order,
+		String portonePaymentId,
+		Integer amount
+	) {
+		Payment payment = Payment.createPendingPayment(
+			order,
+			portonePaymentId,
+			amount,
+			amount
+		);
+
+		ReflectionTestUtils.setField(payment, "id", paymentId);
+
+		return payment;
 	}
 }
