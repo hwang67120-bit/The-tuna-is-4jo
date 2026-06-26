@@ -81,6 +81,23 @@ public class CartService {
 		cartItemRepository.delete(cartItem);
 	}
 
+	public GetCartResponse getCart(Long memberId) {
+		return cartRepository.findByMemberId(memberId)
+			.map(this::getCartResponse)
+			.orElseGet(GetCartResponse::empty);
+	}
+
+	// 주문서 미리보기에 사용할 장바구니 상품 조회
+	public List<CartItem> getPreviewItems(Long memberId, List<Long> cartItemIds) {
+		List<CartItem> cartItems = hasSelectedCartItemIds(cartItemIds)
+			? getSelectedPreviewItems(memberId, cartItemIds)
+			: getAllPreviewItems(memberId);
+
+		validateCartNotEmpty(cartItems);
+
+		return cartItems;
+	}
+
 	private GetCartResponse getCartResponse(Cart cart) {
 		List<CartItem> cartItems =
 			cartItemRepository.findAllByCartIdWithProductOptionAndProduct(cart.getId());
@@ -94,9 +111,35 @@ public class CartService {
 		return GetCartResponse.of(items);
 	}
 
-	public GetCartResponse getCart(Long memberId) {
-		return cartRepository.findByMemberId(memberId)
-			.map(this::getCartResponse)
-			.orElseGet(GetCartResponse::empty);
+	private List<CartItem> getSelectedPreviewItems(Long memberId, List<Long> cartItemIds) {
+		List<CartItem> cartItems =
+			cartItemRepository.findAllByIdInAndMemberIdWithProductOptionAndProduct(
+				cartItemIds,
+				memberId
+			);
+
+		validateSelectedCartItems(cartItems, cartItemIds);
+
+		return cartItems;
+	}
+
+	private List<CartItem> getAllPreviewItems(Long memberId) {
+		return cartItemRepository.findAllByMemberIdWithProductOptionAndProduct(memberId);
+	}
+
+	private boolean hasSelectedCartItemIds(List<Long> cartItemIds) {
+		return cartItemIds != null && !cartItemIds.isEmpty();
+	}
+
+	private void validateSelectedCartItems(List<CartItem> cartItems, List<Long> cartItemIds) {
+		if (cartItems.size() != cartItemIds.size()) {
+			throw BusinessException.from(ErrorCode.CART_ITEM_NOT_FOUND);
+		}
+	}
+
+	private void validateCartNotEmpty(List<CartItem> cartItems) {
+		if (cartItems.isEmpty()) {
+			throw BusinessException.from(ErrorCode.CART_EMPTY);
+		}
 	}
 }

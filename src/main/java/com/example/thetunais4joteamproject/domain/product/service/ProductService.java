@@ -33,6 +33,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductOptionRepository productOptionRepository;
+    private final ProductSearchService productSearchService;
 
     /**
      * 상품 생성
@@ -40,9 +41,7 @@ public class ProductService {
     @Transactional
     public Long createProduct(Long memberId, CreateProductRequest request) {
         Category category = categoryRepository.findById(request.categoryId())
-            .orElseThrow(() -> {
-                return BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND);
-            });
+            .orElseThrow(() -> BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND));
 
         Product product = Product.of(
             memberId,
@@ -80,9 +79,7 @@ public class ProductService {
     public void updateOptionStocks(Long productId, List<UpdateOptionRequest> requests) {
         for (UpdateOptionRequest updateReq : requests) {
             ProductOption option = productOptionRepository.findById(updateReq.optionId())
-                .orElseThrow(() -> {
-                    return BusinessException.from(ErrorCode.OPTION_NOT_FOUND);
-                });
+                .orElseThrow(() -> BusinessException.from(ErrorCode.OPTION_NOT_FOUND));
 
             int inputStock = updateReq.optionStock();
             OptionStatus finalizedStatus = updateReq.status();
@@ -105,9 +102,7 @@ public class ProductService {
     @Transactional
     public void updateRepresentativeStock(Long productId, RepresentStockRequest request) {
         ProductOption representativeOption = productOptionRepository.findTopByProductIdOrderByIdAsc(productId)
-            .orElseThrow(() -> {
-                return BusinessException.from(ErrorCode.OPTION_NOT_FOUND);
-            });
+            .orElseThrow(() -> BusinessException.from(ErrorCode.OPTION_NOT_FOUND));
 
         representativeOption.updateStock(request.stockQuantity());
     }
@@ -122,9 +117,7 @@ public class ProductService {
 
         Page<Product> products = productRepository.findByStatusOrderByCreatedAtDesc(ProductStatus.ON_SALE, pageable);
 
-        return products.map((Product product) -> {
-            return GetAllProductResponse.from(product);
-        });
+        return products.map(GetAllProductResponse::from);
     }
 
     /**
@@ -132,11 +125,8 @@ public class ProductService {
      */
     public GetProductDetailResponse getProductDetail(Long productId) {
         Product product = productRepository.findById(productId)
-            .orElseThrow(() -> {
-                return BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
-            });
+            .orElseThrow(() -> BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND));
 
-        // 예외 방어선 구축: 이미 논리 삭제된 상품이라면 존재하지 않는 상품으로 간주하여 예외 처리
         if (product.getStatus() == ProductStatus.DELETED) {
             throw BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
         }
@@ -155,16 +145,12 @@ public class ProductService {
      */
     public GetCategoryProductsResponse getProductsByCategory(Long categoryId) {
         Category category = categoryRepository.findById(categoryId)
-            .orElseThrow(() -> {
-                return BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND);
-            });
+            .orElseThrow(() -> BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND));
 
         List<Product> products = productRepository.findAllByCategoryIdAndStatus(categoryId, ProductStatus.ON_SALE);
 
         List<GetCategoryProductsResponse.CategoryProductResponse> productResponses = products.stream()
-            .map((Product product) -> {
-                return GetCategoryProductsResponse.CategoryProductResponse.from(product);
-            })
+            .map(GetCategoryProductsResponse.CategoryProductResponse::from)
             .toList();
 
         return GetCategoryProductsResponse.of(category, productResponses);
@@ -176,14 +162,10 @@ public class ProductService {
     @Transactional
     public void updateProduct(Long productId, UpdateProductRequest request) {
         Product product = productRepository.findById(productId)
-            .orElseThrow(() -> {
-                return BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
-            });
+            .orElseThrow(() -> BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND));
 
         Category category = categoryRepository.findById(request.categoryId())
-            .orElseThrow(() -> {
-                return BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND);
-            });
+            .orElseThrow(() -> BusinessException.from(ErrorCode.CATEGORY_NOT_FOUND));
 
         product.updateProduct(
             category,
@@ -191,6 +173,8 @@ public class ProductService {
             request.price(),
             request.description()
         );
+
+        productSearchService.evictSearchCache();
     }
 
     /**
@@ -199,11 +183,11 @@ public class ProductService {
     @Transactional
     public void deleteProduct(Long productId) {
         Product product = productRepository.findById(productId)
-            .orElseThrow(() -> {
-                return BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
-            });
+            .orElseThrow(() -> BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND));
 
         product.changeStatus(ProductStatus.DELETED);
+
+        productSearchService.evictSearchCache();
 
         List<ProductOption> options = productOptionRepository.findAllByProductId(productId);
         for (ProductOption option : options) {
