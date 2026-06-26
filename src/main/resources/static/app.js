@@ -298,9 +298,9 @@ function renderSupportMessages(chatRoomId, messages) {
 }
 
 function renderSupportMessage(message) {
-  const type = message.messageType || (String(message.senderId) === state.memberId ? state.role : 'MESSAGE');
+  const type = message.messageType || 'MESSAGE';
   const createdAt = message.createdAt || message.sentAt;
-  return `<div class="support-message"><span>#${escapeHtml(message.senderId)} · ${escapeHtml(type)} · ${formatDateTime(createdAt)}</span><p>${escapeHtml(message.content)}</p></div>`;
+  return `<div class="support-message"><span>${escapeHtml(type)} · ${formatDateTime(createdAt)}</span><p>${escapeHtml(message.content)}</p></div>`;
 }
 
 function appendSupportMessage(message) {
@@ -333,7 +333,7 @@ async function createSupportChat(form) {
     const chatRoom = payload.data;
     state.supportChatRoomId = String(chatRoom.chatRoomId);
     localStorage.setItem('saverSupportChatRoomId', state.supportChatRoomId);
-    const firstMessage = { chatRoomId: chatRoom.chatRoomId, senderId: state.memberId, content: body.content, messageType: 'USER', createdAt: new Date().toISOString() };
+    const firstMessage = { chatRoomId: chatRoom.chatRoomId, content: body.content, messageType: 'USER', createdAt: new Date().toISOString() };
     $('#supportTalkContent').innerHTML = `<div class="support-created"><strong>문의가 접수되었습니다.</strong><span>채팅방 #${escapeHtml(chatRoom.chatRoomId)} · ${escapeHtml(chatRoom.status)}</span></div>${renderSupportMessages(chatRoom.chatRoomId, [firstMessage])}${renderSupportReplyForm(chatRoom.chatRoomId)}`;
     connectSupportRoom(chatRoom.chatRoomId);
     form.reset();
