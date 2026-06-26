@@ -7,14 +7,13 @@ import com.example.thetunais4joteamproject.domain.product.dto.SearchProductRespo
 import com.example.thetunais4joteamproject.domain.product.repository.ProductRepository;
 import com.example.thetunais4joteamproject.global.error.BusinessException;
 import com.example.thetunais4joteamproject.global.error.ErrorCode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
-import tools.jackson.databind.ObjectMapper;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -40,26 +39,21 @@ public class ProductSearchService {
      */
     @Transactional
     public SearchProductResponse searchProducts(String keyword, Pageable pageable) {
-        // 1. Redis Sorted Set 점수 가산
         redisTemplate.opsForZSet().incrementScore(POPULAR_SEARCH_KEY, keyword, 1.0);
 
-        // 2. 검색 조건별 고유 캐시 키 생성 (product:search:키워드:페이지번호:페이지크기)
         String cacheKey = CACHE_PREFIX + keyword + ":" + pageable.getPageNumber() + ":" + pageable.getPageSize();
 
-        // 3. [v2 캐시 검색 단계] Cache Hit 점검
         String cachedJson = redisTemplate.opsForValue().get(cacheKey);
         if (cachedJson != null) {
             try {
                 return objectMapper.readValue(cachedJson, SearchProductResponse.class);
             } catch (Exception exception) {
-                // 역직렬화 오류 시 안전하게 DB 조회를 유도하기 위해 빈 블록 유지
+                // 직렬화 예외 방어선
             }
         }
 
-        // 4. [v1 DB 인덱스 검색 단계] Cache Miss 시 QueryDSL 복합 인덱스 조회
         Page<SearchProductItem> searchPage = productRepository.searchProductsByKeyword(keyword, pageable);
 
-        // 실패 조건: 매칭되는 상품이 없을 경우 404 예외 규격 송출
         if (searchPage.isEmpty()) {
             throw BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
         }
@@ -71,12 +65,11 @@ public class ProductSearchService {
                 searchPage.getTotalElements()
         );
 
-        // 5. DB 조회 결과를 Redis 캐시 서버에 10분간 보관 (SETEX)
         try {
             String jsonToCache = objectMapper.writeValueAsString(response);
             redisTemplate.opsForValue().set(cacheKey, jsonToCache, CACHE_TTL_MINUTES, TimeUnit.MINUTES);
         } catch (Exception exception) {
-            // 캐시 적재 예외가 코어 비즈니스를 셧다운시키지 않도록 예외 차단
+            // 캐시 적재 예외 가림막
         }
 
         return response;
@@ -86,7 +79,6 @@ public class ProductSearchService {
      * 시나리오 2. 실시간 인기 검색어 상위 TOP 10 조회
      */
     public SearchPopularResponse getPopularSearches() {
-        // 1. 누적 점수가 높은 순으로 10개 키워드 추출
         Set<ZSetOperations.TypedTuple<String>> rankedSet = redisTemplate.opsForZSet()
                 .reverseRangeWithScores(POPULAR_SEARCH_KEY, 0, 9);
 
@@ -108,5 +100,15 @@ public class ProductSearchService {
         }
 
         return SearchPopularResponse.of(keywords, LocalDateTime.now());
+    }
+
+    /**
+     * 상품 정보 변경(수정/삭제) 시 오염된 검색 캐시 데이터 일괄 무효화
+     */
+    public void evictSearchCache() {
+        Set<String> keys = redisTemplate.keys(CACHE_PREFIX + "*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
     }
 }
