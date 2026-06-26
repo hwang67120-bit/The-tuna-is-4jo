@@ -33,7 +33,10 @@ public enum ErrorCode {
     PG_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "결제사 서버와 통신 중 오류가 발생했습니다."),
 
     // [회원(Member) 도메인 비즈니스 에러 코드]
-    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다");
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다"),
+
+    // [쿠폰(Coupon) 도메인 비즈니스 에러 코드]
+    INVALID_COUPON_EXPIRATION(HttpStatus.BAD_REQUEST, "쿠폰 만료 일시는 현재 시간보다 과거일 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
