@@ -7,9 +7,6 @@ public record SendChatMessageRequest(
         @NotNull
         Long chatRoomId,
 
-        @NotNull
-        Long senderId,
-
         @NotBlank
         String content
 ) {
