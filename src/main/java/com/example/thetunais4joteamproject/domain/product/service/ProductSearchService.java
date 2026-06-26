@@ -54,10 +54,6 @@ public class ProductSearchService {
 
         Page<SearchProductItem> searchPage = productRepository.searchProductsByKeyword(keyword, pageable);
 
-        if (searchPage.isEmpty()) {
-            throw BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND);
-        }
-
         SearchProductResponse response = SearchProductResponse.of(
                 searchPage.getContent(),
                 searchPage.getNumber(),
