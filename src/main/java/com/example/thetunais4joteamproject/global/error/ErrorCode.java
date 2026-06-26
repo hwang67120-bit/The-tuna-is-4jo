@@ -11,6 +11,7 @@ public enum ErrorCode {
     CONFLICT(HttpStatus.CONFLICT, "요청을 처리할 수 없습니다"),
     SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "현재 서비스를 이용할 수 없습니다"),
     GATEWAY_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "응답 시간이 초과되었습니다"),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다."),
 
     // [상품(Product) 도메인 비즈니스 에러 코드]
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 카테고리입니다"),
