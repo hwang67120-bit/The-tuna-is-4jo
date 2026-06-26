@@ -1,6 +1,5 @@
 package com.example.thetunais4joteamproject.global.config;
 
-import com.example.thetunais4joteamproject.domain.user.entity.MemberRole;
 import com.example.thetunais4joteamproject.global.error.ErrorCode;
 import com.example.thetunais4joteamproject.global.error.ErrorResponse;
 import com.example.thetunais4joteamproject.global.util.JwtProvider;
@@ -9,16 +8,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 
 @Component
 @RequiredArgsConstructor
@@ -44,16 +41,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             String accessToken = jwtProvider.extractToken(authorizationHeader);
-            jwtProvider.validateToken(accessToken);
-            Long memberId = jwtProvider.getMemberId(accessToken);
-            MemberRole role = jwtProvider.getRole(accessToken);
+            Authentication authentication = jwtProvider.getAuthentication(accessToken);
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    memberId,
-                    null,
-                    List.of(new SimpleGrantedAuthority("ROLE_" + role.name()))
-            );
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            if (authentication instanceof UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken) {
+                usernamePasswordAuthenticationToken.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
+            }
+
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
             filterChain.doFilter(request, response);
