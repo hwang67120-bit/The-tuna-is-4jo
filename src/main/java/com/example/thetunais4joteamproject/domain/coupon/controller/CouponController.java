@@ -5,6 +5,7 @@ import java.util.List;
 import com.example.thetunais4joteamproject.domain.coupon.dto.IssueCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.dto.IssueCouponResponse;
 import com.example.thetunais4joteamproject.domain.coupon.dto.MemberCouponInfoResponse;
+import com.example.thetunais4joteamproject.domain.coupon.dto.UseCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.service.CouponService;
 import com.example.thetunais4joteamproject.global.common.ApiResponse;
 import jakarta.validation.Valid;
@@ -55,5 +56,24 @@ public class CouponController {
 
         // ApiResponse.ok 적용, 보유 쿠폰이 0개여도 [] 빈 리스트 반환 방어
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(responseData));
+    }
+
+    /**
+     * [POST] 결제 시 쿠폰 사용 마킹
+     */
+    @PostMapping("/use")
+    public ResponseEntity<ApiResponse<Void>> useCoupon(
+            @AuthenticationPrincipal
+            Long memberId,
+            @Valid
+            @RequestBody
+			UseCouponRequest request
+    ) {
+        couponService.useCoupon(memberId, request);
+
+        // 반환할 데이터(data)가 없으므로 성공 메시지만 담아 200 OK 반환
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success("쿠폰이 성공적으로 적용되었습니다."));
     }
 }
