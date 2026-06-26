@@ -8,6 +8,7 @@ import com.example.thetunais4joteamproject.domain.chat.dto.GetChatRoomListRespon
 import com.example.thetunais4joteamproject.domain.chat.dto.GetChatRoomResponse;
 import com.example.thetunais4joteamproject.domain.chat.dto.JoinChatRoomResponse;
 import com.example.thetunais4joteamproject.domain.chat.dto.ChatMessageResponse;
+import com.example.thetunais4joteamproject.domain.chat.dto.ChatRoomEventResponse;
 import com.example.thetunais4joteamproject.domain.chat.dto.CloseChatRoomResponse;
 import com.example.thetunais4joteamproject.domain.chat.entity.ChatMessage;
 import com.example.thetunais4joteamproject.domain.chat.entity.ChatRoom;
@@ -35,6 +36,12 @@ public class ChatRoomService {
     private static final String USER_CLOSE_MESSAGE = "문의가 종료되었습니다.";
     private static final String AUTO_CLOSE_MESSAGE = "일정 시간 응답이 없어 문의가 종료되었습니다.";
 
+    private static final String ADMIN_CHAT_ROOM_DESTINATION = "/topic/admin/chat/rooms";
+    private static final String EVENT_CREATED = "CREATED";
+    private static final String EVENT_STATUS_CHANGED = "STATUS_CHANGED";
+    private static final String EVENT_CLOSED = "CLOSED";
+    private static final String EVENT_AUTO_CLOSED = "AUTO_CLOSED";
+
     private final MemberRepository memberRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
@@ -54,6 +61,7 @@ public class ChatRoomService {
         chatMessageRepository.save(
                 ChatMessage.createUserMessage(chatRoom.getId(), member.getId(), createChatRoomRequest.content())
         );
+        sendAdminChatRoomEvent(chatRoom, EVENT_CREATED);
 
         return CreateChatRoomResponse.from(chatRoom);
     }
@@ -76,6 +84,7 @@ public class ChatRoomService {
                         member.getRole()
                 );
                 sendEnterSystemMessage(chatRoom, member);
+                sendAdminChatRoomEvent(chatRoom, EVENT_STATUS_CHANGED);
             }
             return JoinChatRoomResponse.from(chatRoom, member.getRole());
         }
@@ -95,6 +104,7 @@ public class ChatRoomService {
                 .orElseThrow(() -> BusinessException.from(ErrorCode.NOT_FOUND));
         chatRoom.closeByUser(member.getId());
         sendCloseSystemMessage(chatRoom, member);
+        sendAdminChatRoomEvent(chatRoom, EVENT_CLOSED);
 
         return CloseChatRoomResponse.from(chatRoom);
     }
@@ -109,6 +119,7 @@ public class ChatRoomService {
         for (ChatRoom chatRoom : chatRooms) {
             chatRoom.closeBySystem();
             sendAutoCloseSystemMessage(chatRoom);
+            sendAdminChatRoomEvent(chatRoom, EVENT_AUTO_CLOSED);
         }
 
         return chatRooms.size();
@@ -223,6 +234,16 @@ public class ChatRoomService {
                 chatMessage.getMessageType()
         );
     }
+    /**관리자 문의 목록 갱신 알람 **/
+    private void sendAdminChatRoomEvent(ChatRoom chatRoom, String eventType) {
+        log.info("Admin chat room event sending. chatRoomId={}, eventType={}", chatRoom.getId(), eventType);
+
+        messagingTemplate.convertAndSend(
+                ADMIN_CHAT_ROOM_DESTINATION,
+                ChatRoomEventResponse.of(chatRoom, eventType)
+        );
+    }
+
 
 
     private void validateUserRole(Member member) {
