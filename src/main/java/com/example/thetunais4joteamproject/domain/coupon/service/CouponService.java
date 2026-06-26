@@ -1,8 +1,11 @@
 package com.example.thetunais4joteamproject.domain.coupon.service;
 
 import com.example.thetunais4joteamproject.domain.coupon.dto.CreateCouponRequest;
+import com.example.thetunais4joteamproject.domain.coupon.dto.IssueCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.entity.Coupon;
+import com.example.thetunais4joteamproject.domain.coupon.entity.MemberCoupon;
 import com.example.thetunais4joteamproject.domain.coupon.repository.CouponRepository;
+import com.example.thetunais4joteamproject.domain.coupon.repository.MemberCouponRepository;
 import com.example.thetunais4joteamproject.global.error.BusinessException;
 import com.example.thetunais4joteamproject.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +19,7 @@ import java.time.LocalDateTime;
 public class CouponService {
 
     private final CouponRepository couponRepository;
+    private final MemberCouponRepository memberCouponRepository;
 
     /**
      * [Admin] 신규 쿠폰 정책 생성
@@ -41,5 +45,41 @@ public class CouponService {
 
         // 생성된 쿠폰 원판의 식별자(ID)를 반환합니다.
         return coupon.getId();
+    }
+
+    /**
+     * [사용자] 선착순 쿠폰 발급
+     */
+    @Transactional
+    public Long issueCoupon(Long memberId, IssueCouponRequest request) {
+        // 1. 쿠폰 원판 정책 존재 여부 확인
+        Coupon coupon = couponRepository.findById(request.couponId())
+                .orElseThrow(() -> {
+                    return BusinessException.from(ErrorCode.COUPON_NOT_FOUND);
+                });
+
+        // 2. 쿠폰 유효기간 만료 여부 확인
+        if (LocalDateTime.now().isAfter(coupon.getExpirationAt())) {
+            throw BusinessException.from(ErrorCode.COUPON_EXPIRED);
+        }
+
+        // 3. 중복 발급 여부 확인 (유저당 딱 1번만 발급 허용)
+        if (memberCouponRepository.existsByMemberIdAndCouponId(memberId, coupon.getId())) {
+            throw BusinessException.from(ErrorCode.COUPON_ALREADY_ISSUED);
+        }
+
+        // 4. 쿠폰 잔여 수량 확인 및 차감 (0개 이하면 내부에서 예외 발생)
+        try {
+            coupon.decreaseRemainingQuantity();
+        } catch (IllegalArgumentException e) {
+            throw BusinessException.from(ErrorCode.COUPON_OUT_OF_STOCK);
+        }
+
+        // 5. 회원의 쿠폰함에 신규 매핑 데이터 적재
+        MemberCoupon memberCoupon = MemberCoupon.of(memberId, coupon);
+        memberCouponRepository.save(memberCoupon);
+
+        // 6. 생성된 회원 쿠폰 ID 반환
+        return memberCoupon.getId();
     }
 }
