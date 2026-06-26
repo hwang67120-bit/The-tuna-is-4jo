@@ -33,10 +33,15 @@ public enum ErrorCode {
 	INVALID_ORDER_QUANTITY(HttpStatus.BAD_REQUEST, "주문 수량은 1개 이상이어야 합니다"),
 
 	// [결제(Payment) 도메인 비즈니스 에러 코드]
+	ALREADY_PROCESSED_PAYMENT(HttpStatus.BAD_REQUEST, "이미 결제를 완료하였습니다."),
 	INVALID_PAYMENT_STATUS(HttpStatus.BAD_REQUEST, "변경할 수 없는 결제 상태입니다"),
     PAYMENT_INVALID_STATUS(HttpStatus.BAD_REQUEST, "변경할 수 없는 결제 상태입니다."),
-    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 결제입니다."),
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."),
+    PORTONE_PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "포트원 결제 아이디를 찾을 수 없습니다."),
+    PAYMENT_ALREADY_FAILED(HttpStatus.BAD_REQUEST, "이미 실패한 결제입니다."),
+    PAYMENT_ALREADY_CANCELED(HttpStatus.BAD_REQUEST, "이미 실패한 결제입니다."),
     PG_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "결제사 서버와 통신 중 오류가 발생했습니다."),
+    PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "금액이 일치하지 않습니다."),
 
     // [회원(Member) 도메인 비즈니스 에러 코드]
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다"),
