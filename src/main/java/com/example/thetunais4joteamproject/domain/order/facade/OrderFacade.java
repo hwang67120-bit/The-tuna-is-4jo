@@ -15,7 +15,7 @@ import com.example.thetunais4joteamproject.domain.order.entity.Order;
 import com.example.thetunais4joteamproject.domain.order.entity.OrderItem;
 import com.example.thetunais4joteamproject.domain.order.service.OrderService;
 import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
-import com.example.thetunais4joteamproject.domain.payment.service.PaymentService;
+import com.example.thetunais4joteamproject.domain.payment.service.PaymentCommandService;
 import com.example.thetunais4joteamproject.domain.product.entity.ProductOption;
 import com.example.thetunais4joteamproject.domain.product.repository.ProductOptionRepository;
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
@@ -37,7 +37,7 @@ public class OrderFacade {
 
 	private final CartService cartService;
 	private final OrderService orderService;
-	private final PaymentService paymentService;
+	private final PaymentCommandService paymentCommandService;
 	private final MemberRepository memberRepository;
 	private final ProductOptionRepository productOptionRepository;
 
@@ -73,7 +73,7 @@ public class OrderFacade {
 		);
 
 		List<OrderItem> orderItems = orderService.createOrderItemsFromCartItems(order, cartItems);
-		Payment payment = paymentService.createPayment(order);
+		Payment payment = paymentCommandService.createPayment(order);
 
 		// 결제 확정 전에는 장바구니 상품을 삭제하지 않고, 결제 완료 처리 시점에 삭제합니다.
 		return CreateOrderResponse.of(order, payment, orderItems);
@@ -102,7 +102,7 @@ public class OrderFacade {
 		restoreOrderItemStock(orderItems);
 
 		order.cancel();
-		Payment payment = paymentService.cancelPayment(order);
+		Payment payment = paymentCommandService.cancelPayment(order);
 
 		return CancelOrderResponse.of(order, payment);
 	}
@@ -126,7 +126,7 @@ public class OrderFacade {
 		);
 
 		List<OrderItem> orderItems = orderService.createOrderItems(order, productOptions, quantities);
-		Payment payment = paymentService.createPayment(order);
+		Payment payment = paymentCommandService.createPayment(order);
 
 		return CreateOrderResponse.of(order, payment, orderItems);
 	}

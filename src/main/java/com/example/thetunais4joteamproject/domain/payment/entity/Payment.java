@@ -2,7 +2,7 @@ package com.example.thetunais4joteamproject.domain.payment.entity;
 
 import java.time.LocalDateTime;
 
-import com.example.thetunais4joteamproject.domain.order.Orders;
+import com.example.thetunais4joteamproject.domain.order.entity.Order;
 import com.example.thetunais4joteamproject.global.entity.BaseTimeEntity;
 
 import jakarta.persistence.Column;
@@ -37,10 +37,9 @@ public class Payment extends BaseTimeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	//Order Entity가 생성될 때 까지 임시 주석 처리
 	@OneToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "order_id", nullable = false, unique = true)
-	private Orders order;
+	private Order order;
 
 	@Column(name = "portone_payment_id", length = 50, nullable = false)
 	private String portonePaymentId;
@@ -49,7 +48,7 @@ public class Payment extends BaseTimeEntity {
 	private Integer requestedAmount;
 
 	@Column(name = "pg_amount", nullable = false)
-	private Integer pgAmount; // 쿠폰가를 제외한 금액
+	private Integer pgAmount;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
@@ -58,28 +57,26 @@ public class Payment extends BaseTimeEntity {
 	@Column(name = "paid_at")
 	private LocalDateTime paidAt;
 
-	// todo - 주석 제거
-	private Payment(/*Order order,*/ String portonePaymentId, Integer requestedAmount, Integer pgAmount,
+	private Payment(Order order, String portonePaymentId, Integer requestedAmount, Integer pgAmount,
 
 		PaymentStatus status) {
-		// this.order = order;
+		this.order = order;
 		this.portonePaymentId = portonePaymentId;
 		this.requestedAmount = requestedAmount;
 		this.pgAmount = pgAmount;
 		this.status = status;
 	}
 
-	// todo - 주석 제거
 	public static Payment createPendingPayment(
-		// Order order,
+		Order order,
 		String portonePaymentId,
-		// Integer requestedAmount,
+		Integer requestedAmount,
 		Integer pgAmount
 	) {
 		return new Payment(
-			//order,
+			order,
 			portonePaymentId,
-			0 /*requestedAmount*/,
+			requestedAmount,
 			pgAmount,
 			PaymentStatus.PENDING
 		);

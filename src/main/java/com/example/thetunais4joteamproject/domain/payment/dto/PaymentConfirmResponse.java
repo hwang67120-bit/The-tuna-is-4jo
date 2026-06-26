@@ -17,7 +17,7 @@ public record PaymentConfirmResponse(
 		return new PaymentConfirmResponse(
 			payment.getId(),
 			payment.getOrder().getId(),
-			payment.getTotalAmount(),
+			payment.getPgAmount(),
 			payment.getStatus().name(),
 			payment.getOrder().getStatus().name(),
 			message
