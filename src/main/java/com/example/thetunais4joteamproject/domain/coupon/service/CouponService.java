@@ -3,6 +3,7 @@ package com.example.thetunais4joteamproject.domain.coupon.service;
 import com.example.thetunais4joteamproject.domain.coupon.dto.CreateCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.dto.IssueCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.dto.MemberCouponInfoResponse;
+import com.example.thetunais4joteamproject.domain.coupon.dto.RestoreCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.dto.UseCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.entity.Coupon;
 import com.example.thetunais4joteamproject.domain.coupon.entity.MemberCoupon;
@@ -119,6 +120,30 @@ public class CouponService {
                 throw BusinessException.from(ErrorCode.INVALID_COUPON_ORDER_PRICE);
             }
             throw BusinessException.from(ErrorCode.COUPON_EXPIRED);
+        }
+    }
+
+    /**
+     * [주문 연동] 주문 취소 시 쿠폰 복구 처리
+     */
+    @Transactional
+    public void restoreCoupon(Long memberId, RestoreCouponRequest request) {
+        // 1. 회원의 쿠폰함 존재 여부 검증
+        MemberCoupon memberCoupon = memberCouponRepository.findById(request.memberCouponId())
+                .orElseThrow(() -> {
+                    return BusinessException.from(ErrorCode.COUPON_NOT_FOUND);
+                });
+
+        // 2. 소유권 방어선: 타인의 쿠폰 복구 요청 원천 차단
+        if (!memberCoupon.getMemberId().equals(memberId)) {
+            throw BusinessException.from(ErrorCode.UNAUTHORIZED);
+        }
+
+        // 3. 엔티티 내부 핵심 비즈니스 메서드 호출
+        try {
+            memberCoupon.restore();
+        } catch (IllegalArgumentException e) {
+            throw BusinessException.from(ErrorCode.COUPON_NOT_USED);
         }
     }
 }
