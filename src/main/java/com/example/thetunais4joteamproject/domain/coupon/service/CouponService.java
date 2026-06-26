@@ -2,6 +2,7 @@ package com.example.thetunais4joteamproject.domain.coupon.service;
 
 import com.example.thetunais4joteamproject.domain.coupon.dto.CreateCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.dto.IssueCouponRequest;
+import com.example.thetunais4joteamproject.domain.coupon.dto.MemberCouponInfoResponse;
 import com.example.thetunais4joteamproject.domain.coupon.entity.Coupon;
 import com.example.thetunais4joteamproject.domain.coupon.entity.MemberCoupon;
 import com.example.thetunais4joteamproject.domain.coupon.repository.CouponRepository;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -81,5 +83,12 @@ public class CouponService {
 
         // 6. 생성된 회원 쿠폰 ID 반환
         return memberCoupon.getId();
+    }
+
+    /**
+     * [사용자] 본인이 보유한 쿠폰 목록 전체 조회
+     */
+    public List<MemberCouponInfoResponse> getMyCoupons(Long memberId) {
+        return memberCouponRepository.findMyCoupons(memberId);
     }
 }
