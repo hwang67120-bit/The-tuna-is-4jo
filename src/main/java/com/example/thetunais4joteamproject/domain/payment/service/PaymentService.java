@@ -20,7 +20,7 @@ public class PaymentService {
 	@Transactional
 	public Payment createPayment(/*Order order*/){
 		// 쿠폰가를 제외한 실 결제 금액 계산, 아래 코드는 추후 제거 예정
-		// todo - pgAmount 변경
+		// todo - 아래 코드 제거 후 주석 해제
 		Integer pgAmount = 0;
 		//Integer pgAmount = order.getTotalAmount() - 쿠폰가격
 		
