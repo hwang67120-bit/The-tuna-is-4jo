@@ -24,6 +24,7 @@ public enum ErrorCode {
     CART_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 장바구니입니다"),
     CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 장바구니 상품입니다"),
     INVALID_CART_ITEM_QUANTITY(HttpStatus.BAD_REQUEST, "장바구니 상품 수량은 1개 이상이어야 합니다"),
+    CART_EMPTY(HttpStatus.BAD_REQUEST, "장바구니가 비어 있습니다"),
 
     // [결제(Payment) 도메인 비즈니스 에러 코드]
     PAYMENT_INVALID_STATUS(HttpStatus.BAD_REQUEST, "변경할 수 없는 결제 상태입니다."),
