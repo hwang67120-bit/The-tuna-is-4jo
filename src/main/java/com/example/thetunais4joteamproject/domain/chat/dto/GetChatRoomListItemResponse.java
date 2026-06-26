@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 
 public record GetChatRoomListItemResponse(
         Long chatRoomId,
-        Long adminId,
         String title,
         ChatRoomStatus status,
         LocalDateTime createdAt
@@ -15,7 +14,6 @@ public record GetChatRoomListItemResponse(
     public static GetChatRoomListItemResponse from(ChatRoom chatRoom) {
         return new GetChatRoomListItemResponse(
                 chatRoom.getId(),
-                chatRoom.getAdminId(),
                 chatRoom.getTitle(),
                 chatRoom.getStatus(),
                 chatRoom.getCreatedAt()
