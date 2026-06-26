@@ -77,6 +77,25 @@ public class ChatRoom extends BaseEntity {
         throw BusinessException.from(ErrorCode.CONFLICT);
     }
 
+    public void closeByUser(Long memberId) {
+        validateNotClosed();
+        if (!isOwner(memberId)) {
+            throw BusinessException.from(ErrorCode.FORBIDDEN);
+        }
+
+        close();
+    }
+
+    public void closeBySystem() {
+        validateNotClosed();
+        close();
+    }
+
+    private void close() {
+        this.status = ChatRoomStatus.CLOSED;
+        this.completedAt = LocalDateTime.now();
+    }
+
     private void validateNotClosed() {
         if (status == ChatRoomStatus.CLOSED) {
             throw BusinessException.from(ErrorCode.CONFLICT);
