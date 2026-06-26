@@ -7,7 +7,7 @@ public record OrderPreviewResponse(
 	Integer orderPrice,
 	Integer discountPrice,
 	Integer deliveryPrice,
-	Integer paymentPrice
+	Integer totalAmount
 ) {
 
 	public static OrderPreviewResponse of(
@@ -21,14 +21,14 @@ public record OrderPreviewResponse(
 			orderPrice += item.totalPrice();
 		}
 
-		int paymentPrice = orderPrice - discountPrice + deliveryPrice;
+		int totalAmount = orderPrice - discountPrice + deliveryPrice;
 
 		return new OrderPreviewResponse(
 			items,
 			orderPrice,
 			discountPrice,
 			deliveryPrice,
-			paymentPrice
+			totalAmount
 		);
 	}
 }
