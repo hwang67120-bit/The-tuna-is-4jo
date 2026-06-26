@@ -8,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.thetunais4joteamproject.domain.order.entity.Order;
 import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
 import com.example.thetunais4joteamproject.domain.payment.repository.PaymentRepository;
+import com.example.thetunais4joteamproject.global.error.BusinessException;
+import com.example.thetunais4joteamproject.global.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,5 +32,15 @@ public class PaymentService {
 		Payment payment = Payment.createPendingPayment(order, portonePaymentId, requestedAmount, pgAmount);
 
 		return paymentRepository.save(payment);
+	}
+
+	@Transactional
+	public Payment cancelPayment(Order order) {
+		Payment payment = paymentRepository.findByOrderId(order.getId())
+			.orElseThrow(() -> BusinessException.from(ErrorCode.PAYMENT_NOT_FOUND));
+
+		payment.cancel();
+
+		return payment;
 	}
 }

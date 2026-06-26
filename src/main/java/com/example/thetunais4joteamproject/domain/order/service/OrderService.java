@@ -11,6 +11,8 @@ import com.example.thetunais4joteamproject.domain.order.repository.OrderItemRepo
 import com.example.thetunais4joteamproject.domain.order.repository.OrderRepository;
 import com.example.thetunais4joteamproject.domain.product.entity.ProductOption;
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
+import com.example.thetunais4joteamproject.global.error.BusinessException;
+import com.example.thetunais4joteamproject.global.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -75,6 +77,15 @@ public class OrderService {
 		}
 
 		return orderItems;
+	}
+
+	public Order getOrder(Long memberId, Long orderId) {
+		return orderRepository.findByIdAndMemberId(orderId, memberId)
+			.orElseThrow(() -> BusinessException.from(ErrorCode.ORDER_NOT_FOUND));
+	}
+
+	public List<OrderItem> getOrderItems(Long orderId) {
+		return orderItemRepository.findAllByOrderIdWithProductOption(orderId);
 	}
 
 	private String createOrderNumber() {
