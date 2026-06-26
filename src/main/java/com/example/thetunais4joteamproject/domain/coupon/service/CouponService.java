@@ -1,5 +1,6 @@
 package com.example.thetunais4joteamproject.domain.coupon.service;
 
+import com.example.thetunais4joteamproject.domain.coupon.dto.CouponAdminResponse;
 import com.example.thetunais4joteamproject.domain.coupon.dto.CreateCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.dto.IssueCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.dto.MemberCouponInfoResponse;
@@ -145,5 +146,12 @@ public class CouponService {
         } catch (IllegalArgumentException e) {
             throw BusinessException.from(ErrorCode.COUPON_NOT_USED);
         }
+    }
+
+    /**
+     * [관리자] 전역 쿠폰 발급 및 사용 현황 통계 조회
+     */
+    public List<CouponAdminResponse> getCouponsManagementStatus() {
+        return couponRepository.findCouponsManagementStatus();
     }
 }
