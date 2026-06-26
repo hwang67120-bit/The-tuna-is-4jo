@@ -23,85 +23,85 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(
-    name = "payment",
-    uniqueConstraints = @UniqueConstraint(
-        name = "uk_payment_portone_payment_id",
-        columnNames = "portone_payment_id"
-    )
+	name = "payment",
+	uniqueConstraints = @UniqueConstraint(
+		name = "uk_payment_portone_payment_id",
+		columnNames = "portone_payment_id"
+	)
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Payment extends BaseTimeEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "order_id", nullable = false, unique = true)
-    private Order order;
+	@OneToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "order_id", nullable = false, unique = true)
+	private Order order;
 
-    @Column(name = "portone_payment_id", length = 50, nullable = false)
-    private String portonePaymentId;
+	@Column(name = "portone_payment_id", length = 50, nullable = false)
+	private String portonePaymentId;
 
-    @Column(name = "requested_amount", nullable = false)
-    private Integer requestedAmount;
+	@Column(name = "requested_amount", nullable = false)
+	private Integer requestedAmount;
 
-    @Column(name = "pg_amount", nullable = false)
-    private Integer pgAmount;
+	@Column(name = "pg_amount", nullable = false)
+	private Integer pgAmount;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private PaymentStatus status;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private PaymentStatus status;
 
-    @Column(name = "paid_at")
-    private LocalDateTime paidAt;
+	@Column(name = "paid_at")
+	private LocalDateTime paidAt;
 
-    private Payment(Order order, String portonePaymentId, Integer requestedAmount, Integer pgAmount,
+	private Payment(Order order, String portonePaymentId, Integer requestedAmount, Integer pgAmount,
 
-        PaymentStatus status) {
-        this.order = order;
-        this.portonePaymentId = portonePaymentId;
-        this.requestedAmount = requestedAmount;
-        this.pgAmount = pgAmount;
-        this.status = status;
-    }
+		PaymentStatus status) {
+		this.order = order;
+		this.portonePaymentId = portonePaymentId;
+		this.requestedAmount = requestedAmount;
+		this.pgAmount = pgAmount;
+		this.status = status;
+	}
 
-    public static Payment createPendingPayment(
-        Order order,
-        String portonePaymentId,
-        Integer requestedAmount,
-        Integer pgAmount
-    ) {
-        return new Payment(
-            order,
-            portonePaymentId,
-            requestedAmount,
-            pgAmount,
-            PaymentStatus.PENDING
-        );
-    }
+	public static Payment createPendingPayment(
+		Order order,
+		String portonePaymentId,
+		Integer requestedAmount,
+		Integer pgAmount
+	) {
+		return new Payment(
+			order,
+			portonePaymentId,
+			requestedAmount,
+			pgAmount,
+			PaymentStatus.PENDING
+		);
+	}
 
-    public void complete() {
-        changeStatus(PaymentStatus.PAID);
-        this.paidAt = LocalDateTime.now();
-    }
+	public void complete() {
+		changeStatus(PaymentStatus.PAID);
+		this.paidAt = LocalDateTime.now();
+	}
 
-    public void fail() {
-        changeStatus(PaymentStatus.FAILED);
-    }
+	public void fail() {
+		changeStatus(PaymentStatus.FAILED);
+	}
 
-    public void cancel() {
-        changeStatus(PaymentStatus.CANCELED);
-    }
+	public void cancel() {
+		changeStatus(PaymentStatus.CANCELED);
+	}
 
-    public void refund() {
-        changeStatus(PaymentStatus.REFUNDED);
-    }
+	public void refund() {
+		changeStatus(PaymentStatus.REFUNDED);
+	}
 
-    private void changeStatus(PaymentStatus nextStatus) {
-        this.status.validateTransition(nextStatus);
-        this.status = nextStatus;
-    }
+	private void changeStatus(PaymentStatus nextStatus) {
+		this.status.validateTransition(nextStatus);
+		this.status = nextStatus;
+	}
 
 }

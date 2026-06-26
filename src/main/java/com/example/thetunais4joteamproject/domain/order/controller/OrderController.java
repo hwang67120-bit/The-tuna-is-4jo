@@ -6,6 +6,8 @@ import com.example.thetunais4joteamproject.domain.order.dto.CancelOrderResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateCartOrderRequest;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateDirectOrderRequest;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateOrderResponse;
+import com.example.thetunais4joteamproject.domain.order.dto.GetOrderDetailResponse;
+import com.example.thetunais4joteamproject.domain.order.dto.GetOrderResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.OrderPreviewResponse;
 import com.example.thetunais4joteamproject.domain.order.facade.OrderFacade;
 import com.example.thetunais4joteamproject.global.common.ApiResponse;
@@ -59,6 +61,25 @@ public class OrderController {
 		CreateOrderResponse response = orderFacade.createDirectOrder(memberId, request);
 
 		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(response));
+	}
+
+	@GetMapping
+	public ResponseEntity<ApiResponse<List<GetOrderResponse>>> getAll(
+		@AuthenticationPrincipal Long memberId
+	) {
+		List<GetOrderResponse> response = orderFacade.getAll(memberId);
+
+		return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(response));
+	}
+
+	@GetMapping("/{orderId}")
+	public ResponseEntity<ApiResponse<GetOrderDetailResponse>> getOne(
+		@AuthenticationPrincipal Long memberId,
+		@PathVariable Long orderId
+	) {
+		GetOrderDetailResponse response = orderFacade.getOne(memberId, orderId);
+
+		return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(response));
 	}
 
 	@PatchMapping("/{orderId}/cancel")
