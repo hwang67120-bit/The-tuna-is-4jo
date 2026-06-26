@@ -7,7 +7,6 @@ import java.util.List;
 
 public record GetChatRoomResponse(
         Long chatRoomId,
-        Long memberId,
         Long adminId,
         String title,
         ChatRoomStatus status,
@@ -21,7 +20,6 @@ public record GetChatRoomResponse(
     ) {
         return new GetChatRoomResponse(
                 chatRoom.getId(),
-                chatRoom.getMemberId(),
                 chatRoom.getAdminId(),
                 chatRoom.getTitle(),
                 chatRoom.getStatus(),
