@@ -1,7 +1,5 @@
 package com.example.thetunais4joteamproject.domain.payment.service;
 
-import java.util.Objects;
-
 import org.springframework.stereotype.Service;
 import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
 import com.example.thetunais4joteamproject.domain.payment.entity.PaymentStatus;
@@ -19,35 +17,9 @@ public class PaymentCommandService {
 
 	private final PaymentRepository paymentRepository;
 
-	public void completePayment(Payment payment) {
-		validatePendingStatus(payment);
-		payment.complete();
-
-		log.info("결제 승인 완료: paymentId={}", payment.getId());
-	}
-
-	public void failPayment(Payment payment) {
-		if (payment.getStatus() == PaymentStatus.PAID) {
-			throw BusinessException.from(ErrorCode.ALREADY_PROCESSED_PAYMENT);
-		}
-
-		if (payment.getStatus() == PaymentStatus.FAILED) {
-			return;
-		}
-
-		payment.fail();
-
-		log.warn("결제 실패 처리 완료: paymentId={}", payment.getId());
-	}
-
-
 	public Payment getPayment(Long paymentId) {
 		return paymentRepository.findById(paymentId)
 			.orElseThrow(() -> BusinessException.from(ErrorCode.PAYMENT_NOT_FOUND));
-	}
-
-	public boolean isAlreadyPaid(Payment payment) {
-		return payment.getStatus() == PaymentStatus.PAID;
 	}
 
 	public void validatePayment(Payment payment, String portOnePaymentId, Integer pgAmount) {
