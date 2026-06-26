@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.example.thetunais4joteamproject.domain.cart.entity.CartItem;
 import com.example.thetunais4joteamproject.domain.cart.service.CartService;
+import com.example.thetunais4joteamproject.domain.order.dto.CancelOrderResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateCartOrderRequest;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateDirectOrderRequest;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateOrderResponse;
@@ -93,6 +94,19 @@ public class OrderFacade {
 		return createOrderAndPayment(member, productOptions, quantities);
 	}
 
+	@Transactional
+	public CancelOrderResponse cancelOrder(Long memberId, Long orderId) {
+		Order order = orderService.getOrder(memberId, orderId);
+		List<OrderItem> orderItems = orderService.getOrderItems(order.getId());
+
+		restoreOrderItemStock(orderItems);
+
+		order.cancel();
+		Payment payment = paymentService.cancelPayment(order);
+
+		return CancelOrderResponse.of(order, payment);
+	}
+
 	private CreateOrderResponse createOrderAndPayment(
 		Member member,
 		List<ProductOption> productOptions,
@@ -155,6 +169,13 @@ public class OrderFacade {
 		for (int i = 0; i < productOptions.size(); i++) {
 			// 바로 주문은 장바구니 수량이 없으므로 요청 수량을 기준으로 재고를 차감합니다.
 			productOptions.get(i).decreaseStock(quantities.get(i));
+		}
+	}
+
+	private void restoreOrderItemStock(List<OrderItem> orderItems) {
+		for (OrderItem orderItem : orderItems) {
+			// 주문 생성 시 차감했던 재고를 주문 취소 시점에 다시 원복합니다.
+			orderItem.getProductOption().increaseStock(orderItem.getQuantity());
 		}
 	}
 

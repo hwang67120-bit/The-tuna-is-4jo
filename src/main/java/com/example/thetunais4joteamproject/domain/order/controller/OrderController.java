@@ -2,6 +2,7 @@ package com.example.thetunais4joteamproject.domain.order.controller;
 
 import java.util.List;
 
+import com.example.thetunais4joteamproject.domain.order.dto.CancelOrderResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateCartOrderRequest;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateDirectOrderRequest;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateOrderResponse;
@@ -15,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -56,5 +59,15 @@ public class OrderController {
 		CreateOrderResponse response = orderFacade.createDirectOrder(memberId, request);
 
 		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(response));
+	}
+
+	@PatchMapping("/{orderId}/cancel")
+	public ResponseEntity<ApiResponse<CancelOrderResponse>> cancelOrder(
+		@AuthenticationPrincipal Long memberId,
+		@PathVariable Long orderId
+	) {
+		CancelOrderResponse response = orderFacade.cancelOrder(memberId, orderId);
+
+		return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(response));
 	}
 }

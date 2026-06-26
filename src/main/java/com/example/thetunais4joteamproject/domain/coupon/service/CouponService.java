@@ -2,6 +2,9 @@ package com.example.thetunais4joteamproject.domain.coupon.service;
 
 import com.example.thetunais4joteamproject.domain.coupon.dto.CreateCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.dto.IssueCouponRequest;
+import com.example.thetunais4joteamproject.domain.coupon.dto.MemberCouponInfoResponse;
+import com.example.thetunais4joteamproject.domain.coupon.dto.RestoreCouponRequest;
+import com.example.thetunais4joteamproject.domain.coupon.dto.UseCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.entity.Coupon;
 import com.example.thetunais4joteamproject.domain.coupon.entity.MemberCoupon;
 import com.example.thetunais4joteamproject.domain.coupon.repository.CouponRepository;
@@ -12,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -81,5 +85,65 @@ public class CouponService {
 
         // 6. 생성된 회원 쿠폰 ID 반환
         return memberCoupon.getId();
+    }
+
+    /**
+     * [사용자] 본인이 보유한 쿠폰 목록 전체 조회
+     */
+    public List<MemberCouponInfoResponse> getMyCoupons(Long memberId) {
+        return memberCouponRepository.findMyCoupons(memberId);
+    }
+
+    /**
+     * [주문 연동] 결제 진행 시 쿠폰 사용 처리
+     */
+    @Transactional
+    public void useCoupon(Long memberId, UseCouponRequest request) {
+        // 1. 회원의 쿠폰함에 해당 쿠폰이 존재하는지 조회 (원판 Coupon 정보도 Lazy로 필요할 때 조인되도록 findById 활용)
+        MemberCoupon memberCoupon = memberCouponRepository.findById(request.memberCouponId())
+                .orElseThrow(() -> {
+                    return BusinessException.from(ErrorCode.COUPON_NOT_FOUND);
+                });
+
+        // 2. 소유권 방어선: 해당 쿠폰이 요청을 보낸 로그인 회원의 쿠폰이 맞는지 정밀 검증
+        if (!memberCoupon.getMemberId().equals(memberId)) {
+            throw BusinessException.from(ErrorCode.UNAUTHORIZED);
+            // 💡 전역 ErrorCode에 권한 거부용 코드가 있다면 매핑해 주세요.
+        }
+
+        // 3. 엔티티 내부 핵심 비즈니스 메서드 호출
+        try {
+            memberCoupon.use(request.orderPrice());
+        } catch (IllegalArgumentException e) {
+            // 엔티티 내부에서 터진 예외 메시지에 따라 적절한 비즈니스 예외로 전환하여 프론트에 전달
+            if (e.getMessage().contains("최소 주문 금액")) {
+                throw BusinessException.from(ErrorCode.INVALID_COUPON_ORDER_PRICE);
+            }
+            throw BusinessException.from(ErrorCode.COUPON_EXPIRED);
+        }
+    }
+
+    /**
+     * [주문 연동] 주문 취소 시 쿠폰 복구 처리
+     */
+    @Transactional
+    public void restoreCoupon(Long memberId, RestoreCouponRequest request) {
+        // 1. 회원의 쿠폰함 존재 여부 검증
+        MemberCoupon memberCoupon = memberCouponRepository.findById(request.memberCouponId())
+                .orElseThrow(() -> {
+                    return BusinessException.from(ErrorCode.COUPON_NOT_FOUND);
+                });
+
+        // 2. 소유권 방어선: 타인의 쿠폰 복구 요청 원천 차단
+        if (!memberCoupon.getMemberId().equals(memberId)) {
+            throw BusinessException.from(ErrorCode.UNAUTHORIZED);
+        }
+
+        // 3. 엔티티 내부 핵심 비즈니스 메서드 호출
+        try {
+            memberCoupon.restore();
+        } catch (IllegalArgumentException e) {
+            throw BusinessException.from(ErrorCode.COUPON_NOT_USED);
+        }
     }
 }
