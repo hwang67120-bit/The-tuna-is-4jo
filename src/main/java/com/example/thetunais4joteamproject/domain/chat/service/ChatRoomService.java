@@ -84,6 +84,7 @@ public class ChatRoomService {
     public GetChatRoomResponse getOne(Long memberId, Long chatRoomId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> BusinessException.from(ErrorCode.UNAUTHORIZED));
+
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> BusinessException.from(ErrorCode.NOT_FOUND));
         validateChatRoomReadable(member, chatRoom);
