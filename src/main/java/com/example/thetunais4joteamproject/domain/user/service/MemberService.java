@@ -1,14 +1,6 @@
 package com.example.thetunais4joteamproject.domain.user.service;
 
-import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberRequest;
-import com.example.thetunais4joteamproject.domain.user.dto.CreateMemberResponse;
-import com.example.thetunais4joteamproject.domain.user.dto.GetMemberEmailCheckResponse;
-import com.example.thetunais4joteamproject.domain.user.dto.GetMemberInfoResponse;
-import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberRequest;
-import com.example.thetunais4joteamproject.domain.user.dto.LoginMemberResponse;
-import com.example.thetunais4joteamproject.domain.user.dto.LogoutMemberResponse;
-import com.example.thetunais4joteamproject.domain.user.dto.UpdateMemberInfoRequest;
-import com.example.thetunais4joteamproject.domain.user.dto.UpdateMemberInfoResponse;
+import com.example.thetunais4joteamproject.domain.user.dto.*;
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
 import com.example.thetunais4joteamproject.domain.user.entity.MemberRole;
 import com.example.thetunais4joteamproject.domain.user.repository.MemberRepository;
@@ -16,11 +8,12 @@ import com.example.thetunais4joteamproject.global.error.BusinessException;
 import com.example.thetunais4joteamproject.global.error.ErrorCode;
 import com.example.thetunais4joteamproject.global.util.JwtProvider;
 import com.example.thetunais4joteamproject.global.util.PasswordEncryptor;
-import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +27,7 @@ public class MemberService {
     @Value("${admin.whitelist.emails:}")
     private String adminWhitelistEmails;
 
+    /**이메일 중복 검증  **/
     public GetMemberEmailCheckResponse getEmailAvailability(String email) {
         boolean available = !memberRepository.existsByEmail(email);
 
@@ -52,6 +46,9 @@ public class MemberService {
         return LoginMemberResponse.from(member, accessToken);
     }
 
+    /**
+     * 로그아웃
+     **/
     public LogoutMemberResponse logout(String authorizationHeader) {
         String accessToken = jwtProvider.extractToken(authorizationHeader);
         jwtProvider.validateToken(accessToken);
@@ -65,7 +62,9 @@ public class MemberService {
         return GetMemberInfoResponse.from(member);
     }
 
-    /**회원 정보 수정  **/
+    /**
+     * 회원 정보 수정
+     **/
     @Transactional
     public UpdateMemberInfoResponse updateInfo(Long memberId, UpdateMemberInfoRequest request) {
         Member member = getMember(memberId);
@@ -75,7 +74,9 @@ public class MemberService {
         return UpdateMemberInfoResponse.from(member);
     }
 
-    /** 회원가입 **/
+    /**
+     * 회원가입
+     **/
     @Transactional
     public CreateMemberResponse create(CreateMemberRequest request) {
         validateDuplicateEmail(request.email());
@@ -90,7 +91,9 @@ public class MemberService {
         return CreateMemberResponse.from(savedMember);
     }
 
-    /**회원 정보 조회 **/
+    /**
+     * 회원 정보 조회
+     **/
     private Member getMember(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> BusinessException.from(ErrorCode.MEMBER_NOT_FOUND));

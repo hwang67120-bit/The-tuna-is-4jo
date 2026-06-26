@@ -2,7 +2,11 @@ const state = {
   token: localStorage.getItem('saverToken') || '',
   role: localStorage.getItem('saverRole') || '',
   memberId: localStorage.getItem('saverMemberId') || '',
-  products: []
+  products: [],
+  supportChatRoomId: localStorage.getItem('saverSupportChatRoomId') || '',
+  supportSocket: null,
+  supportConnectedRoomId: '',
+  supportStompConnected: false
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -19,6 +23,20 @@ function showToast(message) {
   setTimeout(() => toast.classList.add('hidden'), 2800);
 }
 
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function formatDateTime(value) {
+  if (!value) return '-';
+  return new Date(value).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
 function setSession(data) {
   state.token = data.accessToken;
   state.role = data.role;
@@ -45,6 +63,7 @@ function renderSession() {
   $('#loginOpenButton').classList.toggle('hidden', loggedIn);
   $('#logoutButton').classList.toggle('hidden', !loggedIn);
   $$('[data-admin-only]').forEach((el) => el.classList.toggle('hidden', state.role !== 'ADMIN'));
+  renderSupportState();
 }
 
 async function api(path, options = {}) {
@@ -199,7 +218,212 @@ function formToObject(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
 
+
+function setSupportTab(name) {
+  const panels = { home: '#supportHomePanel', talk: '#supportTalkPanel', settings: '#supportSettingsPanel' };
+  Object.values(panels).forEach((selector) => $(selector).classList.add('hidden'));
+  $(panels[name]).classList.remove('hidden');
+  $$('[data-support-tab]').forEach((button) => button.classList.toggle('active', button.dataset.supportTab === name));
+}
+
+function renderSupportState() {
+  const adminPanel = $('#supportAdminPanel');
+  if (!adminPanel) return;
+  adminPanel.classList.toggle('hidden', state.role !== 'ADMIN');
+  if (state.role === 'ADMIN' && !$('#supportWidget').classList.contains('hidden')) {
+    loadSupportChatList();
+  }
+}
+
+function supportFrame(command, headers = {}, body = '') {
+  const headerLines = Object.entries(headers).map(([key, value]) => `${key}:${value}`).join('\n');
+  return `${command}\n${headerLines}\n\n${body}\0`;
+}
+
+function supportSendFrame(command, headers = {}, body = '') {
+  if (!state.supportSocket || state.supportSocket.readyState !== WebSocket.OPEN) {
+    return false;
+  }
+  state.supportSocket.send(supportFrame(command, headers, body));
+  return true;
+}
+
+function supportParseBody(frame) {
+  const cleanFrame = frame.replace(/\0/g, '');
+  const bodyStart = cleanFrame.indexOf('\n\n');
+  return bodyStart >= 0 ? cleanFrame.slice(bodyStart + 2) : '';
+}
+
+function connectSupportRoom(chatRoomId) {
+  const roomId = String(chatRoomId);
+  if (state.supportSocket && state.supportSocket.readyState === WebSocket.OPEN && state.supportConnectedRoomId === roomId) {
+    return;
+  }
+  if (state.supportSocket) {
+    state.supportSocket.close();
+  }
+  state.supportStompConnected = false;
+
+  const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+  state.supportSocket = new WebSocket(`${protocol}://${location.host}/ws/chat`);
+  state.supportConnectedRoomId = roomId;
+  state.supportSocket.onopen = () => {
+    supportSendFrame('CONNECT', { 'accept-version': '1.2', host: location.host, Authorization: `Bearer ${state.token}` });
+  };
+  state.supportSocket.onmessage = (event) => {
+    const frame = String(event.data);
+    if (frame.startsWith('CONNECTED')) {
+      state.supportStompConnected = true;
+      supportSendFrame('SUBSCRIBE', { id: `support-${roomId}`, destination: `/topic/chat/rooms/${roomId}` });
+      return;
+    }
+    if (frame.startsWith('MESSAGE')) {
+      const body = supportParseBody(frame);
+      if (!body) return;
+      appendSupportMessage(JSON.parse(body));
+    }
+  };
+  state.supportSocket.onerror = () => showToast('채팅 연결을 확인해 주세요.');
+  state.supportSocket.onclose = () => {
+    state.supportStompConnected = false;
+  };
+}
+
+function renderSupportMessages(chatRoomId, messages) {
+  const roomId = String(chatRoomId);
+  if (!messages.length) {
+    return `<div class="support-messages" data-support-messages="${roomId}"><div class="support-empty compact">메시지가 없습니다.</div></div>`;
+  }
+  return `<div class="support-messages" data-support-messages="${roomId}">${messages.map(renderSupportMessage).join('')}</div>`;
+}
+
+function renderSupportMessage(message) {
+  const type = message.messageType || (String(message.senderId) === state.memberId ? state.role : 'MESSAGE');
+  const createdAt = message.createdAt || message.sentAt;
+  return `<div class="support-message"><span>#${escapeHtml(message.senderId)} · ${escapeHtml(type)} · ${formatDateTime(createdAt)}</span><p>${escapeHtml(message.content)}</p></div>`;
+}
+
+function appendSupportMessage(message) {
+  const roomId = String(message.chatRoomId);
+  const containers = $$(`[data-support-messages="${roomId}"]`);
+  containers.forEach((container) => {
+    container.querySelector('.support-empty')?.remove();
+    container.insertAdjacentHTML('beforeend', renderSupportMessage(message));
+    container.scrollTop = container.scrollHeight;
+  });
+}
+
+function renderSupportReplyForm(chatRoomId) {
+  return `<form class="support-reply-form" data-support-send-room-id="${chatRoomId}"><input name="content" placeholder="메시지를 입력해 주세요" autocomplete="off" required><button type="submit">전송</button></form>`;
+}
+
+async function createSupportChat(form) {
+  if (!state.token) {
+    showToast('로그인이 필요합니다.');
+    $('#authModal').classList.remove('hidden');
+    return;
+  }
+  if (state.role !== 'USER') {
+    showToast('사용자만 문의를 생성할 수 있습니다.');
+    return;
+  }
+  const body = formToObject(form);
+  try {
+    const payload = await api('/api/chats', { method: 'POST', body: JSON.stringify(body) });
+    const chatRoom = payload.data;
+    state.supportChatRoomId = String(chatRoom.chatRoomId);
+    localStorage.setItem('saverSupportChatRoomId', state.supportChatRoomId);
+    const firstMessage = { chatRoomId: chatRoom.chatRoomId, senderId: state.memberId, content: body.content, messageType: 'USER', createdAt: new Date().toISOString() };
+    $('#supportTalkContent').innerHTML = `<div class="support-created"><strong>문의가 접수되었습니다.</strong><span>채팅방 #${escapeHtml(chatRoom.chatRoomId)} · ${escapeHtml(chatRoom.status)}</span></div>${renderSupportMessages(chatRoom.chatRoomId, [firstMessage])}${renderSupportReplyForm(chatRoom.chatRoomId)}`;
+    connectSupportRoom(chatRoom.chatRoomId);
+    form.reset();
+    setSupportTab('talk');
+    showToast('문의가 접수되었습니다.');
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function supportSendWhenReady(payload, attempt = 0) {
+  if (state.supportStompConnected) {
+    supportSendFrame('SEND', { destination: '/app/chat/message', 'content-type': 'application/json' }, payload);
+    return;
+  }
+  if (attempt >= 20) {
+    showToast('채팅 연결을 확인해 주세요.');
+    return;
+  }
+  window.setTimeout(() => supportSendWhenReady(payload, attempt + 1), 100);
+}
+
+async function sendSupportMessage(chatRoomId, content) {
+  if (!state.token || !state.memberId) {
+    showToast('로그인이 필요합니다.');
+    return;
+  }
+  connectSupportRoom(chatRoomId);
+  const payload = JSON.stringify({ chatRoomId: Number(chatRoomId), content });
+  supportSendWhenReady(payload);
+}
+
+async function loadSupportChatList() {
+  if (state.role !== 'ADMIN') return;
+  try {
+    const payload = await api('/api/chats', { method: 'GET' });
+    const chatRooms = payload.data?.chatRooms || [];
+    const list = $('#supportChatList');
+    if (!chatRooms.length) {
+      list.innerHTML = '<div class="support-empty compact">문의가 없습니다.</div>';
+      $('#supportChatDetail').innerHTML = '';
+      return;
+    }
+    list.innerHTML = chatRooms.map((room) => `<button type="button" data-support-room-id="${room.chatRoomId}"><strong>${escapeHtml(room.title)}</strong><span>#${room.chatRoomId} · ${escapeHtml(room.status)} · ${formatDateTime(room.createdAt)}</span></button>`).join('');
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function loadSupportChatDetail(chatRoomId) {
+  try {
+    await api(`/api/chats/${chatRoomId}/join`, { method: 'POST', body: JSON.stringify({}) });
+    const payload = await api(`/api/chats/${chatRoomId}`, { method: 'GET' });
+    const room = payload.data;
+    const messages = room.messages || [];
+    $('#supportChatDetail').innerHTML = `<div class="support-detail-head"><strong>${escapeHtml(room.title)}</strong><span>${escapeHtml(room.status)}</span></div>${renderSupportMessages(room.chatRoomId, messages)}${renderSupportReplyForm(room.chatRoomId)}`;
+    connectSupportRoom(room.chatRoomId);
+    loadSupportChatList();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
 function bindEvents() {
+  $('#supportToggleButton').addEventListener('click', () => {
+    $('#supportWidget').classList.toggle('hidden');
+    renderSupportState();
+  });
+  $$('[data-support-tab]').forEach((button) => button.addEventListener('click', () => setSupportTab(button.dataset.supportTab)));
+  $('#supportCreateForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    await createSupportChat(event.currentTarget);
+  });
+  $('#supportRefreshButton').addEventListener('click', loadSupportChatList);
+  $('#supportWidget').addEventListener('submit', async (event) => {
+    const form = event.target.closest('.support-reply-form');
+    if (!form) {
+      return;
+    }
+    event.preventDefault();
+    const content = form.elements.content.value.trim();
+    if (!content) {
+      return;
+    }
+    await sendSupportMessage(form.dataset.supportSendRoomId, content);
+    form.reset();
+  });
+  $('#supportChatList').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-support-room-id]');
+    if (button) loadSupportChatDetail(button.dataset.supportRoomId);
+  });
   $$('[data-view]').forEach((button) => button.addEventListener('click', () => showView(button.dataset.view)));
   $$('.pill').forEach((button) => button.addEventListener('click', () => {
     $$('.pill').forEach((item) => item.classList.remove('active'));
