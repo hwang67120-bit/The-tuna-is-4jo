@@ -45,6 +45,10 @@ public enum ErrorCode {
     PAYMENT_NOT_PAID(HttpStatus.BAD_REQUEST, "결제가 완료되지 않았습니다."),
     PAYMENT_ORDER_MISMATCH(HttpStatus.BAD_REQUEST, "결제와 주문이 일치하지 않습니다."),
 
+    // [웹훅(Webhook) 도메인 비즈니스 에러 코드]
+    WEBHOOK_EVENT_NOT_FOUND(HttpStatus.NOT_FOUND, "주문 금액보다 많이 사용할 수 없습니다."),
+    WEBHOOK_VERIFICATION_FAILED(HttpStatus.UNAUTHORIZED, "웹훅 서명 인증에 실패하였습니다."),
+
     // [회원(Member) 도메인 비즈니스 에러 코드]
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다"),
 
