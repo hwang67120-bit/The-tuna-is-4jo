@@ -11,8 +11,11 @@ import java.util.Optional;
 import com.example.thetunais4joteamproject.domain.cart.entity.CartItem;
 import com.example.thetunais4joteamproject.domain.cart.service.CartService;
 import com.example.thetunais4joteamproject.domain.order.dto.OrderPreviewResponse;
+import com.example.thetunais4joteamproject.domain.order.service.OrderService;
+import com.example.thetunais4joteamproject.domain.payment.service.PaymentService;
 import com.example.thetunais4joteamproject.domain.product.entity.Product;
 import com.example.thetunais4joteamproject.domain.product.entity.ProductOption;
+import com.example.thetunais4joteamproject.domain.product.repository.ProductOptionRepository;
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
 import com.example.thetunais4joteamproject.domain.user.repository.MemberRepository;
 
@@ -24,11 +27,22 @@ class OrderFacadeTest {
 	void 선택한_장바구니_상품으로_주문서_미리보기를_생성한다() {
 		// given
 		CartService cartService = mock(CartService.class);
+		OrderService orderService = mock(OrderService.class);
+		PaymentService paymentService = mock(PaymentService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
-		OrderFacade orderFacade = new OrderFacade(cartService, memberRepository);
+		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+
+		OrderFacade orderFacade = new OrderFacade(
+			cartService,
+			orderService,
+			paymentService,
+			memberRepository,
+			productOptionRepository
+		);
 
 		Long memberId = 1L;
 		List<Long> cartItemIds = List.of(10L, 20L);
+
 		CartItem cartItem = createCartItem(
 			1L,
 			100L,
@@ -62,7 +76,7 @@ class OrderFacadeTest {
 		assertThat(response.orderPrice()).isEqualTo(23000);
 		assertThat(response.discountPrice()).isEqualTo(0);
 		assertThat(response.deliveryPrice()).isEqualTo(3000);
-		assertThat(response.paymentPrice()).isEqualTo(26000);
+		assertThat(response.totalAmount()).isEqualTo(26000);
 
 		verify(memberRepository).findById(memberId);
 		verify(cartService).getPreviewItems(memberId, cartItemIds);
@@ -73,10 +87,21 @@ class OrderFacadeTest {
 	void 장바구니_상품_ID가_없으면_전체_장바구니_상품으로_주문서_미리보기를_생성한다() {
 		// given
 		CartService cartService = mock(CartService.class);
+		OrderService orderService = mock(OrderService.class);
+		PaymentService paymentService = mock(PaymentService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
-		OrderFacade orderFacade = new OrderFacade(cartService, memberRepository);
+		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+
+		OrderFacade orderFacade = new OrderFacade(
+			cartService,
+			orderService,
+			paymentService,
+			memberRepository,
+			productOptionRepository
+		);
 
 		Long memberId = 1L;
+
 		CartItem cartItem = createCartItem(
 			1L,
 			100L,
@@ -101,7 +126,7 @@ class OrderFacadeTest {
 		assertThat(response.orderPrice()).isEqualTo(23000);
 		assertThat(response.discountPrice()).isEqualTo(0);
 		assertThat(response.deliveryPrice()).isEqualTo(3000);
-		assertThat(response.paymentPrice()).isEqualTo(26000);
+		assertThat(response.totalAmount()).isEqualTo(26000);
 
 		verify(memberRepository).findById(memberId);
 		verify(cartService).getPreviewItems(memberId, List.of());

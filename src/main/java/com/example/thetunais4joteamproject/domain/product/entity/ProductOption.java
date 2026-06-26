@@ -67,6 +67,16 @@ public class ProductOption extends BaseEntity {
         this.status = status;
     }
 
+    public void decreaseStock(Integer quantity) {
+        validateEnoughStock(quantity);
+
+        this.optionStock -= quantity;
+
+        if (this.optionStock == 0) {
+            this.status = OptionStatus.SOLDOUT;
+        }
+    }
+
     // 요청 수량이 판매 가능 상태와 재고 범위 안에 있는지 검증
     public void validateEnoughStock(Integer quantity) {
         if (this.optionStock < quantity) {
