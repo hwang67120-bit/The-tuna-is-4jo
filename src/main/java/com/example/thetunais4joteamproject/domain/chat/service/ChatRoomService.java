@@ -70,14 +70,13 @@ public class ChatRoomService {
     public GetChatRoomListResponse getAll(Long memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> BusinessException.from(ErrorCode.UNAUTHORIZED));
-        validateAdminRole(member);
 
-        List<GetChatRoomListItemResponse> chatRooms = chatRoomRepository.findAllByOrderByCreatedAtDesc()
-                .stream()
+        List<ChatRoom> chatRooms = getChatRoomsByRole(member);
+        List<GetChatRoomListItemResponse> chatRoomResponses = chatRooms.stream()
                 .map(GetChatRoomListItemResponse::from)
                 .toList();
 
-        return GetChatRoomListResponse.from(chatRooms);
+        return GetChatRoomListResponse.from(chatRoomResponses);
     }
 
     /**채팅방 조회 **/
@@ -85,10 +84,10 @@ public class ChatRoomService {
     public GetChatRoomResponse getOne(Long memberId, Long chatRoomId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> BusinessException.from(ErrorCode.UNAUTHORIZED));
-        validateAdminRole(member);
-
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> BusinessException.from(ErrorCode.NOT_FOUND));
+        validateChatRoomReadable(member, chatRoom);
+
         List<GetChatMessageResponse> messages = chatMessageRepository.findByChatRoomIdOrderByCreatedAtAsc(chatRoomId)
                 .stream()
                 .map(GetChatMessageResponse::from)
@@ -103,10 +102,26 @@ public class ChatRoomService {
         }
     }
 
-    private void validateAdminRole(Member member) {
-        if (member.getRole() != MemberRole.ADMIN) {
-            throw BusinessException.from(ErrorCode.FORBIDDEN);
+    private List<ChatRoom> getChatRoomsByRole(Member member) {
+        if (member.getRole() == MemberRole.ADMIN) {
+            return chatRoomRepository.findAllByOrderByCreatedAtDesc();
         }
+        if (member.getRole() == MemberRole.USER) {
+            return chatRoomRepository.findAllByMemberIdOrderByCreatedAtDesc(member.getId());
+        }
+
+        throw BusinessException.from(ErrorCode.FORBIDDEN);
+    }
+
+    private void validateChatRoomReadable(Member member, ChatRoom chatRoom) {
+        if (member.getRole() == MemberRole.ADMIN) {
+            return;
+        }
+        if (member.getRole() == MemberRole.USER && chatRoom.isOwner(member.getId())) {
+            return;
+        }
+
+        throw BusinessException.from(ErrorCode.FORBIDDEN);
     }
 
     private void validateNoActiveChatRoom(Long memberId) {

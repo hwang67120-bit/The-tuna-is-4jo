@@ -268,7 +268,7 @@ function connectSupportRoom(chatRoomId) {
   state.supportSocket = new WebSocket(`${protocol}://${location.host}/ws/chat`);
   state.supportConnectedRoomId = roomId;
   state.supportSocket.onopen = () => {
-    supportSendFrame('CONNECT', { 'accept-version': '1.2', host: location.host });
+    supportSendFrame('CONNECT', { 'accept-version': '1.2', host: location.host, Authorization: `Bearer ${state.token}` });
   };
   state.supportSocket.onmessage = (event) => {
     const frame = String(event.data);
@@ -362,7 +362,7 @@ async function sendSupportMessage(chatRoomId, content) {
     return;
   }
   connectSupportRoom(chatRoomId);
-  const payload = JSON.stringify({ chatRoomId: Number(chatRoomId), senderId: Number(state.memberId), content });
+  const payload = JSON.stringify({ chatRoomId: Number(chatRoomId), content });
   supportSendWhenReady(payload);
 }
 

@@ -26,8 +26,8 @@ public class ChatMessageService {
 
     /** 메세지 생성 **/
     @Transactional
-    public ChatMessageResponse create(SendChatMessageRequest sendChatMessageRequest) {
-        Member sender = memberRepository.findById(sendChatMessageRequest.senderId())
+    public ChatMessageResponse create(SendChatMessageRequest sendChatMessageRequest, Long senderId) {
+        Member sender = memberRepository.findById(senderId)
                 .orElseThrow(() -> BusinessException.from(ErrorCode.UNAUTHORIZED));
         ChatRoom chatRoom = chatRoomRepository.findById(sendChatMessageRequest.chatRoomId())
                 .orElseThrow(() -> BusinessException.from(ErrorCode.NOT_FOUND));

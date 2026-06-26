@@ -17,6 +17,8 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
     List<ChatRoom> findAllByOrderByCreatedAtDesc();
 
+    List<ChatRoom> findAllByMemberIdOrderByCreatedAtDesc(Long memberId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from ChatRoom c where c.id = :chatRoomId")
     Optional<ChatRoom> findByIdForUpdate(@Param("chatRoomId") Long chatRoomId);

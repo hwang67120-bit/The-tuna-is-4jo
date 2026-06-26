@@ -8,10 +8,16 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import java.util.Date;
-import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.util.Date;
+import java.util.List;
+
 
 @Component
 public class JwtProvider {
@@ -80,5 +86,20 @@ public class JwtProvider {
         } catch (JwtException | IllegalArgumentException exception) {
             throw BusinessException.from(ErrorCode.UNAUTHORIZED);
         }
+    }
+
+
+    public Authentication getAuthentication(String token) {
+
+        validateToken(token);
+
+        Long memberId = getMemberId(token);
+        MemberRole role = getRole(token);
+
+        return new UsernamePasswordAuthenticationToken(
+                memberId,
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_" + role.name()))
+        );
     }
 }

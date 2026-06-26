@@ -4,6 +4,7 @@ import com.example.thetunais4joteamproject.domain.chat.dto.ChatMessageResponse;
 import com.example.thetunais4joteamproject.domain.chat.dto.SendChatMessageRequest;
 import com.example.thetunais4joteamproject.domain.chat.service.ChatMessageService;
 import jakarta.validation.Valid;
+import java.security.Principal;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,15 +26,18 @@ public class ChatMessageController {
     public void sendMessage(
             @Valid
             @Payload
-            SendChatMessageRequest sendChatMessageRequest
+            SendChatMessageRequest sendChatMessageRequest,
+            Principal principal
     ) {
+        Long senderId = Long.valueOf(principal.getName());
+
         log.info("Chat message received. chatRoomId={}, senderId={}, content={}",
                 sendChatMessageRequest.chatRoomId(),
-                sendChatMessageRequest.senderId(),
+                senderId,
                 sendChatMessageRequest.content()
         );
 
-        ChatMessageResponse chatMessageResponse = chatMessageService.create(sendChatMessageRequest);
+        ChatMessageResponse chatMessageResponse = chatMessageService.create(sendChatMessageRequest, senderId);
 
         messagingTemplate.convertAndSend(
                 "/topic/chat/rooms/" + sendChatMessageRequest.chatRoomId(),
