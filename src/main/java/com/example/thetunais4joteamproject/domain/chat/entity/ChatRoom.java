@@ -1,17 +1,15 @@
 package com.example.thetunais4joteamproject.domain.chat.entity;
 
-import com.example.thetunais4joteamproject.domain.user.entity.Member;
 import com.example.thetunais4joteamproject.global.common.BaseEntity;
+import com.example.thetunais4joteamproject.global.error.BusinessException;
+import com.example.thetunais4joteamproject.global.error.ErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -28,9 +26,11 @@ public class ChatRoom extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
+    @Column(name = "member_id", nullable = false)
+    private Long memberId;
+
+    @Column(name = "admin_id")
+    private Long adminId;
 
     @Column(name = "title", nullable = false, length = 100)
     private String title;
@@ -42,17 +42,44 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
-    private ChatRoom(Member member, String title, ChatRoomStatus status) {
-        this.member = member;
+    private ChatRoom(Long memberId, String title, ChatRoomStatus status) {
+        this.memberId = memberId;
         this.title = title;
         this.status = status;
     }
 
-    public static ChatRoom create(Member member, String title) {
-        return new ChatRoom(member, title, ChatRoomStatus.WAITING);
+    public static ChatRoom create(Long memberId, String title) {
+        return new ChatRoom(memberId, title, ChatRoomStatus.WAITING);
     }
 
-    public boolean isActive() {
-        return status == ChatRoomStatus.WAITING || status == ChatRoomStatus.IN_PROGRESS;
+    public boolean isOwner(Long memberId) {
+        return this.memberId.equals(memberId);
+    }
+
+    public void joinUser(Long memberId) {
+        validateNotClosed();
+        if (!isOwner(memberId)) {
+            throw BusinessException.from(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    public void joinAdmin(Long adminId) {
+        validateNotClosed();
+        if (status == ChatRoomStatus.WAITING) {
+            this.adminId = adminId;
+            this.status = ChatRoomStatus.IN_PROGRESS;
+            return;
+        }
+        if (this.adminId != null && this.adminId.equals(adminId)) {
+            return;
+        }
+
+        throw BusinessException.from(ErrorCode.CONFLICT);
+    }
+
+    private void validateNotClosed() {
+        if (status == ChatRoomStatus.CLOSED) {
+            throw BusinessException.from(ErrorCode.CONFLICT);
+        }
     }
 }
