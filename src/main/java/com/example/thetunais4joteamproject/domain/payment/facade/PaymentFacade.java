@@ -1,5 +1,7 @@
 package com.example.thetunais4joteamproject.domain.payment.facade;
 
+import java.util.Objects;
+
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +47,8 @@ public class PaymentFacade {
 		validateOrderOwner(order, memberId);
 
 		Payment payment = paymentCommandService.getPayment(request.paymentId());
+
+		validatePaymentBelongsToOrder(payment, order);
 
 		// 멱등성 처리
 		if (paymentCommandService.isAlreadyPaid(payment)) {
@@ -113,6 +117,12 @@ public class PaymentFacade {
 			paymentCommandService.failPayment(payment);
 
 			throw BusinessException.from(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
+		}
+	}
+
+	private void validatePaymentBelongsToOrder(Payment payment, Order order) {
+		if (!Objects.equals(payment.getOrder().getId(), order.getId())) {
+			throw BusinessException.from(ErrorCode.PAYMENT_ORDER_MISMATCH);
 		}
 	}
 }
