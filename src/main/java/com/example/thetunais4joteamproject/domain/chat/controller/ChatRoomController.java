@@ -2,6 +2,7 @@ package com.example.thetunais4joteamproject.domain.chat.controller;
 
 import com.example.thetunais4joteamproject.domain.chat.dto.CreateChatRoomRequest;
 import com.example.thetunais4joteamproject.domain.chat.dto.CreateChatRoomResponse;
+import com.example.thetunais4joteamproject.domain.chat.dto.CloseChatRoomResponse;
 import com.example.thetunais4joteamproject.domain.chat.dto.GetChatRoomListResponse;
 import com.example.thetunais4joteamproject.domain.chat.dto.GetChatRoomResponse;
 import com.example.thetunais4joteamproject.domain.chat.dto.JoinChatRoomResponse;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -44,6 +46,16 @@ public class ChatRoomController {
         JoinChatRoomResponse joinChatRoomResponse = chatRoomService.join(memberId, chatRoomId);
 
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(joinChatRoomResponse));
+    }
+
+    @PatchMapping("/{chatRoomId}/close")
+    public ResponseEntity<ApiResponse<CloseChatRoomResponse>> close(
+            @AuthenticationPrincipal Long memberId,
+            @PathVariable Long chatRoomId
+    ) {
+        CloseChatRoomResponse closeChatRoomResponse = chatRoomService.close(memberId, chatRoomId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(closeChatRoomResponse));
     }
 
     @GetMapping
