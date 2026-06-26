@@ -11,6 +11,7 @@ public enum ErrorCode {
     CONFLICT(HttpStatus.CONFLICT, "요청을 처리할 수 없습니다"),
     SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "현재 서비스를 이용할 수 없습니다"),
     GATEWAY_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "응답 시간이 초과되었습니다"),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 장애가 발생했습니다"),
 
     // [상품(Product) 도메인 비즈니스 에러 코드]
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 카테고리입니다"),
@@ -42,6 +43,7 @@ public enum ErrorCode {
     PG_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "결제사 서버와 통신 중 오류가 발생했습니다."),
     PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "금액이 일치하지 않습니다."),
     PAYMENT_NOT_PAID(HttpStatus.BAD_REQUEST, "결제가 완료되지 않았습니다."),
+    PAYMENT_ORDER_MISMATCH(HttpStatus.BAD_REQUEST, "결제와 주문이 일치하지 않습니다."),
 
     // [회원(Member) 도메인 비즈니스 에러 코드]
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다"),
