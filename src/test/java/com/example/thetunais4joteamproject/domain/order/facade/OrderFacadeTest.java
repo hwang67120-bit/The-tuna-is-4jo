@@ -12,7 +12,7 @@ import com.example.thetunais4joteamproject.domain.cart.entity.CartItem;
 import com.example.thetunais4joteamproject.domain.cart.service.CartService;
 import com.example.thetunais4joteamproject.domain.order.dto.OrderPreviewResponse;
 import com.example.thetunais4joteamproject.domain.order.service.OrderService;
-import com.example.thetunais4joteamproject.domain.payment.service.PaymentService;
+import com.example.thetunais4joteamproject.domain.payment.service.PaymentCommandService;
 import com.example.thetunais4joteamproject.domain.product.entity.Product;
 import com.example.thetunais4joteamproject.domain.product.entity.ProductOption;
 import com.example.thetunais4joteamproject.domain.product.repository.ProductOptionRepository;
@@ -28,14 +28,14 @@ class OrderFacadeTest {
 		// given
 		CartService cartService = mock(CartService.class);
 		OrderService orderService = mock(OrderService.class);
-		PaymentService paymentService = mock(PaymentService.class);
+		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
 			orderService,
-			paymentService,
+			paymentCommandService,
 			memberRepository,
 			productOptionRepository
 		);
@@ -88,14 +88,14 @@ class OrderFacadeTest {
 		// given
 		CartService cartService = mock(CartService.class);
 		OrderService orderService = mock(OrderService.class);
-		PaymentService paymentService = mock(PaymentService.class);
+		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
 			orderService,
-			paymentService,
+			paymentCommandService,
 			memberRepository,
 			productOptionRepository
 		);
