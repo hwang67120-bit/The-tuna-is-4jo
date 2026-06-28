@@ -1,5 +1,6 @@
 package com.example.thetunais4joteamproject.domain.order.facade;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +37,7 @@ public class OrderFacade {
 
 	private static final int DEFAULT_DISCOUNT_PRICE = 0;
 	private static final int DEFAULT_DELIVERY_PRICE = 3000;
+	private static final int PAYMENT_PENDING_EXPIRATION_MINUTES = 10;
 
 	private final CartService cartService;
 	private final OrderService orderService;
@@ -104,14 +106,27 @@ public class OrderFacade {
 	@Transactional
 	public CancelOrderResponse cancelOrder(Long memberId, Long orderId) {
 		Order order = orderService.getOrder(memberId, orderId);
-		List<OrderItem> orderItems = orderService.getOrderItems(order.getId());
-
-		restoreOrderItemStock(orderItems);
 
 		order.cancel();
+
+		List<OrderItem> orderItems = orderService.getOrderItems(order.getId());
+		restoreOrderItemStock(orderItems);
+
 		Payment payment = paymentCommandService.cancelPayment(order);
 
 		return CancelOrderResponse.of(order, payment);
+	}
+
+	// 결제 대기 시간이 지난 주문을 만료 처리하고 주문 생성 시 차감했던 재고를 원복합니다.
+	@Transactional
+	public void expirePendingOrders() {
+		LocalDateTime expiredAt = LocalDateTime.now()
+			.minusMinutes(PAYMENT_PENDING_EXPIRATION_MINUTES);
+		List<Order> orders = orderService.getExpiredPendingOrders(expiredAt);
+
+		for (Order order : orders) {
+			expirePendingOrder(order);
+		}
 	}
 
 	// 주문 내역은 결제 대기, 결제 완료, 취소 주문을 모두 조회합니다.
@@ -162,6 +177,15 @@ public class OrderFacade {
 		Payment payment = paymentCommandService.createPayment(order);
 
 		return CreateOrderResponse.of(order, payment, orderItems);
+	}
+
+	private void expirePendingOrder(Order order) {
+		order.expire();
+
+		List<OrderItem> orderItems = orderService.getOrderItems(order.getId());
+		restoreOrderItemStock(orderItems);
+
+		paymentCommandService.expirePayment(order);
 	}
 
 	private Member getMember(Long memberId) {

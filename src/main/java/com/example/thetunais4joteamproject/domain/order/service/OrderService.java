@@ -1,5 +1,6 @@
 package com.example.thetunais4joteamproject.domain.order.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -106,6 +107,14 @@ public class OrderService {
 	// 주문 내역에서는 결제 대기, 결제 완료, 취소 주문을 모두 최신순으로 조회합니다.
 	public List<Order> getOrders(Long memberId) {
 		return orderRepository.findAllByMemberIdOrderByCreatedAtDesc(memberId);
+	}
+
+	// 결제 대기 시간이 지난 주문을 만료 처리 대상으로 조회합니다.
+	public List<Order> getExpiredPendingOrders(LocalDateTime expiredAt) {
+		return orderRepository.findExpiredPendingOrders(
+			OrderStatus.PENDING_PAYMENT,
+			expiredAt
+		);
 	}
 
 	// 주문 상세는 상태와 관계없이 로그인 회원의 주문인지 검증한 뒤 조회합니다.

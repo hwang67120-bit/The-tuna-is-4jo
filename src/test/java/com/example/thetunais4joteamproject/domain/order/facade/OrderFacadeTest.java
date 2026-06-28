@@ -392,6 +392,115 @@ class OrderFacadeTest {
 	}
 
 	@Test
+	void 결제완료_주문은_주문취소로_취소할_수_없다() {
+		// given
+		CartService cartService = mock(CartService.class);
+		OrderService orderService = mock(OrderService.class);
+		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
+		MemberRepository memberRepository = mock(MemberRepository.class);
+		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+
+		OrderFacade orderFacade = new OrderFacade(
+			cartService,
+			orderService,
+			paymentCommandService,
+			memberRepository,
+			productOptionRepository
+		);
+
+		Long memberId = 1L;
+		Long orderId = 10L;
+		Member member = mock(Member.class);
+		ProductOption productOption = createProductOption(
+			1000L,
+			100L,
+			"테스트 상품",
+			"XL",
+			10000,
+			1500
+		);
+		Order order = createOrder(orderId, member, "ORD-1234567890", 23000, 0, 3000, 26000);
+		order.confirm();
+		OrderItem orderItem = createOrderItem(
+			100L,
+			order,
+			productOption,
+			1L,
+			100L,
+			"테스트 상품",
+			"XL",
+			11500,
+			2
+		);
+
+		when(orderService.getOrder(memberId, orderId)).thenReturn(order);
+		when(orderService.getOrderItems(orderId)).thenReturn(List.of(orderItem));
+
+		// when & then
+		assertThatThrownBy(() -> orderFacade.cancelOrder(memberId, orderId))
+			.isInstanceOf(BusinessException.class);
+
+		verify(productOption, never()).increaseStock(2);
+		verify(paymentCommandService, never()).cancelPayment(order);
+	}
+
+	@Test
+	void 결제대기_시간이_지난_주문을_만료하고_재고를_원복한다() {
+		// given
+		CartService cartService = mock(CartService.class);
+		OrderService orderService = mock(OrderService.class);
+		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
+		MemberRepository memberRepository = mock(MemberRepository.class);
+		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+
+		OrderFacade orderFacade = new OrderFacade(
+			cartService,
+			orderService,
+			paymentCommandService,
+			memberRepository,
+			productOptionRepository
+		);
+
+		Member member = mock(Member.class);
+		ProductOption productOption = createProductOption(
+			1000L,
+			100L,
+			"테스트 상품",
+			"XL",
+			10000,
+			1500
+		);
+		Order order = createOrder(10L, member, "ORD-1234567890", 23000, 0, 3000, 26000);
+		OrderItem orderItem = createOrderItem(
+			100L,
+			order,
+			productOption,
+			1L,
+			100L,
+			"테스트 상품",
+			"XL",
+			11500,
+			2
+		);
+		Payment payment = createPayment(20L, order, "pay-123", 26000);
+		payment.cancel();
+
+		when(orderService.getExpiredPendingOrders(any(LocalDateTime.class))).thenReturn(List.of(order));
+		when(orderService.getOrderItems(order.getId())).thenReturn(List.of(orderItem));
+		when(paymentCommandService.expirePayment(order)).thenReturn(payment);
+
+		// when
+		orderFacade.expirePendingOrders();
+
+		// then
+		assertThat(order.getStatus().name()).isEqualTo("EXPIRED");
+
+		verify(orderService).getExpiredPendingOrders(any(LocalDateTime.class));
+		verify(productOption).increaseStock(2);
+		verify(paymentCommandService).expirePayment(order);
+	}
+
+	@Test
 	void 상태와_관계없이_주문_목록을_조회한다() {
 		// given
 		CartService cartService = mock(CartService.class);
