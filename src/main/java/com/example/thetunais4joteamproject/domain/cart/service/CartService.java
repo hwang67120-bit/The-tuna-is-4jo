@@ -81,6 +81,12 @@ public class CartService {
 		cartItemRepository.delete(cartItem);
 	}
 
+	public void deleteOrderedCartItems(Long memberId, List<Long> cartItemIds) {
+		if (!cartItemIds.isEmpty()) {
+			cartItemRepository.deleteAllByIdInAndMemberId(cartItemIds, memberId);
+		}
+	}
+
 	public GetCartResponse getCart(Long memberId) {
 		return cartRepository.findByMemberId(memberId)
 			.map(this::getCartResponse)

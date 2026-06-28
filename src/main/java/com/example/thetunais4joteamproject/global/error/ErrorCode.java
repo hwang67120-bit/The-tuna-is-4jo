@@ -31,6 +31,7 @@ public enum ErrorCode {
 	ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 주문입니다"),
 	INVALID_ORDER_STATUS(HttpStatus.BAD_REQUEST, "변경할 수 없는 주문 상태입니다"),
 	INVALID_ORDER_QUANTITY(HttpStatus.BAD_REQUEST, "주문 수량은 1개 이상이어야 합니다"),
+	ORDER_ALREADY_PENDING(HttpStatus.CONFLICT, "이미 결제 대기 중인 주문이 있습니다"),
 
 	// [결제(Payment) 도메인 비즈니스 에러 코드]
 	ALREADY_PROCESSED_PAYMENT(HttpStatus.BAD_REQUEST, "이미 결제를 완료하였습니다."),
