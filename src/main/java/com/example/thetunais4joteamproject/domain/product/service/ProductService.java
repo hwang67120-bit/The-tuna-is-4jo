@@ -207,9 +207,7 @@ public class ProductService {
     public void decreaseOptionStock(Long optionId, int quantity) {
         // 1. 실제 재고를 쥐고 있는 영속성 옵션 객체 확보
         ProductOption option = productOptionRepository.findById(optionId)
-                .orElseThrow(() -> {
-                    return BusinessException.from(ErrorCode.OPTION_NOT_FOUND);
-                });
+                .orElseThrow(() -> BusinessException.from(ErrorCode.OPTION_NOT_FOUND));
 
         // 2. 현재 재고와 차감 수량 비교 정밀 검증
         if (option.getOptionStock() < quantity) {
