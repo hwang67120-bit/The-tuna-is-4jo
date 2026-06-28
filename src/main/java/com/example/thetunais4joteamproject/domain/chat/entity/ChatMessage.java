@@ -43,4 +43,8 @@ public class ChatMessage extends BaseEntity {
     public static ChatMessage create(Long chatRoomId, Long senderId, String content, MemberRole senderRole) {
         return new ChatMessage(chatRoomId, senderId, content, senderRole.name());
     }
+
+    public static ChatMessage createSystemMessage(Long chatRoomId, Long senderId, String content) {
+        return new ChatMessage(chatRoomId, senderId, content, "SYSTEM");
+    }
 }

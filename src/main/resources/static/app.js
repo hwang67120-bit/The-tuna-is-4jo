@@ -6,7 +6,9 @@ const state = {
   supportChatRoomId: localStorage.getItem('saverSupportChatRoomId') || '',
   supportSocket: null,
   supportConnectedRoomId: '',
-  supportStompConnected: false
+  supportStompConnected: false,
+  supportReconnectTimer: null,
+  supportLastMessageIds: JSON.parse(localStorage.getItem('saverSupportLastMessageIds') || '{}')
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -254,12 +256,61 @@ function supportParseBody(frame) {
   return bodyStart >= 0 ? cleanFrame.slice(bodyStart + 2) : '';
 }
 
+function getSupportMessageId(message) {
+  return Number(message.messageId || message.id || 0);
+}
+
+function saveSupportLastMessageIds() {
+  localStorage.setItem('saverSupportLastMessageIds', JSON.stringify(state.supportLastMessageIds));
+}
+
+function rememberSupportMessage(message, fallbackRoomId = '') {
+  const roomId = String(message.chatRoomId || fallbackRoomId || '');
+  const messageId = getSupportMessageId(message);
+  if (!roomId || !messageId) {
+    return messageId;
+  }
+
+  const savedMessageId = Number(state.supportLastMessageIds[roomId] || 0);
+  if (messageId > savedMessageId) {
+    state.supportLastMessageIds[roomId] = messageId;
+    saveSupportLastMessageIds();
+  }
+
+  return messageId;
+}
+
+function rememberSupportMessages(chatRoomId, messages) {
+  messages.forEach((message) => rememberSupportMessage(message, chatRoomId));
+}
+
+function scheduleSupportReconnect(chatRoomId) {
+  clearTimeout(state.supportReconnectTimer);
+  state.supportReconnectTimer = window.setTimeout(() => {
+    connectSupportRoom(chatRoomId);
+  }, 5000);
+}
+
+async function loadMissingSupportMessages(chatRoomId) {
+  const roomId = String(chatRoomId);
+  const afterMessageId = Number(state.supportLastMessageIds[roomId] || 0);
+  try {
+    const payload = await api(`/api/chats/${roomId}/messages?afterMessageId=${afterMessageId}`, { method: 'GET' });
+    const messages = payload.data || [];
+    messages.forEach((message) => appendSupportMessage({ ...message, chatRoomId: Number(roomId) }));
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
 function connectSupportRoom(chatRoomId) {
   const roomId = String(chatRoomId);
-  if (state.supportSocket && state.supportSocket.readyState === WebSocket.OPEN && state.supportConnectedRoomId === roomId) {
+  if (state.supportSocket && state.supportConnectedRoomId === roomId && [WebSocket.OPEN, WebSocket.CONNECTING].includes(state.supportSocket.readyState)) {
     return;
   }
+  clearTimeout(state.supportReconnectTimer);
   if (state.supportSocket) {
+    state.supportSocket.onclose = null;
     state.supportSocket.close();
   }
   state.supportStompConnected = false;
@@ -275,6 +326,7 @@ function connectSupportRoom(chatRoomId) {
     if (frame.startsWith('CONNECTED')) {
       state.supportStompConnected = true;
       supportSendFrame('SUBSCRIBE', { id: `support-${roomId}`, destination: `/topic/chat/rooms/${roomId}` });
+      loadMissingSupportMessages(roomId);
       return;
     }
     if (frame.startsWith('MESSAGE')) {
@@ -286,11 +338,15 @@ function connectSupportRoom(chatRoomId) {
   state.supportSocket.onerror = () => showToast('채팅 연결을 확인해 주세요.');
   state.supportSocket.onclose = () => {
     state.supportStompConnected = false;
+    if (state.token && state.supportConnectedRoomId === roomId) {
+      scheduleSupportReconnect(roomId);
+    }
   };
 }
 
 function renderSupportMessages(chatRoomId, messages) {
   const roomId = String(chatRoomId);
+  rememberSupportMessages(roomId, messages);
   if (!messages.length) {
     return `<div class="support-messages" data-support-messages="${roomId}"><div class="support-empty compact">메시지가 없습니다.</div></div>`;
   }
@@ -298,15 +354,21 @@ function renderSupportMessages(chatRoomId, messages) {
 }
 
 function renderSupportMessage(message) {
-  const type = message.messageType || (String(message.senderId) === state.memberId ? state.role : 'MESSAGE');
+  const type = message.messageType || 'MESSAGE';
   const createdAt = message.createdAt || message.sentAt;
-  return `<div class="support-message"><span>#${escapeHtml(message.senderId)} · ${escapeHtml(type)} · ${formatDateTime(createdAt)}</span><p>${escapeHtml(message.content)}</p></div>`;
+  const messageId = getSupportMessageId(message);
+  const messageIdAttribute = messageId ? ` data-support-message-id="${messageId}"` : '';
+  return `<div class="support-message"${messageIdAttribute}><span>${escapeHtml(type)} · ${formatDateTime(createdAt)}</span><p>${escapeHtml(message.content)}</p></div>`;
 }
 
 function appendSupportMessage(message) {
-  const roomId = String(message.chatRoomId);
+  const roomId = String(message.chatRoomId || state.supportConnectedRoomId);
+  const messageId = rememberSupportMessage(message, roomId);
   const containers = $$(`[data-support-messages="${roomId}"]`);
   containers.forEach((container) => {
+    if (messageId && container.querySelector(`[data-support-message-id="${messageId}"]`)) {
+      return;
+    }
     container.querySelector('.support-empty')?.remove();
     container.insertAdjacentHTML('beforeend', renderSupportMessage(message));
     container.scrollTop = container.scrollHeight;
@@ -333,7 +395,7 @@ async function createSupportChat(form) {
     const chatRoom = payload.data;
     state.supportChatRoomId = String(chatRoom.chatRoomId);
     localStorage.setItem('saverSupportChatRoomId', state.supportChatRoomId);
-    const firstMessage = { chatRoomId: chatRoom.chatRoomId, senderId: state.memberId, content: body.content, messageType: 'USER', createdAt: new Date().toISOString() };
+    const firstMessage = { chatRoomId: chatRoom.chatRoomId, content: body.content, messageType: 'USER', createdAt: new Date().toISOString() };
     $('#supportTalkContent').innerHTML = `<div class="support-created"><strong>문의가 접수되었습니다.</strong><span>채팅방 #${escapeHtml(chatRoom.chatRoomId)} · ${escapeHtml(chatRoom.status)}</span></div>${renderSupportMessages(chatRoom.chatRoomId, [firstMessage])}${renderSupportReplyForm(chatRoom.chatRoomId)}`;
     connectSupportRoom(chatRoom.chatRoomId);
     form.reset();
