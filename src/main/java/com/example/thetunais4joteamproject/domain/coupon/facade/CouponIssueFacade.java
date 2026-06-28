@@ -18,7 +18,7 @@ public class CouponIssueFacade {
     private final CouponService couponService;
 
     /**
-     * ⚡ Redis 분산 락 제어 및 쿠폰 발급 진입점
+     * Redis 분산 락 제어 및 쿠폰 발급 진입점
      */
     public Long issueCouponWithLock(Long memberId, IssueCouponRequest request) {
         // 1. 쿠폰 ID를 기반으로 고유한 락 키 생성
