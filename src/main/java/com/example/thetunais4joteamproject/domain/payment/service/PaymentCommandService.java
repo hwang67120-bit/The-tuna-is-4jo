@@ -128,4 +128,10 @@ public class PaymentCommandService {
 			throw BusinessException.from(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
 		}
 	}
+
+	@Transactional(readOnly = true)
+	public Payment findByPortonePaymentId(String portonePaymentId) {
+		return paymentRepository.findByPortonePaymentId(portonePaymentId)
+			.orElseThrow(() -> BusinessException.from(ErrorCode.PAYMENT_NOT_FOUND));
+	}
 }
