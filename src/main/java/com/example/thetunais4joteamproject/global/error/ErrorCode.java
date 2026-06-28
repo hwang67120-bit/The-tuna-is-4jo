@@ -20,6 +20,7 @@ public enum ErrorCode {
     DEFAULT_OPTION_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "상품의 기본 옵션을 찾을 수 없습니다. 시스템 오류입니다"),
     OUT_OF_STOCK(HttpStatus.CONFLICT, "상품 재고가 부족합니다"),
     PRODUCT_OPTION_NOT_ON_SALE(HttpStatus.CONFLICT, "판매 중인 상품 옵션이 아닙니다"),
+    PRODUCT_OUT_OF_STOCK(HttpStatus.BAD_REQUEST, "선택한 상품 옵션의 재고가 부족하여 주문할 수 없습니다."),
 
     // [장바구니(Cart) 도메인 비즈니스 에러 코드]
     CART_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 장바구니입니다"),
