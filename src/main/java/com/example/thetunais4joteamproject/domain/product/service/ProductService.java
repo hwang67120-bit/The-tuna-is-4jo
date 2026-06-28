@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -197,5 +198,33 @@ public class ProductService {
                 OptionStatus.SOLDOUT
             );
         }
+    }
+
+    /**
+     * [주문 연동] 특정 옵션의 재고 차감 (Facade 분산 락 안에서 안전하게 실행됨)
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void decreaseOptionStock(Long optionId, int quantity) {
+        // 1. 실제 재고를 쥐고 있는 영속성 옵션 객체 확보
+        ProductOption option = productOptionRepository.findById(optionId)
+                .orElseThrow(() -> {
+                    return BusinessException.from(ErrorCode.OPTION_NOT_FOUND);
+                });
+
+        // 2. 현재 재고와 차감 수량 비교 정밀 검증
+        if (option.getOptionStock() < quantity) {
+            throw BusinessException.from(ErrorCode.PRODUCT_OUT_OF_STOCK);
+        }
+
+        // 3. 차감 계산 및 품절(SOLDOUT) 상태 스위칭 조건문 전개
+        int calculatedStock = option.getOptionStock() - quantity;
+        OptionStatus targetStatus = calculatedStock == 0 ? OptionStatus.SOLDOUT : option.getStatus();
+
+        // 4. 엔티티 내부 캡슐화 메서드 호출 (기존에 정의된 도메인 메서드 스펙 활용)
+        option.updateOptionDetails(
+                calculatedStock,
+                option.getAdditionalPrice(),
+                targetStatus
+        );
     }
 }

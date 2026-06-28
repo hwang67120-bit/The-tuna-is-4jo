@@ -14,6 +14,7 @@ import com.example.thetunais4joteamproject.global.error.BusinessException;
 import com.example.thetunais4joteamproject.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -55,13 +56,11 @@ public class CouponService {
     /**
      * [사용자] 선착순 쿠폰 발급
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Long issueCoupon(Long memberId, IssueCouponRequest request) {
         // 1. 쿠폰 원판 정책 존재 여부 확인
         Coupon coupon = couponRepository.findById(request.couponId())
-                .orElseThrow(() -> {
-                    return BusinessException.from(ErrorCode.COUPON_NOT_FOUND);
-                });
+                .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
 
         // 2. 쿠폰 유효기간 만료 여부 확인
         if (LocalDateTime.now().isAfter(coupon.getExpirationAt())) {
@@ -102,9 +101,7 @@ public class CouponService {
     public void useCoupon(Long memberId, UseCouponRequest request) {
         // 1. 회원의 쿠폰함에 해당 쿠폰이 존재하는지 조회 (원판 Coupon 정보도 Lazy로 필요할 때 조인되도록 findById 활용)
         MemberCoupon memberCoupon = memberCouponRepository.findById(request.memberCouponId())
-                .orElseThrow(() -> {
-                    return BusinessException.from(ErrorCode.COUPON_NOT_FOUND);
-                });
+                .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
 
         // 2. 소유권 방어선: 해당 쿠폰이 요청을 보낸 로그인 회원의 쿠폰이 맞는지 정밀 검증
         if (!memberCoupon.getMemberId().equals(memberId)) {
@@ -131,9 +128,7 @@ public class CouponService {
     public void restoreCoupon(Long memberId, RestoreCouponRequest request) {
         // 1. 회원의 쿠폰함 존재 여부 검증
         MemberCoupon memberCoupon = memberCouponRepository.findById(request.memberCouponId())
-                .orElseThrow(() -> {
-                    return BusinessException.from(ErrorCode.COUPON_NOT_FOUND);
-                });
+                .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
 
         // 2. 소유권 방어선: 타인의 쿠폰 복구 요청 원천 차단
         if (!memberCoupon.getMemberId().equals(memberId)) {

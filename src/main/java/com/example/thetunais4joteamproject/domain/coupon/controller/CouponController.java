@@ -7,6 +7,7 @@ import com.example.thetunais4joteamproject.domain.coupon.dto.IssueCouponResponse
 import com.example.thetunais4joteamproject.domain.coupon.dto.MemberCouponInfoResponse;
 import com.example.thetunais4joteamproject.domain.coupon.dto.RestoreCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.dto.UseCouponRequest;
+import com.example.thetunais4joteamproject.domain.coupon.facade.CouponIssueFacade;
 import com.example.thetunais4joteamproject.domain.coupon.service.CouponService;
 import com.example.thetunais4joteamproject.global.common.ApiResponse;
 import jakarta.validation.Valid;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CouponController {
 
     private final CouponService couponService;
+    private final CouponIssueFacade couponIssueFacade;
 
     /**
      * [POST] 사용자 선착순 쿠폰 발급
@@ -38,7 +40,7 @@ public class CouponController {
             @RequestBody
             IssueCouponRequest request
     ) {
-        Long memberCouponId = couponService.issueCoupon(memberId, request);
+        Long memberCouponId = couponIssueFacade.issueCouponWithLock(memberId, request);
         IssueCouponResponse responseData = new IssueCouponResponse(memberCouponId);
 
         // ApiResponse를 적용하여 201 Created 반환
