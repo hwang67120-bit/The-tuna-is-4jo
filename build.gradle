@@ -48,6 +48,7 @@ dependencies {
 
     // portone
     implementation 'io.portone:server-sdk:0.23.0'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
 }
 
 

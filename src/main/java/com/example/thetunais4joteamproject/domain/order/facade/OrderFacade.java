@@ -9,6 +9,8 @@ import com.example.thetunais4joteamproject.domain.order.dto.CancelOrderResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateCartOrderRequest;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateDirectOrderRequest;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateOrderResponse;
+import com.example.thetunais4joteamproject.domain.order.dto.GetOrderDetailResponse;
+import com.example.thetunais4joteamproject.domain.order.dto.GetOrderResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.OrderPreviewItemResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.OrderPreviewResponse;
 import com.example.thetunais4joteamproject.domain.order.entity.Order;
@@ -41,6 +43,7 @@ public class OrderFacade {
 	private final MemberRepository memberRepository;
 	private final ProductOptionRepository productOptionRepository;
 
+	// 주문 생성 전 장바구니 상품 기준으로 결제 예정 금액을 미리 계산합니다.
 	@Transactional(readOnly = true)
 	public OrderPreviewResponse previewOrder(Long memberId, List<Long> cartItemIds) {
 		validateMemberExists(memberId);
@@ -53,6 +56,7 @@ public class OrderFacade {
 		return OrderPreviewResponse.of(items, DEFAULT_DISCOUNT_PRICE, DEFAULT_DELIVERY_PRICE);
 	}
 
+	// 장바구니 상품 기준으로 주문과 결제 대기 데이터를 같은 트랜잭션에서 생성합니다.
 	@Transactional
 	public CreateOrderResponse createCartOrder(Long memberId, CreateCartOrderRequest request) {
 		Member member = getMember(memberId);
@@ -79,6 +83,7 @@ public class OrderFacade {
 		return CreateOrderResponse.of(order, payment, orderItems);
 	}
 
+	// 바로 주문은 장바구니를 거치지 않고 상품 옵션과 요청 수량으로 주문을 생성합니다.
 	@Transactional
 	public CreateOrderResponse createDirectOrder(Long memberId, CreateDirectOrderRequest request) {
 		Member member = getMember(memberId);
@@ -94,6 +99,7 @@ public class OrderFacade {
 		return createOrderAndPayment(member, productOptions, quantities);
 	}
 
+	// 주문 취소 시 주문 생성 때 차감한 재고와 결제 대기 상태를 함께 되돌립니다.
 	@Transactional
 	public CancelOrderResponse cancelOrder(Long memberId, Long orderId) {
 		Order order = orderService.getOrder(memberId, orderId);
@@ -105,6 +111,32 @@ public class OrderFacade {
 		Payment payment = paymentCommandService.cancelPayment(order);
 
 		return CancelOrderResponse.of(order, payment);
+	}
+
+	// 주문 내역은 결제 완료되어 확정된 주문만 조회합니다.
+	@Transactional(readOnly = true)
+	public List<GetOrderResponse> getAll(Long memberId) {
+		validateMemberExists(memberId);
+
+		List<Order> orders = orderService.getConfirmedOrders(memberId);
+		List<GetOrderResponse> responses = new ArrayList<>();
+
+		for (Order order : orders) {
+			responses.add(GetOrderResponse.from(order));
+		}
+
+		return responses;
+	}
+
+	// 주문 상세도 로그인 회원의 확정 주문만 조회합니다.
+	@Transactional(readOnly = true)
+	public GetOrderDetailResponse getOne(Long memberId, Long orderId) {
+		validateMemberExists(memberId);
+
+		Order order = orderService.getConfirmedOrder(memberId, orderId);
+		List<OrderItem> orderItems = orderService.getOrderItems(order.getId());
+
+		return GetOrderDetailResponse.of(order, orderItems);
 	}
 
 	private CreateOrderResponse createOrderAndPayment(

@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 public class JwtChannelInterceptor implements ChannelInterceptor {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String ADMIN_CHAT_ROOM_DESTINATION = "/topic/admin/chat/rooms";
+    private static final String ADMIN_AUTHORITY = "ROLE_ADMIN";
 
     private final JwtProvider jwtProvider;
 
@@ -39,6 +41,26 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
             throw new IllegalArgumentException("로그인이 필요합니다");
         }
 
+        if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+            validateAdminSubscribe(accessor);
+        }
+
         return message;
+    }
+
+    private void validateAdminSubscribe(StompHeaderAccessor accessor) {
+        String destination = accessor.getDestination();
+        if (destination == null || !destination.startsWith(ADMIN_CHAT_ROOM_DESTINATION)) {
+            return;
+        }
+        if (!(accessor.getUser() instanceof Authentication authentication)) {
+            throw new IllegalArgumentException("로그인이 필요합니다");
+        }
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> ADMIN_AUTHORITY.equals(authority.getAuthority()));
+        if (!isAdmin) {
+            throw new IllegalArgumentException("관리자 권한이 필요합니다");
+        }
     }
 }
