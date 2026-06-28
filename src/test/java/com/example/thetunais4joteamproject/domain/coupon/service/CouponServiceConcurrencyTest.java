@@ -5,18 +5,39 @@ import com.example.thetunais4joteamproject.domain.coupon.entity.Coupon;
 import com.example.thetunais4joteamproject.domain.coupon.facade.CouponIssueFacade;
 import com.example.thetunais4joteamproject.domain.coupon.repository.CouponRepository;
 import com.example.thetunais4joteamproject.domain.coupon.repository.MemberCouponRepository;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import redis.embedded.RedisServer;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+    "portone.webhook-secret=dGVzdF9zZWNyZXRfa2V5X2Zvcl9iYXNlNjRfZGVjb2RpbmdfMTIzNDU2Nzg5MA=="
+})
 class CouponServiceConcurrencyTest {
+
+    private static RedisServer redisServer;
+
+    @BeforeAll
+    static void startRedis() throws IOException {
+        redisServer = new RedisServer(6379);
+        redisServer.start();
+    }
+
+    @AfterAll
+    static void stopRedis() throws IOException {
+        if (redisServer != null) {
+            redisServer.stop();
+        }
+    }
 
     @Autowired
     private CouponIssueFacade couponIssueFacade; // 분산 락 퍼사드 주입
