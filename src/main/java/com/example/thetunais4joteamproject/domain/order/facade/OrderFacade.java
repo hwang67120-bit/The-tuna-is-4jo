@@ -104,11 +104,12 @@ public class OrderFacade {
 	@Transactional
 	public CancelOrderResponse cancelOrder(Long memberId, Long orderId) {
 		Order order = orderService.getOrder(memberId, orderId);
-		List<OrderItem> orderItems = orderService.getOrderItems(order.getId());
-
-		restoreOrderItemStock(orderItems);
 
 		order.cancel();
+
+		List<OrderItem> orderItems = orderService.getOrderItems(order.getId());
+		restoreOrderItemStock(orderItems);
+
 		Payment payment = paymentCommandService.cancelPayment(order);
 
 		return CancelOrderResponse.of(order, payment);

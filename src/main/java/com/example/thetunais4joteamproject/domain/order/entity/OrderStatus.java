@@ -21,7 +21,7 @@ public enum OrderStatus {
 			case PENDING_PAYMENT -> nextStatus == CONFIRMED ||
 				nextStatus == CANCELED;
 
-			case CONFIRMED -> nextStatus == CANCELED;
+			case CONFIRMED -> false;
 
 			case CANCELED -> false;
 		};
