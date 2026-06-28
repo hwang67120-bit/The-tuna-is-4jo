@@ -28,6 +28,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             select c
             from ChatRoom c
             where c.status in :statuses
+              and c.createdAt < :threshold
               and not exists (
                   select m.id
                   from ChatMessage m
