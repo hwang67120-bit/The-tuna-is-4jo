@@ -63,6 +63,7 @@ public class OrderFacade {
 		List<Long> cartItemIds = getCartItemIds(request);
 		List<CartItem> cartItems = cartService.getPreviewItems(memberId, cartItemIds);
 
+		orderService.validateNoPendingCartOrder(memberId, cartItems);
 		decreaseCartItemStock(cartItems);
 
 		int orderPrice = calculateCartOrderPrice(cartItems);
@@ -113,12 +114,12 @@ public class OrderFacade {
 		return CancelOrderResponse.of(order, payment);
 	}
 
-	// 주문 내역은 결제 완료되어 확정된 주문만 조회합니다.
+	// 주문 내역은 결제 대기, 결제 완료, 취소 주문을 모두 조회합니다.
 	@Transactional(readOnly = true)
 	public List<GetOrderResponse> getAll(Long memberId) {
 		validateMemberExists(memberId);
 
-		List<Order> orders = orderService.getConfirmedOrders(memberId);
+		List<Order> orders = orderService.getOrders(memberId);
 		List<GetOrderResponse> responses = new ArrayList<>();
 
 		for (Order order : orders) {
@@ -128,12 +129,12 @@ public class OrderFacade {
 		return responses;
 	}
 
-	// 주문 상세도 로그인 회원의 확정 주문만 조회합니다.
+	// 주문 상세 내역은 로그인 회원의 주문이면 모두 조회합니다.
 	@Transactional(readOnly = true)
 	public GetOrderDetailResponse getOne(Long memberId, Long orderId) {
 		validateMemberExists(memberId);
 
-		Order order = orderService.getConfirmedOrder(memberId, orderId);
+		Order order = orderService.getOrderDetail(memberId, orderId);
 		List<OrderItem> orderItems = orderService.getOrderItems(order.getId());
 
 		return GetOrderDetailResponse.of(order, orderItems);
