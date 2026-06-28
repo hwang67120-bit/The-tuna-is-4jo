@@ -12,18 +12,20 @@ public enum OrderStatus {
 
 	PENDING_PAYMENT("결제 대기"),
 	CONFIRMED("주문 확정"),
-	CANCELED("주문 취소");
+	CANCELED("주문 취소"),
+	EXPIRED("주문 만료");
 
 	private final String message;
 
 	public boolean canTransitionTo(OrderStatus nextStatus) {
 		return switch (this) {
 			case PENDING_PAYMENT -> nextStatus == CONFIRMED ||
-				nextStatus == CANCELED;
+				nextStatus == CANCELED ||
+				nextStatus == EXPIRED;
 
-			case CONFIRMED -> nextStatus == CANCELED;
+			case CONFIRMED -> false;
 
-			case CANCELED -> false;
+			case CANCELED, EXPIRED -> false;
 		};
 	}
 

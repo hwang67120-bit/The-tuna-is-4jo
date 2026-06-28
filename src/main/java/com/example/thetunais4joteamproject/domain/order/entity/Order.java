@@ -81,4 +81,8 @@ public class Order extends BaseEntity {
     public void cancel() {
         changeStatus(OrderStatus.CANCELED);
     }
+
+    public void expire() {
+        changeStatus(OrderStatus.EXPIRED);
+    }
 }
