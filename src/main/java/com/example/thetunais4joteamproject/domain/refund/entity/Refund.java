@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
 import com.example.thetunais4joteamproject.global.entity.BaseTimeEntity;
+import com.example.thetunais4joteamproject.global.error.BusinessException;
+import com.example.thetunais4joteamproject.global.error.ErrorCode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,12 +18,19 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
+@Table(
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_refund_payment_id", columnNames = "payment_id")
+    }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Refund extends BaseTimeEntity {
 
@@ -59,9 +68,6 @@ public class Refund extends BaseTimeEntity {
     @Column(name = "refund_amount", nullable = false)
     private Integer refundAmount;
 
-    @Column(name = "portone_cancellation_id", unique = true, length = 50)
-    private String portoneCancellationId;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private RefundStatus status;
@@ -96,27 +102,47 @@ public class Refund extends BaseTimeEntity {
         return new Refund(payment, requester, reason, refundAmount);
     }
 
-    public void approve(Member admin, String portoneCancellationId) {
+    public void complete(Member admin) {
+        status.validateTransition(RefundStatus.COMPLETED);
+
         this.admin = admin;
-        this.portoneCancellationId = portoneCancellationId;
         this.status = RefundStatus.COMPLETED;
         this.processedAt = LocalDateTime.now();
     }
 
-    public void reject(Member admin, String rejectionReason) {
+    public void reject(Member admin, String reason) {
+        status.validateTransition(RefundStatus.REJECTED);
+
         this.admin = admin;
-        this.rejectionReason = rejectionReason;
+        this.rejectionReason = reason;
         this.status = RefundStatus.REJECTED;
         this.processedAt = LocalDateTime.now();
     }
 
-    public void fail(String failureReason) {
-        this.failureReason = failureReason;
+    public void fail(String reason) {
+        status.validateTransition(RefundStatus.FAILED);
+
+        this.failureReason = reason;
         this.status = RefundStatus.FAILED;
         this.processedAt = LocalDateTime.now();
     }
 
     public void restoreCoupon() {
         this.couponRestored = true;
+    }
+
+    public void completeByWebhook() {
+
+        if (status == RefundStatus.COMPLETED) {
+            return;
+        }
+
+        if (status != RefundStatus.REQUESTED &&
+            status != RefundStatus.FAILED) {
+            throw BusinessException.from(ErrorCode.INVALID_REFUND_STATUS);
+        }
+
+        this.status = RefundStatus.COMPLETED;
+        this.processedAt = LocalDateTime.now();
     }
 }
