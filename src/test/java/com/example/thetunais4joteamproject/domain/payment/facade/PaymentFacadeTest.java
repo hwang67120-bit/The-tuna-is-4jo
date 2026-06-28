@@ -6,6 +6,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -15,9 +16,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.example.thetunais4joteamproject.domain.cart.service.CartService;
 import com.example.thetunais4joteamproject.domain.order.entity.Order;
 import com.example.thetunais4joteamproject.domain.order.entity.OrderStatus;
 import com.example.thetunais4joteamproject.domain.order.repository.OrderRepository;
+import com.example.thetunais4joteamproject.domain.order.service.OrderService;
 import com.example.thetunais4joteamproject.domain.payment.dto.PaymentConfirmRequest;
 import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
 import com.example.thetunais4joteamproject.domain.payment.entity.PaymentStatus;
@@ -44,6 +47,12 @@ class PaymentFacadeTest {
 	private PaymentGatewayResponse pgResponse;
 
 	@Mock
+	private OrderService orderService;
+
+	@Mock
+	private CartService cartService;
+
+	@Mock
 	private Member member;
 
 	@Mock
@@ -58,7 +67,9 @@ class PaymentFacadeTest {
 		paymentFacade = new PaymentFacade(
 			paymentCommandService,
 			paymentGateway,
-			orderRepository
+			orderRepository,
+			orderService,
+			cartService
 		);
 	}
 
@@ -80,6 +91,7 @@ class PaymentFacadeTest {
 		given(paymentGateway.getPayment("pay-123")).willReturn(pgResponse);
 		given(pgResponse.status()).willReturn("PAID");
 		given(pgResponse.totalAmount()).willReturn(26000);
+		given(orderService.getOrderItems(order.getId())).willReturn(List.of());
 
 		// when
 		paymentFacade.confirmPayment(memberId, request);
@@ -87,6 +99,7 @@ class PaymentFacadeTest {
 		// then
 		assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
 		assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+		verify(cartService).deleteOrderedCartItems(memberId, List.of());
 	}
 
 	@Test
@@ -107,6 +120,7 @@ class PaymentFacadeTest {
 
 		given(orderRepository.findById(order.getId())).willReturn(Optional.of(order));
 		given(paymentRepository.findById(payment.getId())).willReturn(Optional.of(payment));
+		given(orderService.getOrderItems(order.getId())).willReturn(List.of());
 
 		// when
 		paymentFacade.confirmPayment(memberId, request);
@@ -115,6 +129,7 @@ class PaymentFacadeTest {
 		assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
 		assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
 		verify(paymentGateway, never()).getPayment("pay-123");
+		verify(cartService).deleteOrderedCartItems(memberId, List.of());
 	}
 
 	@Test
