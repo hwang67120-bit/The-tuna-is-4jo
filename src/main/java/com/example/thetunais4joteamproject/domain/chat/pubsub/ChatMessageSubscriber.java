@@ -1,16 +1,18 @@
 package com.example.thetunais4joteamproject.domain.chat.pubsub;
 
 import com.example.thetunais4joteamproject.domain.chat.dto.ChatMessageResponse;
-import java.io.IOException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 @Slf4j
+@Profile("redis")
 @Component
 @RequiredArgsConstructor
 public class ChatMessageSubscriber implements MessageListener {

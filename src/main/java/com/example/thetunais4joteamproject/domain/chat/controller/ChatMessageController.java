@@ -2,7 +2,7 @@ package com.example.thetunais4joteamproject.domain.chat.controller;
 
 import com.example.thetunais4joteamproject.domain.chat.dto.ChatMessageResponse;
 import com.example.thetunais4joteamproject.domain.chat.dto.SendChatMessageRequest;
-import com.example.thetunais4joteamproject.domain.chat.pubsub.ChatMessagePublisher;
+import com.example.thetunais4joteamproject.domain.chat.pubsub.ChatMessageBroadcaster;
 import com.example.thetunais4joteamproject.domain.chat.service.ChatMessageService;
 import jakarta.validation.Valid;
 import java.security.Principal;
@@ -20,7 +20,7 @@ public class ChatMessageController {
     private static final Logger log = LoggerFactory.getLogger(ChatMessageController.class);
 
     private final ChatMessageService chatMessageService;
-    private final ChatMessagePublisher chatMessagePublisher;
+    private final ChatMessageBroadcaster chatMessageBroadcaster;
 
     @MessageMapping("/chat/message")
     public void sendMessage(
@@ -38,6 +38,6 @@ public class ChatMessageController {
         );
 
         ChatMessageResponse chatMessageResponse = chatMessageService.create(sendChatMessageRequest, senderId);
-        chatMessagePublisher.publish(chatMessageResponse);
+        chatMessageBroadcaster.broadcast(chatMessageResponse);
     }
 }

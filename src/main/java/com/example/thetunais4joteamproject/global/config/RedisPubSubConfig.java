@@ -4,10 +4,12 @@ import com.example.thetunais4joteamproject.domain.chat.pubsub.ChatMessageSubscri
 import com.example.thetunais4joteamproject.domain.chat.pubsub.ChatRedisChannel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 
+@Profile("redis")
 @Configuration
 public class RedisPubSubConfig {
 
