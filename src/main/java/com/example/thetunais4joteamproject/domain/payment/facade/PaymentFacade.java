@@ -1,12 +1,16 @@
 package com.example.thetunais4joteamproject.domain.payment.facade;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.thetunais4joteamproject.domain.cart.service.CartService;
 import com.example.thetunais4joteamproject.domain.order.entity.Order;
+import com.example.thetunais4joteamproject.domain.order.entity.OrderItem;
 import com.example.thetunais4joteamproject.domain.order.repository.OrderRepository;
+import com.example.thetunais4joteamproject.domain.order.service.OrderService;
 import com.example.thetunais4joteamproject.domain.payment.dto.PaymentConfirmRequest;
 import com.example.thetunais4joteamproject.domain.payment.dto.PaymentConfirmResponse;
 import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
@@ -29,6 +33,8 @@ public class PaymentFacade {
 	private final PaymentCommandService paymentCommandService;
 	private final PaymentGateway paymentGateway;
 	private final OrderRepository orderRepository;
+	private final OrderService orderService;
+	private final CartService cartService;
 
 	// order 조회
 	// order 소유권 검증 호출
@@ -36,11 +42,10 @@ public class PaymentFacade {
 	// payment 검증 호출
 	// PortOne 조회
 	// PortOne 검증 호출
-	// 재고 차감 호출
 	// 쿠폰 사용 호출
 	// payment 승인 호출
 	// order 완료 호출
-	// 장바구니 비우기 호출
+	// 주문에 포함된 장바구니 상품 삭제 호출
 	@Transactional
 	public PaymentConfirmResponse confirmPayment(Long memberId, PaymentConfirmRequest request) {
 		Order order = getOrder(request.orderId());
@@ -52,6 +57,8 @@ public class PaymentFacade {
 
 		// 멱등성 처리
 		if (paymentCommandService.isAlreadyPaid(payment)) {
+			deleteOrderedCartItems(memberId, order);
+
 			return PaymentConfirmResponse.of(payment, "이미 승인된 결제입니다.");
 		}
 
@@ -69,13 +76,12 @@ public class PaymentFacade {
 		validatePgPaymentCompleted(payment, pgResponse);
 		validatePgAmount(payment, pgResponse);
 
-		// TODO: 재고 차감 호출
 		// TODO: 쿠폰 사용 호출
 
 		paymentCommandService.completePayment(payment);
 		order.confirm();
 
-		// TODO: 장바구니 비우기 호출
+		deleteOrderedCartItems(memberId, order);
 
 		return PaymentConfirmResponse.of(payment, "결제가 승인되었습니다.");
 	}
@@ -124,5 +130,12 @@ public class PaymentFacade {
 		if (!Objects.equals(payment.getOrder().getId(), order.getId())) {
 			throw BusinessException.from(ErrorCode.PAYMENT_ORDER_MISMATCH);
 		}
+	}
+
+	private void deleteOrderedCartItems(Long memberId, Order order) {
+		List<OrderItem> orderItems = orderService.getOrderItems(order.getId());
+		List<Long> cartItemIds = orderService.getCartItemIds(orderItems);
+
+		cartService.deleteOrderedCartItems(memberId, cartItemIds);
 	}
 }

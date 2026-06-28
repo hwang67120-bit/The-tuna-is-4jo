@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -74,6 +75,21 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 		AND c.member.id = :memberId
 		""")
 	List<CartItem> findAllByIdInAndMemberIdWithProductOptionAndProduct(
+		@Param("cartItemIds") List<Long> cartItemIds,
+		@Param("memberId") Long memberId
+	);
+
+	@Modifying
+	@Query("""
+		DELETE FROM CartItem ci
+		WHERE ci.id IN :cartItemIds
+		AND ci.cart.id IN (
+			SELECT c.id
+			FROM Cart c
+			WHERE c.member.id = :memberId
+		)
+		""")
+	void deleteAllByIdInAndMemberId(
 		@Param("cartItemIds") List<Long> cartItemIds,
 		@Param("memberId") Long memberId
 	);
