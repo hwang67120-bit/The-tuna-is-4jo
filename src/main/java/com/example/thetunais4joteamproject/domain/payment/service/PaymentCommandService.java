@@ -76,6 +76,25 @@ public class PaymentCommandService {
 		return payment;
 	}
 
+	public Payment expirePayment(Order order) {
+		Payment payment = paymentRepository.findByOrderId(order.getId())
+			.orElseThrow(() -> BusinessException.from(ErrorCode.PAYMENT_NOT_FOUND));
+
+		if (payment.getStatus() == PaymentStatus.CANCELED) {
+			return payment;
+		}
+
+		if (payment.getStatus() != PaymentStatus.PENDING) {
+			throw BusinessException.from(ErrorCode.ALREADY_PROCESSED_PAYMENT);
+		}
+
+		payment.cancel();
+
+		log.info("결제 대기 만료 처리 완료: paymentId={}, orderId={}", payment.getId(), order.getId());
+
+		return payment;
+	}
+
 
 	public Payment getPayment(Long paymentId) {
 		return paymentRepository.findById(paymentId)
