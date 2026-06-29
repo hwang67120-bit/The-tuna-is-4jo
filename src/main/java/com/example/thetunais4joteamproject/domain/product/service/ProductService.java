@@ -112,16 +112,16 @@ public class ProductService {
     }
 
     /**
-     * 상품 목록 조회
+     * 상품 목록 조회 (No-Offset 대용량 쿼리 최적화 완료)
      */
-    public Page<GetAllProductResponse> getAllProducts(Pageable pageable) {
-        if (pageable.getPageNumber() < 0) {
+    public List<GetAllProductResponse> getAllProductsNoOffset(Long lastProductId, int size) {
+        if (size <= 0) {
             throw BusinessException.from(ErrorCode.BAD_REQUEST);
         }
 
-        Page<Product> products = productRepository.findByStatusOrderByCreatedAtDesc(ProductStatus.ON_SALE, pageable);
+        List<Product> products = productRepository.findAllByNoOffset(lastProductId, size);
 
-        return products.map(GetAllProductResponse::from);
+        return products.stream().map(GetAllProductResponse::from).toList();
     }
 
     /**

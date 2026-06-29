@@ -173,4 +173,50 @@ class ProductServiceTest {
         // then
         verify(option, times(1)).updateOptionDetails(0, 1000, OptionStatus.SOLDOUT);
     }
+
+    @Test
+    @DisplayName("no-offset 상품 목록 조회 시 size가 0 이하이면 BAD_REQUEST 예외가 발생한다.")
+    void getAllProductsNoOffset_InvalidSize_ThrowsException() {
+        // when & then
+        assertThatThrownBy(() -> productService.getAllProductsNoOffset(10L, 0))
+            .isInstanceOf(BusinessException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BAD_REQUEST);
+    }
+
+    @Test
+    @DisplayName("no-offset 상품 목록 조회 시 정상적으로 상품 목록을 응답한다.")
+    void getAllProductsNoOffset_Success() {
+        // given
+        Product product1 = mock(Product.class);
+        Product product2 = mock(Product.class);
+        Category category = mock(Category.class);
+
+        given(category.getName()).willReturn("카테고리");
+
+        given(product1.getId()).willReturn(10L);
+        given(product1.getName()).willReturn("상품1");
+        given(product1.getPrice()).willReturn(1000);
+        given(product1.getDescription()).willReturn("설명1");
+        given(product1.getStatus()).willReturn(ProductStatus.ON_SALE);
+        given(product1.getCategory()).willReturn(category);
+
+        given(product2.getId()).willReturn(9L);
+        given(product2.getName()).willReturn("상품2");
+        given(product2.getPrice()).willReturn(2000);
+        given(product2.getDescription()).willReturn("설명2");
+        given(product2.getStatus()).willReturn(ProductStatus.ON_SALE);
+        given(product2.getCategory()).willReturn(category);
+
+        given(productRepository.findAllByNoOffset(10L, 2)).willReturn(List.of(product1, product2));
+
+        // when
+        List<GetAllProductResponse> response = productService.getAllProductsNoOffset(10L, 2);
+
+        // then
+        assertThat(response).hasSize(2);
+        assertThat(response.get(0).id()).isEqualTo(10L);
+        assertThat(response.get(1).id()).isEqualTo(9L);
+        assertThat(response.get(0).categoryName()).isEqualTo("카테고리");
+        verify(productRepository, times(1)).findAllByNoOffset(10L, 2);
+    }
 }
