@@ -17,6 +17,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.example.thetunais4joteamproject.domain.cart.service.CartService;
+import com.example.thetunais4joteamproject.domain.coupon.dto.UseCouponRequest;
+import com.example.thetunais4joteamproject.domain.coupon.service.CouponService;
 import com.example.thetunais4joteamproject.domain.order.entity.Order;
 import com.example.thetunais4joteamproject.domain.order.entity.OrderStatus;
 import com.example.thetunais4joteamproject.domain.order.repository.OrderRepository;
@@ -53,6 +55,9 @@ class PaymentFacadeTest {
 	private CartService cartService;
 
 	@Mock
+	private CouponService couponService;
+
+	@Mock
 	private Member member;
 
 	@Mock
@@ -69,7 +74,8 @@ class PaymentFacadeTest {
 			paymentGateway,
 			orderRepository,
 			orderService,
-			cartService
+			cartService,
+			couponService
 		);
 	}
 
@@ -130,6 +136,37 @@ class PaymentFacadeTest {
 		assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
 		verify(paymentGateway, never()).getPayment("pay-123");
 		verify(cartService).deleteOrderedCartItems(memberId, List.of());
+	}
+
+	@Test
+	void 결제_승인에_성공하면_선택한_사용자_쿠폰을_사용_처리한다() {
+		// given
+		Long memberId = 1L;
+		Long memberCouponId = 30L;
+		Order order = createOrder(1L, member, memberId, memberCouponId, 26000);
+		Payment payment = createPendingPayment(10L, order, "pay-123", 26000);
+
+		PaymentConfirmRequest request = new PaymentConfirmRequest(
+			order.getId(),
+			payment.getId(),
+			"pay-123"
+		);
+
+		given(orderRepository.findById(order.getId())).willReturn(Optional.of(order));
+		given(paymentRepository.findById(payment.getId())).willReturn(Optional.of(payment));
+		given(paymentGateway.getPayment("pay-123")).willReturn(pgResponse);
+		given(pgResponse.status()).willReturn("PAID");
+		given(pgResponse.totalAmount()).willReturn(26000);
+		given(orderService.getOrderItems(order.getId())).willReturn(List.of());
+
+		// when
+		paymentFacade.confirmPayment(memberId, request);
+
+		// then
+		verify(couponService).useCoupon(
+			memberId,
+			new UseCouponRequest(memberCouponId, order.getOrderPrice())
+		);
 	}
 
 	@Test
@@ -236,11 +273,22 @@ class PaymentFacadeTest {
 	}
 
 	private Order createOrder(Long orderId, Member member, Long memberId, Integer totalAmount) {
+		return createOrder(orderId, member, memberId, null, totalAmount);
+	}
+
+	private Order createOrder(
+		Long orderId,
+		Member member,
+		Long memberId,
+		Long memberCouponId,
+		Integer totalAmount
+	) {
 		given(member.getId()).willReturn(memberId);
 
 		Order order = Order.of(
 			member,
 			"ORD-1234567890",
+			memberCouponId,
 			totalAmount,
 			0,
 			0,

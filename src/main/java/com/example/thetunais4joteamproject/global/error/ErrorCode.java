@@ -61,6 +61,9 @@ public enum ErrorCode {
     // [회원(Member) 도메인 비즈니스 에러 코드]
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다"),
 
+    // [배송지(Address) 도메인 비즈니스 에러 코드]
+    ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 배송지입니다"),
+
     // [쿠폰(Coupon) 도메인 비즈니스 에러 코드]
     INVALID_COUPON_EXPIRATION(HttpStatus.BAD_REQUEST, "쿠폰 만료 일시는 현재 시간보다 과거일 수 없습니다."),
     COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 쿠폰입니다."),
@@ -68,6 +71,7 @@ public enum ErrorCode {
     COUPON_OUT_OF_STOCK(HttpStatus.BAD_REQUEST, "쿠폰 수량이 모두 소진되었습니다."),
     COUPON_EXPIRED(HttpStatus.BAD_REQUEST, "유효기간이 만료된 쿠폰입니다."),
     INVALID_COUPON_ORDER_PRICE(HttpStatus.BAD_REQUEST, "주문 금액이 쿠폰의 최소 주문 금액 조건을 충족하지 못했습니다."),
+    INVALID_COUPON_DISCOUNT_PRICE(HttpStatus.BAD_REQUEST, "쿠폰 할인 금액은 주문 금액보다 클 수 없습니다."),
     COUPON_NOT_USED(HttpStatus.BAD_REQUEST, "사용 완료 상태의 쿠폰만 복구할 수 있습니다.");
 
     private final HttpStatus httpStatus;

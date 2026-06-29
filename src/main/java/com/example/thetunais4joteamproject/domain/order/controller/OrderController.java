@@ -36,9 +36,10 @@ public class OrderController {
 	@GetMapping("/preview")
 	public ResponseEntity<ApiResponse<OrderPreviewResponse>> previewOrder(
 		@AuthenticationPrincipal Long memberId,
-		@RequestParam(required = false) List<Long> cartItemIds
+		@RequestParam(required = false) List<Long> cartItemIds,
+		@RequestParam(required = false) Long memberCouponId
 	) {
-		OrderPreviewResponse response = orderFacade.previewOrder(memberId, cartItemIds);
+		OrderPreviewResponse response = orderFacade.previewOrder(memberId, cartItemIds, memberCouponId);
 
 		return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(response));
 	}
