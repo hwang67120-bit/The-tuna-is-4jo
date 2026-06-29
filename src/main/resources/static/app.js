@@ -3,6 +3,8 @@ const state = {
   role: localStorage.getItem('saverRole') || '',
   memberId: localStorage.getItem('saverMemberId') || '',
   products: [],
+  portOneConfig: null,
+  pendingOrder: null,
   supportChatRoomId: localStorage.getItem('saverSupportChatRoomId') || '',
   supportSocket: null,
   supportConnectedRoomId: '',
@@ -14,6 +16,33 @@ const state = {
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
+function clearSignupForm() {
+  const form = $('#signupForm');
+  const passwordInput = $('#signupPassword');
+  const passwordToggle = $('[data-password-toggle="signupPassword"]');
+
+  if (!form) return;
+
+  form.reset();
+  if (passwordInput) passwordInput.type = 'password';
+  if (passwordToggle) {
+    passwordToggle.textContent = '보기';
+    passwordToggle.setAttribute('aria-label', '비밀번호 보기');
+  }
+}
+function bindPasswordToggle() {
+  $$('[data-password-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const input = document.getElementById(button.dataset.passwordToggle);
+      if (!input) return;
+
+      const isHidden = input.type === 'password';
+      input.type = isHidden ? 'text' : 'password';
+      button.textContent = isHidden ? '숨김' : '보기';
+      button.setAttribute('aria-label', isHidden ? '비밀번호 숨기기' : '비밀번호 보기');
+    });
+  });
+}
 function formatPrice(value) {
   return Number(value || 0).toLocaleString('ko-KR') + '원';
 }
@@ -98,7 +127,7 @@ async function loadProducts(categoryId = 'all') {
     const url = categoryId === 'all' ? '/api/products?page=0&size=20' : `/api/products/categories/${categoryId}`;
     const payload = await api(url, { method: 'GET' });
     const data = payload.data;
-    const products = Array.isArray(data?.content) ? data.content : (data?.products || []);
+    const products = Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : (data?.products || []));
     state.products = products;
     renderProducts(products);
   } catch (error) {
@@ -106,6 +135,14 @@ async function loadProducts(categoryId = 'all') {
   }
 }
 
+async function searchProducts(keyword) {
+  try {
+    const payload = await api(`/api/products/search?keyword=${encodeURIComponent(keyword)}&page=0&size=20`, { method: 'GET' });
+    renderProducts(payload.data?.products || []);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
 function renderProducts(products) {
   const grid = $('#productGrid');
   if (!products.length) {
@@ -141,17 +178,21 @@ function renderProductDetail(product) {
   const options = product.options || [];
   $('#productDetail').innerHTML = `<div class="detail-visual">S</div>
     <div class="detail-info">
-      <span class="badge">${product.status}</span>
-      <h1>${product.name}</h1>
-      <p>${product.categoryName || ''}</p>
-      <p>${product.description || ''}</p>
+      <span class="badge">${escapeHtml(product.status)}</span>
+      <h1>${escapeHtml(product.name)}</h1>
+      <p>${escapeHtml(product.categoryName || '')}</p>
+      <p>${escapeHtml(product.description || '')}</p>
       <div class="price">${formatPrice(product.price)}</div>
       <div class="option-list">
-        ${options.map((option) => `<div class="option-row">
-          <div><strong>${option.optionName}</strong><br><small>재고 ${option.optionStock} · ${option.status}</small></div>
-          <input type="number" min="1" value="1" data-quantity-for="${option.optionId}">
-          <button class="primary-button small" type="button" data-cart-option-id="${option.optionId}" ${option.status !== 'ON_SALE' ? 'disabled' : ''}>담기</button>
-        </div>`).join('')}
+        ${options.map((option) => {
+          const disabled = option.status !== 'ON_SALE' ? 'disabled' : '';
+          return `<div class="option-row">
+            <div><strong>${escapeHtml(option.optionName)}</strong><br><small>재고 ${escapeHtml(option.optionStock)} · ${escapeHtml(option.status)}</small></div>
+            <input type="number" min="1" value="1" data-quantity-for="${option.optionId}">
+            <button class="primary-button small" type="button" data-cart-option-id="${option.optionId}" ${disabled}>담기</button>
+            <button class="outline-button" type="button" data-direct-option-id="${option.optionId}" ${disabled}>바로 구매</button>
+          </div>`;
+        }).join('')}
       </div>
     </div>`;
 }
@@ -159,6 +200,7 @@ function renderProductDetail(product) {
 async function loadCart() {
   if (!state.token) {
     $('#cartPanel').innerHTML = '로그인이 필요합니다.';
+    $('#orderResult')?.classList.add('hidden');
     return;
   }
   try {
@@ -169,12 +211,18 @@ async function loadCart() {
       $('#cartPanel').innerHTML = '장바구니가 비어 있습니다.';
       return;
     }
-    $('#cartPanel').innerHTML = items.map((item) => `<div class="cart-row">
-      <strong>${item.productName}<br><small>${item.optionName}</small></strong>
+    $('#cartPanel').innerHTML = items.map((item) => `<div class="cart-row" data-cart-row="${item.cartItemId}">
+      <input type="checkbox" checked data-cart-select="${item.cartItemId}" aria-label="주문 선택">
+      <strong>${escapeHtml(item.productName)}<br><small>${escapeHtml(item.optionName)}</small></strong>
       <span>${formatPrice(item.unitPrice)}</span>
       <input type="number" min="1" value="${item.quantity}" data-cart-quantity="${item.cartItemId}">
       <strong>${formatPrice(item.totalPrice)}</strong>
-    </div>`).join('') + `<div class="cart-total">총 ${formatPrice(data.totalPrice)}</div>`;
+      <button class="outline-button" type="button" data-cart-delete="${item.cartItemId}">삭제</button>
+    </div>`).join('') + `<div class="cart-total">총 ${formatPrice(data.totalPrice)}</div>
+      <div class="cart-actions">
+        <button class="outline-button" type="button" data-clear-cart>전체 비우기</button>
+        <button class="primary-button" type="button" data-cart-order-selected>선택 상품 구매</button>
+      </div>`;
   } catch (error) {
     showToast(error.message);
   }
@@ -214,6 +262,316 @@ async function addCartItem(optionId) {
   } catch (error) {
     showToast(error.message);
   }
+}
+
+
+function requireLogin() {
+  if (state.token) return true;
+
+  showToast('로그인이 필요합니다.');
+  $('#authModal').classList.remove('hidden');
+  return false;
+}
+
+function getOptionQuantity(optionId) {
+  return Number($(`[data-quantity-for="${optionId}"]`)?.value || 1);
+}
+
+function getSelectedCartItemIds() {
+  return $$('[data-cart-select]:checked').map((checkbox) => Number(checkbox.dataset.cartSelect));
+}
+
+function renderOrderForm() {
+  const pendingOrder = state.pendingOrder;
+  if (!pendingOrder) return;
+
+  showView('order');
+  $('#orderItemsPanel').innerHTML = pendingOrder.type === 'DIRECT'
+    ? `<div class="cart-row order-row"><strong>바로 구매 상품</strong><span>옵션 #${escapeHtml(pendingOrder.productOptionId)} · ${escapeHtml(pendingOrder.quantity)}개</span></div>`
+    : `<div class="cart-row order-row"><strong>장바구니 상품</strong><span>${pendingOrder.cartItemIds.length}개 선택</span></div>`;
+  $('#orderSummaryPrice').textContent = '주문 생성 후 확인';
+  $('#orderSummaryDiscount').textContent = '-0원';
+  $('#orderSummaryDelivery').textContent = '주문 생성 후 확인';
+  $('#orderSummaryTotal').textContent = '주문 생성 후 확인';
+}
+
+function prepareDirectOrder(optionId) {
+  if (!requireLogin()) return;
+
+  state.pendingOrder = {
+    type: 'DIRECT',
+    productOptionId: Number(optionId),
+    quantity: getOptionQuantity(optionId)
+  };
+  renderOrderForm();
+}
+
+function prepareCartOrder(cartItemIds) {
+  if (!requireLogin()) return;
+  if (!cartItemIds.length) {
+    showToast('구매할 상품을 선택해 주세요.');
+    return;
+  }
+
+  state.pendingOrder = {
+    type: 'CART',
+    cartItemIds
+  };
+  renderOrderForm();
+}
+
+function getDeliveryAddressRequest() {
+  const form = $('#deliveryAddressForm');
+  const request = formToObject(form);
+  request.defaultAddress = form.elements.defaultAddress.checked;
+  return request;
+}
+
+async function createDeliveryAddress() {
+  const payload = await api('/api/addresses', {
+    method: 'POST',
+    body: JSON.stringify(getDeliveryAddressRequest())
+  });
+  return payload.data.addressId;
+}
+
+async function submitPendingOrder() {
+  if (!requireLogin()) return;
+  if (!state.pendingOrder) {
+    showToast('주문할 상품을 먼저 선택해 주세요.');
+    return;
+  }
+
+  try {
+    const memberAddressId = await createDeliveryAddress();
+    if (state.pendingOrder.type === 'DIRECT') {
+      await createDirectOrder(state.pendingOrder.productOptionId, state.pendingOrder.quantity, memberAddressId);
+    } else {
+      await createCartOrder(state.pendingOrder.cartItemIds, memberAddressId);
+    }
+    state.pendingOrder = null;
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function renderOrderResult(order) {
+  const panel = $('#orderResultPanel');
+  if (!panel) return;
+
+  showView('orderResult');
+  panel.innerHTML = `<h3>결제 영수증</h3>
+    <div class="order-result-row"><strong>주문 ID</strong><span>${escapeHtml(order.orderId)}</span></div>
+    <div class="order-result-row"><strong>주문 번호</strong><span>${escapeHtml(order.orderNumber)}</span></div>
+    <div class="order-result-row"><strong>결제 ID</strong><span>${escapeHtml(order.paymentId)}</span></div>
+    <div class="order-result-row"><strong>PortOne 결제 ID</strong><span>${escapeHtml(order.portonePaymentId)}</span></div>
+    <div class="order-result-row"><strong>주문 상태</strong><span>${escapeHtml(order.orderStatus)}</span></div>
+    <div class="order-result-row"><strong>결제 상태</strong><span>${escapeHtml(order.paymentStatus)}</span></div>
+    <div class="order-result-row"><strong>상품 금액</strong><span>${formatPrice(order.orderPrice)}</span></div>
+    <div class="order-result-row"><strong>할인 금액</strong><span>-${formatPrice(order.discountPrice)}</span></div>
+    <div class="order-result-row"><strong>배송비</strong><span>${formatPrice(order.deliveryPrice)}</span></div>
+    <div class="order-result-row"><strong>총 결제 금액</strong><span>${formatPrice(order.totalAmount)}</span></div>
+    <div class="order-result-actions">
+      <button class="primary-button" type="button" data-payment-confirm data-order-id="${order.orderId}" data-payment-id="${order.paymentId}" data-portone-payment-id="${escapeHtml(order.portonePaymentId)}" data-order-name="${escapeHtml(getOrderName(order))}" data-total-amount="${order.totalAmount}">PortOne 결제하기</button>
+    </div>`;
+}
+
+function getOrderName(order) {
+  const items = order.items || [];
+  if (!items.length) return `주문 ${order.orderNumber}`;
+
+  const firstItem = items[0];
+  const firstName = firstItem.productName || firstItem.optionName || '상품';
+  return items.length === 1 ? firstName : `${firstName} 외 ${items.length - 1}건`;
+}
+
+async function loadPortOneConfig() {
+  if (state.portOneConfig) return state.portOneConfig;
+
+  const payload = await api('/api/config/portone', { method: 'GET' });
+  state.portOneConfig = payload.data;
+  return state.portOneConfig;
+}
+
+async function requestPortOnePayment(orderId, paymentId, portonePaymentId, orderName, totalAmount) {
+  if (!window.PortOne) {
+    throw new Error('PortOne 결제 SDK를 불러오지 못했습니다.');
+  }
+
+  const config = await loadPortOneConfig();
+  const response = await PortOne.requestPayment({
+    storeId: config.storeId,
+    channelKey: config.channelKey,
+    paymentId: portonePaymentId,
+    orderName,
+    totalAmount: Number(totalAmount),
+    currency: 'KRW',
+    payMethod: 'CARD',
+    customer: {
+      fullName: `회원 ${state.memberId}`
+    }
+  });
+
+  if (response.code) {
+    throw new Error(response.message || '결제가 실패했습니다.');
+  }
+
+  return confirmPayment(orderId, paymentId, portonePaymentId);
+}
+
+async function createDirectOrder(optionId, quantity = getOptionQuantity(optionId), memberAddressId = null) {
+  if (!requireLogin()) return;
+  try {
+    const payload = await api('/api/orders/direct', {
+      method: 'POST',
+      body: JSON.stringify({ productOptionId: Number(optionId), quantity })
+    });
+    showToast('바로 구매 주문이 생성되었습니다.');
+    renderOrderResult(payload.data);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function createCartOrder(cartItemIds, memberAddressId = null) {
+  if (!requireLogin()) return;
+  if (!cartItemIds.length) {
+    showToast('구매할 상품을 선택해 주세요.');
+    return;
+  }
+
+  try {
+    const payload = await api('/api/orders/cart', {
+      method: 'POST',
+      body: JSON.stringify({ cartItemIds, memberAddressId })
+    });
+    showToast('장바구니 주문이 생성되었습니다.');
+    await loadCart();
+    renderOrderResult(payload.data);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function confirmPayment(orderId, paymentId, portonePaymentId) {
+  if (!requireLogin()) return;
+
+  try {
+    const payload = await api('/api/payments/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ orderId: Number(orderId), paymentId: Number(paymentId), portonePaymentId })
+    });
+    showToast(payload.data?.message || '결제가 확정되었습니다.');
+    await loadCart();
+    showView('profile');
+    await loadOrderHistory();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function updateCartItemQuantity(cartItemId, quantity) {
+  if (!requireLogin()) return;
+
+  try {
+    await api(`/api/carts/${cartItemId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ quantity: Number(quantity) })
+    });
+    showToast('수량이 변경되었습니다.');
+    loadCart();
+  } catch (error) {
+    showToast(error.message);
+    loadCart();
+  }
+}
+
+async function deleteCartItem(cartItemId) {
+  if (!requireLogin()) return;
+
+  try {
+    await api(`/api/carts/${cartItemId}`, { method: 'DELETE' });
+    showToast('장바구니 상품을 삭제했습니다.');
+    loadCart();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function clearCart() {
+  if (!requireLogin()) return;
+
+  try {
+    await api('/api/carts/items', { method: 'DELETE' });
+    showToast('장바구니를 비웠습니다.');
+    loadCart();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+async function loadOrderHistory() {
+  if (!requireLogin()) return;
+
+  try {
+    const payload = await api('/api/orders', { method: 'GET' });
+    const orders = payload.data || [];
+    const panel = $('#orderHistoryPanel');
+
+    if (!orders.length) {
+      panel.innerHTML = '주문내역이 없습니다.';
+      return;
+    }
+
+    panel.innerHTML = orders.map((order) => `<div class="cart-row order-history-row">
+      <strong>${escapeHtml(order.orderNumber)}<br><small>${formatDateTime(order.orderedAt)}</small></strong>
+      <span>${escapeHtml(order.orderStatus)}</span>
+      <strong>${formatPrice(order.totalAmount)}</strong>
+      <button class="outline-button" type="button" data-order-detail-id="${order.orderId}">상세</button>
+    </div>`).join('');
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+async function loadOrderDetail(orderId) {
+  if (!requireLogin()) return;
+
+  try {
+    const payload = await api(`/api/orders/${orderId}`, { method: 'GET' });
+    renderOrderDetail(payload.data);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function renderOrderDetail(order) {
+  const panel = $('#orderHistoryPanel');
+  const deliveryAddress = order.deliveryAddress;
+  const items = order.items || [];
+  const addressText = deliveryAddress
+    ? `${deliveryAddress.receiverName} / ${deliveryAddress.receiverPhone}<br>${deliveryAddress.zipcode} ${deliveryAddress.address} ${deliveryAddress.detailAddress}`
+    : '배송지 정보가 없습니다.';
+
+  panel.insertAdjacentHTML('beforeend', `<div class="table-panel order-detail-panel">
+    <h3>주문 상세</h3>
+    <div class="order-result-row"><strong>주문 번호</strong><span>${escapeHtml(order.orderNumber)}</span></div>
+    <div class="order-result-row"><strong>주문 상태</strong><span>${escapeHtml(order.orderStatus)}</span></div>
+    <div class="order-result-row"><strong>주문 일시</strong><span>${formatDateTime(order.orderedAt)}</span></div>
+    <div class="order-result-row"><strong>배송지</strong><span>${addressText}</span></div>
+    <h3>상품</h3>
+    ${items.map((item) => `<div class="cart-row order-row">
+      <strong>${escapeHtml(item.productName)}<br><small>${escapeHtml(item.optionName)}</small></strong>
+      <span>${formatPrice(item.unitPrice)} × ${escapeHtml(item.quantity)} = ${formatPrice(item.totalPrice)}</span>
+    </div>`).join('')}
+    <h3>결제 금액</h3>
+    <div class="order-result-row"><strong>상품 금액</strong><span>${formatPrice(order.orderPrice)}</span></div>
+    <div class="order-result-row"><strong>할인 금액</strong><span>-${formatPrice(order.discountPrice)}</span></div>
+    <div class="order-result-row"><strong>배송비</strong><span>${formatPrice(order.deliveryPrice)}</span></div>
+    <div class="order-result-row"><strong>총 결제 금액</strong><span>${formatPrice(order.totalAmount)}</span></div>
+  </div>`);
+}
+function showAdminPanel(panelId) {
+  $$('.admin-panel').forEach((panel) => panel.classList.toggle('hidden', panel.id !== panelId));
+  $$('[data-admin-panel]').forEach((button) => button.classList.toggle('active', button.dataset.adminPanel === panelId));
 }
 
 function formToObject(form) {
@@ -493,8 +851,19 @@ function bindEvents() {
     loadProducts(button.dataset.category);
   }));
   $('#loginOpenButton').addEventListener('click', () => $('#authModal').classList.remove('hidden'));
-  $('#authCloseButton').addEventListener('click', () => $('#authModal').classList.add('hidden'));
-  $('#showSignupButton').addEventListener('click', () => $('#signupForm').classList.toggle('hidden'));
+  $('#authCloseButton').addEventListener('click', () => {
+    clearSignupForm();
+    $('#signupForm').classList.add('hidden');
+    $('#authModal').classList.add('hidden');
+  });
+  bindPasswordToggle();
+  window.addEventListener('pagehide', clearSignupForm);
+  $('#showSignupButton').addEventListener('click', () => {
+    const signupForm = $('#signupForm');
+    const willHide = !signupForm.classList.contains('hidden');
+    signupForm.classList.toggle('hidden');
+    if (willHide) clearSignupForm();
+  });
   $('#logoutButton').addEventListener('click', async () => {
     try { await api('/api/members/logout', { method: 'POST' }); } catch (error) { }
     clearSession();
@@ -515,17 +884,62 @@ function bindEvents() {
     try {
       await api('/api/members/signup', { method: 'POST', body: JSON.stringify(formToObject(event.currentTarget)) });
       showToast('회원가입 성공');
-      event.currentTarget.reset();
+      clearSignupForm();
       event.currentTarget.classList.add('hidden');
     } catch (error) { showToast(error.message); }
+  });
+  $("#productSearchForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    searchProducts(formToObject(event.currentTarget).keyword);
+  });
+  $("#clearProductSearchButton").addEventListener("click", () => {
+    $("#productSearchForm").reset();
+    loadProducts('all');
   });
   $('#productGrid').addEventListener('click', (event) => {
     const button = event.target.closest('[data-detail-id]');
     if (button) loadProductDetail(button.dataset.detailId);
   });
   $('#productDetail').addEventListener('click', (event) => {
-    const button = event.target.closest('[data-cart-option-id]');
-    if (button) addCartItem(button.dataset.cartOptionId);
+    const cartButton = event.target.closest('[data-cart-option-id]');
+    if (cartButton) addCartItem(cartButton.dataset.cartOptionId);
+
+    const directButton = event.target.closest('[data-direct-option-id]');
+    if (directButton) prepareDirectOrder(directButton.dataset.directOptionId);
+  });
+  $('#cartPanel').addEventListener('click', (event) => {
+    const deleteButton = event.target.closest('[data-cart-delete]');
+    if (deleteButton) deleteCartItem(deleteButton.dataset.cartDelete);
+
+    const clearButton = event.target.closest('[data-clear-cart]');
+    if (clearButton) clearCart();
+
+    const orderButton = event.target.closest('[data-cart-order-selected]');
+    if (orderButton) prepareCartOrder(getSelectedCartItemIds());
+  });
+  $('#cartPanel').addEventListener('change', (event) => {
+    const quantityInput = event.target.closest('[data-cart-quantity]');
+    if (quantityInput) updateCartItemQuantity(quantityInput.dataset.cartQuantity, quantityInput.value);
+  });
+  $("#submitOrderButton").addEventListener("click", submitPendingOrder);
+  $('#orderResultPanel').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-payment-confirm]');
+    if (button) requestPortOnePayment(
+      button.dataset.orderId,
+      button.dataset.paymentId,
+      button.dataset.portonePaymentId,
+      button.dataset.orderName,
+      button.dataset.totalAmount
+    ).catch((error) => showToast(error.message));
+  });
+  $('#goToOrderHistoryButton').addEventListener('click', async () => {
+    showView('profile');
+    await loadOrderHistory();
+  });
+  $('#loadOrderHistoryButton').addEventListener('click', loadOrderHistory);
+  $('#orderHistoryPanel').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-order-detail-id]');
+    if (button) loadOrderDetail(button.dataset.orderDetailId);
   });
   $('#refreshCartButton').addEventListener('click', loadCart);
   $('#loadProfileButton').addEventListener('click', loadProfile);
@@ -537,13 +951,23 @@ function bindEvents() {
       loadProfile();
     } catch (error) { showToast(error.message); }
   });
+  $$('[data-admin-panel]').forEach((button) => button.addEventListener('click', () => showAdminPanel(button.dataset.adminPanel)));
   $('#productCreateForm').addEventListener('submit', async (event) => {
     event.preventDefault();
     const body = formToObject(event.currentTarget);
-    body.categoryId = Number(body.categoryId);
-    body.price = Number(body.price);
+    const request = {
+      categoryId: Number(body.categoryId),
+      name: body.name,
+      price: Number(body.price),
+      description: body.description,
+      options: [{
+        optionName: body.optionName,
+        optionStock: Number(body.optionStock),
+        additionalPrice: Number(body.additionalPrice)
+      }]
+    };
     try {
-      const payload = await api('/api/products', { method: 'POST', body: JSON.stringify(body) });
+      const payload = await api('/api/products', { method: 'POST', body: JSON.stringify(request) });
       showToast(`상품이 등록되었습니다. ID ${payload.data.productId}`);
       event.currentTarget.reset();
       loadProducts();
@@ -571,3 +995,5 @@ function bindEvents() {
 renderSession();
 bindEvents();
 loadProducts();
+
+
