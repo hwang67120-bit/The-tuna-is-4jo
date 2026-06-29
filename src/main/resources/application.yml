@@ -3,36 +3,47 @@ spring:
     name: The-tuna-is-4jo-team-project
 
   datasource:
-    url: ${LOCAL_DB_URL:jdbc:h2:mem:tuna;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
-    driver-class-name: ${LOCAL_DB_DRIVER:org.h2.Driver}
-    username: ${LOCAL_DB_USERNAME:sa}
-    password: ${LOCAL_DB_PASSWORD:}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: 6379
 
   jpa:
-    defer-datasource-initialization: true
+    open-in-view: false
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:create-drop}
-    show-sql: true
+      ddl-auto: update
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
 
   sql:
     init:
-      mode: always
-
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+      mode: never
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: 8080
+  forward-headers-strategy: framework
 
 jwt:
   secret: ${JWT_SECRET}
-  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:3600000}
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION}
 
 admin:
   whitelist:
-    emails: ${ADMIN_WHITELIST_EMAILS:}
+    emails: ${ADMIN_WHITELIST_EMAILS}
+
+portone:
+  base-url: https://api.portone.io
+  api-secret: ${PORTONE_API_SECRET}
+  store-id: ${PORTONE_STORE_ID}
+  channel-key: ${PORTONE_CHANNEL_KEY}
+  webhook-secret: ${PORTONE_WEBHOOK_SECRET}
+
+redisson:
+  address: ${REDISSON_ADDRESS}
