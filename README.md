@@ -119,14 +119,52 @@ src/
 - 실패 응답은 공통 예외 응답 규칙을 따른다.
 - README API 요약에는 상세 필드명과 데이터 타입을 작성하지 않는다.
 
-| 상태 코드 | 메시지 |
-| ---: | --- |
-| 400 | 요청 내용을 확인해 주세요 |
-| 401 | 로그인이 필요합니다 |
-| 404 | 찾을 수 없습니다 |
-| 409 | 요청을 처리할 수 없습니다 |
-| 503 | 현재 서비스를 이용할 수 없습니다 |
-| 504 | 응답 시간이 초과되었습니다 |
+| 예외 코드 | HTTP Status | 메시지 |
+| --- | ---: | --- |
+| BAD_REQUEST | 400 | 요청 내용을 확인해 주세요 |
+| UNAUTHORIZED | 401 | 로그인이 필요합니다 |
+| FORBIDDEN | 403 | 접근 권한이 없습니다 |
+| NOT_FOUND | 404 | 찾을 수 없습니다 |
+| CONFLICT | 409 | 요청을 처리할 수 없습니다 |
+| SERVICE_UNAVAILABLE | 503 | 현재 서비스를 이용할 수 없습니다 |
+| GATEWAY_TIMEOUT | 504 | 응답 시간이 초과되었습니다 |
+| INTERNAL_SERVER_ERROR | 500 | 서버 장애가 발생했습니다 |
+| CATEGORY_NOT_FOUND | 404 | 존재하지 않는 카테고리입니다 |
+| PRODUCT_NOT_FOUND | 404 | 존재하지 않는 상품입니다 |
+| OPTION_NOT_FOUND | 404 | 존재하지 않는 옵션입니다 |
+| DEFAULT_OPTION_NOT_FOUND | 500 | 상품의 기본 옵션을 찾을 수 없습니다. 시스템 오류입니다 |
+| OUT_OF_STOCK | 409 | 상품 재고가 부족합니다 |
+| PRODUCT_OPTION_NOT_ON_SALE | 409 | 판매 중인 상품 옵션이 아닙니다 |
+| PRODUCT_OUT_OF_STOCK | 400 | 선택한 상품 옵션의 재고가 부족하여 주문할 수 없습니다. |
+| CART_NOT_FOUND | 404 | 존재하지 않는 장바구니입니다 |
+| CART_ITEM_NOT_FOUND | 404 | 존재하지 않는 장바구니 상품입니다 |
+| INVALID_CART_ITEM_QUANTITY | 400 | 장바구니 상품 수량은 1개 이상이어야 합니다 |
+| CART_EMPTY | 400 | 장바구니가 비어 있습니다 |
+| ORDER_NOT_FOUND | 404 | 존재하지 않는 주문입니다 |
+| INVALID_ORDER_STATUS | 400 | 변경할 수 없는 주문 상태입니다 |
+| INVALID_ORDER_QUANTITY | 400 | 주문 수량은 1개 이상이어야 합니다 |
+| ORDER_ALREADY_PENDING | 409 | 이미 결제 대기 중인 주문이 있습니다 |
+| ALREADY_PROCESSED_PAYMENT | 400 | 이미 결제를 완료하였습니다. |
+| INVALID_PAYMENT_STATUS | 400 | 변경할 수 없는 결제 상태입니다 |
+| PAYMENT_INVALID_STATUS | 400 | 변경할 수 없는 결제 상태입니다. |
+| PAYMENT_NOT_FOUND | 404 | 주문을 찾을 수 없습니다. |
+| PORTONE_PAYMENT_NOT_FOUND | 404 | 포트원 결제 아이디를 찾을 수 없습니다. |
+| PAYMENT_ALREADY_FAILED | 400 | 이미 실패한 결제입니다. |
+| PAYMENT_ALREADY_CANCELED | 400 | 이미 실패한 결제입니다. |
+| PG_SERVER_ERROR | 502 | 결제사 서버와 통신 중 오류가 발생했습니다. |
+| PAYMENT_AMOUNT_MISMATCH | 400 | 금액이 일치하지 않습니다. |
+| PAYMENT_NOT_PAID | 400 | 결제가 완료되지 않았습니다. |
+| PAYMENT_ORDER_MISMATCH | 400 | 결제와 주문이 일치하지 않습니다. |
+| WEBHOOK_EVENT_NOT_FOUND | 404 | 주문 금액보다 많이 사용할 수 없습니다. |
+| WEBHOOK_VERIFICATION_FAILED | 401 | 웹훅 서명 인증에 실패하였습니다. |
+| MEMBER_NOT_FOUND | 404 | 존재하지 않는 회원입니다 |
+| INVALID_COUPON_EXPIRATION | 400 | 쿠폰 만료 일시는 현재 시간보다 과거일 수 없습니다. |
+| COUPON_NOT_FOUND | 404 | 존재하지 않는 쿠폰입니다. |
+| COUPON_ALREADY_ISSUED | 400 | 이미 발급받은 쿠폰입니다. |
+| COUPON_OUT_OF_STOCK | 400 | 쿠폰 수량이 모두 소진되었습니다. |
+| COUPON_EXPIRED | 400 | 유효기간이 만료된 쿠폰입니다. |
+| INVALID_COUPON_ORDER_PRICE | 400 | 주문 금액이 쿠폰의 최소 주문 금액 조건을 충족하지 못했습니다. |
+| COUPON_NOT_USED | 400 | 사용 완료 상태의 쿠폰만 복구할 수 있습니다. |
 
 ---
 
@@ -414,15 +452,16 @@ src/
 
 ### 주요 상태 값
 
-| 구분 | 상태 값 |
-| --- | --- |
-| 회원 권한 | `USER`, `ADMIN` |
-| 상품 상태 | `ON_SALE`, `DISCONTINUED`, `DELETED` |
-| 상품 옵션 상태 | `ON_SALE`, `SOLDOUT`, `DISCONTINUED` |
-| 주문 상태 | `PENDING_PAYMENT`, `CONFIRMED`, `CANCELED`, `EXPIRED` |
-| 결제 상태 | `PENDING`, `PAID`, `FAILED`, `CANCELED`, `REFUNDED` |
-| 쿠폰 상태 | `ACTIVE`, `DISABLED` |
-| 발급 쿠폰 상태 | `UNUSED`, `USED`, `EXPIRED` |
-| 채팅방 상태 | `WAITING`, `IN_PROGRESS`, `CLOSED` |
-| 메시지 타입 | `USER`, `ADMIN`, `SYSTEM` |
-| 웹훅 상태 | `RECEIVED`, `PROCESSED`, `IGNORED`, `FAILED` |
+| Enum | 사용 위치 | 상태 값 |
+| --- | --- | --- |
+| `MemberRole` | 회원 권한 | `USER`, `ADMIN` |
+| `ProductStatus` | 상품 상태 | `ON_SALE`, `DISCONTINUED`, `DELETED` |
+| `OptionStatus` | 상품 옵션 상태 | `ON_SALE`, `SOLDOUT`, `DISCONTINUED` |
+| `OrderStatus` | 주문 상태 | `PENDING_PAYMENT`, `CONFIRMED`, `CANCELED`, `EXPIRED` |
+| `PaymentStatus` | 결제 상태 | `PENDING`, `PAID`, `FAILED`, `CANCELED`, `REFUNDED` |
+| `CouponStatus` | 쿠폰 상태 | `ACTIVE`, `DISABLED` |
+| `MemberCouponStatus` | 발급 쿠폰 상태 | `UNUSED`, `USED`, `EXPIRED` |
+| `ChatRoomStatus` | 채팅방 상태 | `WAITING`, `IN_PROGRESS`, `CLOSED` |
+| `WebhookStatus` | 웹훅 처리 상태 | `RECEIVED`, `PROCESSED`, `IGNORED`, `FAILED` |
+
+> `ErrorCode` enum은 공통 예외 응답 표에서 관리합니다.
