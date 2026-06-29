@@ -2,66 +2,112 @@
 
 ## 프로젝트 파일 구조
 
-> 목표 패키지 구조입니다. 도메인별 책임을 분리하고, 담당 도메인 외 로직 수정을 제한합니다.
+> 현재 프로젝트 기준 패키지 구조입니다. 도메인별 책임을 분리하고, 공통 설정과 예외 처리는 `global`에서 관리합니다.
 
 ```text
-src/main/java/com/example/thetunais4joteamproject/
+src/
+├── main
+│   ├── java/com/example/thetunais4joteamproject/
+│   │   ├── TheTunaIs4joTeamProjectApplication.java
+│   │   │
+│   │   ├── global                         # 전역 공통 계층
+│   │   │   ├── aop                        # 채팅 복구 API 시간 측정 등 공통 AOP
+│   │   │   ├── common                     # BaseEntity, 공통 API 응답
+│   │   │   ├── config                     # Security, JWT Filter, Redis, WebSocket, Querydsl 설정
+│   │   │   ├── entity                     # 전역 공통 엔티티
+│   │   │   ├── error                      # 공통 예외, 에러 코드, 예외 응답
+│   │   │   └── util                       # JwtProvider, PasswordEncryptor 등 유틸
+│   │   │
+│   │   └── domain                         # 도메인 비즈니스 로직 계층
+│   │       ├── user                       # 회원, 로그인, JWT 발급
+│   │       │   ├── controller
+│   │       │   ├── dto
+│   │       │   ├── entity
+│   │       │   ├── repository
+│   │       │   └── service
+│   │       │
+│   │       ├── product                    # 상품, 카테고리, 검색, 캐시
+│   │       │   ├── cache
+│   │       │   ├── controller
+│   │       │   ├── dto
+│   │       │   ├── entity
+│   │       │   ├── repository
+│   │       │   │   ├── custom             # Querydsl 커스텀 Repository 인터페이스
+│   │       │   │   └── impl               # Querydsl 커스텀 Repository 구현체
+│   │       │   └── service
+│   │       │
+│   │       ├── cart                       # 장바구니
+│   │       │   ├── controller
+│   │       │   ├── dto
+│   │       │   ├── entity
+│   │       │   ├── facade
+│   │       │   ├── repository
+│   │       │   └── service
+│   │       │
+│   │       ├── order                      # 주문, 주문 스케줄러
+│   │       │   ├── controller
+│   │       │   ├── dto
+│   │       │   ├── entity
+│   │       │   ├── facade
+│   │       │   ├── repository
+│   │       │   ├── scheduler
+│   │       │   └── service
+│   │       │
+│   │       ├── payment                    # 결제, 결제 포트/파사드
+│   │       │   ├── controller
+│   │       │   ├── dto
+│   │       │   ├── entity
+│   │       │   ├── facade
+│   │       │   ├── port
+│   │       │   ├── repository
+│   │       │   └── service
+│   │       │
+│   │       ├── refund                     # 환불
+│   │       │   ├── controller
+│   │       │   ├── repository
+│   │       │   └── service
+│   │       │
+│   │       ├── coupon                     # 쿠폰, 분산락, 쿠폰 스케줄러
+│   │       │   ├── aop
+│   │       │   ├── controller
+│   │       │   ├── dto
+│   │       │   ├── entity
+│   │       │   ├── facade
+│   │       │   ├── repository
+│   │       │   ├── scheduler
+│   │       │   └── service
+│   │       │
+│   │       ├── chat                       # STOMP 채팅, 재연결 복구, Redis Pub/Sub
+│   │       │   ├── controller
+│   │       │   ├── dto
+│   │       │   ├── entity
+│   │       │   ├── pubsub                 # Redis Publisher/Subscriber, 브로드캐스터
+│   │       │   ├── repository
+│   │       │   └── service
+│   │       │
+│   │       └── infra                      # 외부 인프라 연동
+│   │           ├── portone
+│   │           │   ├── client
+│   │           │   ├── config
+│   │           │   ├── controller
+│   │           │   └── dto
+│   │           └── webhook                # PortOne 웹훅 처리
+│   │
+│   └── resources
+│       └── static                         # 테스트/데모용 정적 화면
 │
-├── global                         # 공통 보안, 에러 핸들링, 유틸 인프라
-│   ├── config                     # Security, Redis, Redisson, Querydsl 설정
-│   ├── error                      # GlobalExceptionHandler, 에러코드 관리
-│   ├── common                     # BaseEntity, 공통 Standard Response 포맷
-│   └── util                       # JwtProvider, Encryptor 등
-│
-└── domain                         # 도메인 비즈니스 로직 계층 (상호 격리 구조)
-    ├── user                       # 1. 회원 및 인증 도메인
-    │   ├── controller             # UsersApiController
-    │   ├── service                # UserService, AuthService
-    │   ├── repository             # UserRepository
-    │   └── dto                    # UserRequestDto, UserResponseDto
-    │
-    ├── product                    # 2. 상품 및 검색 도메인
-    │   ├── controller             # ProductController
-    │   ├── service                # ProductService, SearchService
-    │   ├── repository             # ProductRepository, CategoryRepository
-    │   │   ├── custom             # QueryDSL 성능 최적화용 명세 인터페이스
-    │   │   └── impl               # QueryDSL 최적화 동적 쿼리 구현체
-    │   ├── cache                  # ProductCacheRepository
-    │   └── dto                    # ProductRequest, ProductResponse, SearchCondition
-    │
-    ├── cart                       # 3. 장바구니 도메인
-    │   ├── controller
-    │   ├── service
-    │   ├── repository
-    │   └── dto
-    │
-    ├── order                      # 4. 주문 및 결제 도메인
-    │   ├── controller
-    │   ├── service                # OrderService, PaymentService
-    │   ├── repository             # OrderRepository, PaymentRepository
-    │   └── dto
-    │
-    ├── coupon                     # 5. 프로모션 및 쿠폰 도메인
-    │   ├── controller             # CouponController, AdminCouponController
-    │   ├── service                # CouponService, CouponIssueService
-    │   ├── repository             # CouponRepository, MemberCouponRepository
-    │   ├── aop                    # @DistributedLock, DistributedLockAspect
-    │   └── dto
-    │
-    ├── refund                     # 6. 환불 도메인
-    │   ├── controller
-    │   ├── service                # RefundService
-    │   └── repository
-    │
-    ├── webhook                    # 7. PortOne 외부 연동 웹훅 도메인
-    │   ├── controller             # WebhookController
-    │   └── service                # WebhookIdempotencyService
-    │
-    └── chat                       # 8. 실시간 채팅 도메인
-        ├── controller             # ChatRoomController, ChatStompController
-        ├── service                # ChatService
-        ├── repository             # ChatRoomRepository, ChatMessageRepository
-        └── dto
+└── test
+    ├── java/com/example/thetunais4joteamproject/
+    │   ├── domain                         # 도메인별 단위/통합 테스트
+    │   │   ├── chat                       # Pub/Sub, 상태 변화 테스트
+    │   │   ├── coupon
+    │   │   ├── infra
+    │   │   ├── order
+    │   │   ├── payment
+    │   │   ├── product
+    │   │   └── user                       # 로그인/JWT 테스트
+    │   └── global                         # 보안 설정/JWT 필터 테스트
+    └── k6                                # 채팅 메시지 복구 성능 테스트 스크립트
 ```
 
 ## API 요약
