@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.example.thetunais4joteamproject.domain.cart.entity.CartItem;
 import com.example.thetunais4joteamproject.domain.cart.service.CartService;
+import com.example.thetunais4joteamproject.domain.coupon.service.CouponService;
 import com.example.thetunais4joteamproject.domain.order.dto.CancelOrderResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateCartOrderRequest;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateDirectOrderRequest;
@@ -35,7 +36,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OrderFacade {
 
-	private static final int DEFAULT_DISCOUNT_PRICE = 0;
 	private static final int DEFAULT_DELIVERY_PRICE = 3000;
 	private static final int PAYMENT_PENDING_EXPIRATION_MINUTES = 10;
 
@@ -44,18 +44,26 @@ public class OrderFacade {
 	private final PaymentCommandService paymentCommandService;
 	private final MemberRepository memberRepository;
 	private final ProductOptionRepository productOptionRepository;
+	private final CouponService couponService;
 
 	// 주문 생성 전 장바구니 상품 기준으로 결제 예정 금액을 미리 계산합니다.
 	@Transactional(readOnly = true)
 	public OrderPreviewResponse previewOrder(Long memberId, List<Long> cartItemIds) {
+		return previewOrder(memberId, cartItemIds, null);
+	}
+
+	// 주문 생성 전 장바구니 상품과 선택한 사용자 쿠폰 기준으로 결제 예정 금액을 미리 계산합니다.
+	@Transactional(readOnly = true)
+	public OrderPreviewResponse previewOrder(Long memberId, List<Long> cartItemIds, Long memberCouponId) {
 		validateMemberExists(memberId);
 
 		List<Long> previewCartItemIds = getCartItemIds(cartItemIds);
 		List<CartItem> cartItems = cartService.getPreviewItems(memberId, previewCartItemIds);
 		List<OrderPreviewItemResponse> items = getOrderPreviewItems(cartItems);
+		int orderPrice = calculateCartOrderPrice(cartItems);
+		int discountPrice = couponService.calculateDiscountPrice(memberId, memberCouponId, orderPrice);
 
-		// 쿠폰 도메인이 아직 구현되지 않았으므로 할인 금액은 0원, 배송비는 기본 정책인 3000원을 적용합니다.
-		return OrderPreviewResponse.of(items, DEFAULT_DISCOUNT_PRICE, DEFAULT_DELIVERY_PRICE);
+		return OrderPreviewResponse.of(items, discountPrice, DEFAULT_DELIVERY_PRICE);
 	}
 
 	// 장바구니 상품 기준으로 주문과 결제 대기 데이터를 같은 트랜잭션에서 생성합니다.
@@ -69,12 +77,15 @@ public class OrderFacade {
 		decreaseCartItemStock(cartItems);
 
 		int orderPrice = calculateCartOrderPrice(cartItems);
-		int totalAmount = orderPrice - DEFAULT_DISCOUNT_PRICE + DEFAULT_DELIVERY_PRICE;
+		Long memberCouponId = getMemberCouponId(request);
+		int discountPrice = couponService.calculateDiscountPrice(memberId, memberCouponId, orderPrice);
+		int totalAmount = orderPrice - discountPrice + DEFAULT_DELIVERY_PRICE;
 
-		Order order = orderService.createOrder(
+		Order order = createOrder(
 			member,
+			memberCouponId,
 			orderPrice,
-			DEFAULT_DISCOUNT_PRICE,
+			discountPrice,
 			DEFAULT_DELIVERY_PRICE,
 			totalAmount
 		);
@@ -99,7 +110,12 @@ public class OrderFacade {
 		List<ProductOption> productOptions = List.of(productOption);
 		List<Integer> quantities = List.of(request.quantity());
 
-		return createOrderAndPayment(member, productOptions, quantities);
+		return createOrderAndPayment(
+			member,
+			request.memberCouponId(),
+			productOptions,
+			quantities
+		);
 	}
 
 	// 주문 취소 시 주문 생성 때 차감한 재고와 결제 대기 상태를 함께 되돌립니다.
@@ -157,18 +173,21 @@ public class OrderFacade {
 
 	private CreateOrderResponse createOrderAndPayment(
 		Member member,
+		Long memberCouponId,
 		List<ProductOption> productOptions,
 		List<Integer> quantities
 	) {
 		decreaseProductOptionStock(productOptions, quantities);
 
 		int orderPrice = calculateOrderPrice(productOptions, quantities);
-		int totalAmount = orderPrice - DEFAULT_DISCOUNT_PRICE + DEFAULT_DELIVERY_PRICE;
+		int discountPrice = couponService.calculateDiscountPrice(member.getId(), memberCouponId, orderPrice);
+		int totalAmount = orderPrice - discountPrice + DEFAULT_DELIVERY_PRICE;
 
-		Order order = orderService.createOrder(
+		Order order = createOrder(
 			member,
+			memberCouponId,
 			orderPrice,
-			DEFAULT_DISCOUNT_PRICE,
+			discountPrice,
 			DEFAULT_DELIVERY_PRICE,
 			totalAmount
 		);
@@ -177,6 +196,34 @@ public class OrderFacade {
 		Payment payment = paymentCommandService.createPayment(order);
 
 		return CreateOrderResponse.of(order, payment, orderItems);
+	}
+
+	private Order createOrder(
+		Member member,
+		Long memberCouponId,
+		Integer orderPrice,
+		Integer discountPrice,
+		Integer deliveryPrice,
+		Integer totalAmount
+	) {
+		if (memberCouponId == null) {
+			return orderService.createOrder(
+				member,
+				orderPrice,
+				discountPrice,
+				deliveryPrice,
+				totalAmount
+			);
+		}
+
+		return orderService.createOrder(
+			member,
+			memberCouponId,
+			orderPrice,
+			discountPrice,
+			deliveryPrice,
+			totalAmount
+		);
 	}
 
 	private void expirePendingOrder(Order order) {
@@ -284,5 +331,9 @@ public class OrderFacade {
 		return request != null && request.cartItemIds() != null
 			? request.cartItemIds()
 			: List.of();
+	}
+
+	private Long getMemberCouponId(CreateCartOrderRequest request) {
+		return request == null ? null : request.memberCouponId();
 	}
 }
