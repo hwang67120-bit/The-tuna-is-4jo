@@ -30,6 +30,7 @@ public class OrderService {
 	// 주문 생성 시점의 금액을 스냅샷으로 저장하고 결제 대기 상태 주문을 생성합니다.
 	public Order createOrder(
 		Member member,
+		Long memberCouponId,
 		Integer orderPrice,
 		Integer discountPrice,
 		Integer deliveryPrice,
@@ -38,6 +39,7 @@ public class OrderService {
 		Order order = Order.of(
 			member,
 			createOrderNumber(),
+			memberCouponId,
 			orderPrice,
 			discountPrice,
 			deliveryPrice,
@@ -45,6 +47,23 @@ public class OrderService {
 		);
 
 		return orderRepository.save(order);
+	}
+
+	public Order createOrder(
+		Member member,
+		Integer orderPrice,
+		Integer discountPrice,
+		Integer deliveryPrice,
+		Integer totalAmount
+	) {
+		return createOrder(
+			member,
+			null,
+			orderPrice,
+			discountPrice,
+			deliveryPrice,
+			totalAmount
+		);
 	}
 
 	// 바로 주문 상품은 상품 옵션과 요청 수량을 기준으로 주문 상품을 생성합니다.

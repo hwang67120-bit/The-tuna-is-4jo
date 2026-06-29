@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.thetunais4joteamproject.domain.cart.service.CartService;
+import com.example.thetunais4joteamproject.domain.coupon.dto.UseCouponRequest;
+import com.example.thetunais4joteamproject.domain.coupon.service.CouponService;
 import com.example.thetunais4joteamproject.domain.order.entity.Order;
 import com.example.thetunais4joteamproject.domain.order.entity.OrderItem;
 import com.example.thetunais4joteamproject.domain.order.repository.OrderRepository;
@@ -35,6 +37,7 @@ public class PaymentFacade {
 	private final OrderRepository orderRepository;
 	private final OrderService orderService;
 	private final CartService cartService;
+	private final CouponService couponService;
 
 	// order 조회
 	// order 소유권 검증 호출
@@ -76,7 +79,7 @@ public class PaymentFacade {
 		validatePgPaymentCompleted(payment, pgResponse);
 		validatePgAmount(payment, pgResponse);
 
-		// TODO: 쿠폰 사용 호출
+		useCoupon(memberId, order);
 
 		paymentCommandService.completePayment(payment);
 		order.confirm();
@@ -137,5 +140,14 @@ public class PaymentFacade {
 		List<Long> cartItemIds = orderService.getCartItemIds(orderItems);
 
 		cartService.deleteOrderedCartItems(memberId, cartItemIds);
+	}
+
+	private void useCoupon(Long memberId, Order order) {
+		if (order.getMemberCouponId() != null) {
+			couponService.useCoupon(
+				memberId,
+				new UseCouponRequest(order.getMemberCouponId(), order.getOrderPrice())
+			);
+		}
 	}
 }

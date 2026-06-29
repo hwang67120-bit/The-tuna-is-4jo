@@ -42,18 +42,32 @@ public class MemberCoupon extends BaseEntity {
 
     // 비즈니스 메서드: 쿠폰 사용 확정
     public void use(int orderPrice) {
+        validateUsable(orderPrice);
+
+        this.couponStatus = MemberCouponStatus.USED;
+        this.usedAt = LocalDateTime.now();
+    }
+
+    public int calculateDiscountPrice(int orderPrice) {
+        validateUsable(orderPrice);
+
+        return this.coupon.getDiscountPrice();
+    }
+
+    private void validateUsable(int orderPrice) {
         if (this.couponStatus != MemberCouponStatus.UNUSED) {
             throw new IllegalArgumentException("이미 사용되었거나 만료된 쿠폰입니다.");
         }
         if (orderPrice < this.coupon.getMinOrderPrice()) {
             throw new IllegalArgumentException("주문 금액이 쿠폰의 최소 주문 금액보다 적습니다.");
         }
+        if (this.coupon.getDiscountPrice() > orderPrice) {
+            throw new IllegalArgumentException("쿠폰 할인 금액이 주문 금액보다 클 수 없습니다.");
+        }
         if (LocalDateTime.now().isAfter(this.coupon.getExpirationAt())) {
             this.couponStatus = MemberCouponStatus.EXPIRED;
             throw new IllegalArgumentException("만료된 쿠폰입니다.");
         }
-        this.couponStatus = MemberCouponStatus.USED;
-        this.usedAt = LocalDateTime.now();
     }
 
     // 비즈니스 메서드: 주문 취소 시 복구

@@ -39,11 +39,11 @@ public class CouponService {
 
         // 정적 팩토리 메서드를 통해 엔티티 객체를 조립합니다.
         Coupon coupon = Coupon.of(
-                request.name(),
-                request.discountPrice(),
-                request.minOrderPrice(),
-                request.totalQuantity(),
-                request.expirationAt()
+            request.name(),
+            request.discountPrice(),
+            request.minOrderPrice(),
+            request.totalQuantity(),
+            request.expirationAt()
         );
 
         // 데이터베이스에 최종 영속화합니다.
@@ -60,7 +60,7 @@ public class CouponService {
     public Long issueCoupon(Long memberId, IssueCouponRequest request) {
         // 1. 쿠폰 원판 정책 존재 여부 확인
         Coupon coupon = couponRepository.findById(request.couponId())
-                .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
+            .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
 
         // 2. 쿠폰 유효기간 만료 여부 확인
         if (LocalDateTime.now().isAfter(coupon.getExpirationAt())) {
@@ -95,13 +95,41 @@ public class CouponService {
     }
 
     /**
+     * [주문 연동] 선택한 사용자 쿠폰 검증 및 할인 금액 계산
+     */
+    public int calculateDiscountPrice(Long memberId, Long memberCouponId, int orderPrice) {
+        if (memberCouponId == null) {
+            return 0;
+        }
+
+        MemberCoupon memberCoupon = memberCouponRepository.findById(memberCouponId)
+            .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
+
+        if (!memberCoupon.getMemberId().equals(memberId)) {
+            throw BusinessException.from(ErrorCode.UNAUTHORIZED);
+        }
+
+        try {
+            return memberCoupon.calculateDiscountPrice(orderPrice);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("최소 주문 금액")) {
+                throw BusinessException.from(ErrorCode.INVALID_COUPON_ORDER_PRICE);
+            }
+            if (e.getMessage().contains("쿠폰 할인 금액")) {
+                throw BusinessException.from(ErrorCode.INVALID_COUPON_DISCOUNT_PRICE);
+            }
+            throw BusinessException.from(ErrorCode.COUPON_EXPIRED);
+        }
+    }
+
+    /**
      * [주문 연동] 결제 진행 시 쿠폰 사용 처리
      */
     @Transactional
     public void useCoupon(Long memberId, UseCouponRequest request) {
         // 1. 회원의 쿠폰함에 해당 쿠폰이 존재하는지 조회 (원판 Coupon 정보도 Lazy로 필요할 때 조인되도록 findById 활용)
         MemberCoupon memberCoupon = memberCouponRepository.findById(request.memberCouponId())
-                .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
+            .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
 
         // 2. 소유권 방어선: 해당 쿠폰이 요청을 보낸 로그인 회원의 쿠폰이 맞는지 정밀 검증
         if (!memberCoupon.getMemberId().equals(memberId)) {
@@ -117,6 +145,9 @@ public class CouponService {
             if (e.getMessage().contains("최소 주문 금액")) {
                 throw BusinessException.from(ErrorCode.INVALID_COUPON_ORDER_PRICE);
             }
+            if (e.getMessage().contains("쿠폰 할인 금액")) {
+                throw BusinessException.from(ErrorCode.INVALID_COUPON_DISCOUNT_PRICE);
+            }
             throw BusinessException.from(ErrorCode.COUPON_EXPIRED);
         }
     }
@@ -128,7 +159,7 @@ public class CouponService {
     public void restoreCoupon(Long memberId, RestoreCouponRequest request) {
         // 1. 회원의 쿠폰함 존재 여부 검증
         MemberCoupon memberCoupon = memberCouponRepository.findById(request.memberCouponId())
-                .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
+            .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
 
         // 2. 소유권 방어선: 타인의 쿠폰 복구 요청 원천 차단
         if (!memberCoupon.getMemberId().equals(memberId)) {

@@ -31,6 +31,8 @@ public class Order extends BaseEntity {
     @Column(nullable = false)
     private Integer discountPrice;
 
+    private Long memberCouponId;
+
     @Column(nullable = false)
     private Integer deliveryPrice;
 
@@ -44,6 +46,7 @@ public class Order extends BaseEntity {
     private Order(
         Member member,
         String orderNumber,
+        Long memberCouponId,
         Integer orderPrice,
         Integer discountPrice,
         Integer deliveryPrice,
@@ -51,6 +54,7 @@ public class Order extends BaseEntity {
     ) {
         this.member = member;
         this.orderNumber = orderNumber;
+        this.memberCouponId = memberCouponId;
         this.orderPrice = orderPrice;
         this.discountPrice = discountPrice;
         this.deliveryPrice = deliveryPrice;
@@ -61,12 +65,24 @@ public class Order extends BaseEntity {
     public static Order of(
         Member member,
         String orderNumber,
+        Long memberCouponId,
         Integer orderPrice,
         Integer discountPrice,
         Integer deliveryPrice,
         Integer totalAmount
     ) {
-        return new Order(member, orderNumber, orderPrice, discountPrice, deliveryPrice, totalAmount);
+        return new Order(member, orderNumber, memberCouponId, orderPrice, discountPrice, deliveryPrice, totalAmount);
+    }
+
+    public static Order of(
+        Member member,
+        String orderNumber,
+        Integer orderPrice,
+        Integer discountPrice,
+        Integer deliveryPrice,
+        Integer totalAmount
+    ) {
+        return new Order(member, orderNumber, null, orderPrice, discountPrice, deliveryPrice, totalAmount);
     }
 
     public void changeStatus(OrderStatus status) {

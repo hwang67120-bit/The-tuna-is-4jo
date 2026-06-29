@@ -16,6 +16,7 @@ import java.util.Optional;
 
 import com.example.thetunais4joteamproject.domain.cart.entity.CartItem;
 import com.example.thetunais4joteamproject.domain.cart.service.CartService;
+import com.example.thetunais4joteamproject.domain.coupon.service.CouponService;
 import com.example.thetunais4joteamproject.domain.order.dto.CancelOrderResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateCartOrderRequest;
 import com.example.thetunais4joteamproject.domain.order.dto.CreateDirectOrderRequest;
@@ -49,13 +50,15 @@ class OrderFacadeTest {
 		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+		CouponService couponService = mock(CouponService.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
 			orderService,
 			paymentCommandService,
 			memberRepository,
-			productOptionRepository
+			productOptionRepository,
+			couponService
 		);
 
 		Long memberId = 1L;
@@ -109,13 +112,15 @@ class OrderFacadeTest {
 		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+		CouponService couponService = mock(CouponService.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
 			orderService,
 			paymentCommandService,
 			memberRepository,
-			productOptionRepository
+			productOptionRepository,
+			couponService
 		);
 
 		Long memberId = 1L;
@@ -159,19 +164,21 @@ class OrderFacadeTest {
 		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+		CouponService couponService = mock(CouponService.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
 			orderService,
 			paymentCommandService,
 			memberRepository,
-			productOptionRepository
+			productOptionRepository,
+			couponService
 		);
 
 		Long memberId = 1L;
 		Member member = mock(Member.class);
 		List<Long> cartItemIds = List.of(1L);
-		CreateCartOrderRequest request = new CreateCartOrderRequest(cartItemIds);
+		CreateCartOrderRequest request = new CreateCartOrderRequest(cartItemIds, null);
 
 		CartItem cartItem = createCartItem(
 			1L,
@@ -223,6 +230,76 @@ class OrderFacadeTest {
 	}
 
 	@Test
+	void 사용자_쿠폰을_선택하면_장바구니_주문에_할인금액을_적용한다() {
+		// given
+		CartService cartService = mock(CartService.class);
+		OrderService orderService = mock(OrderService.class);
+		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
+		MemberRepository memberRepository = mock(MemberRepository.class);
+		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+		CouponService couponService = mock(CouponService.class);
+
+		OrderFacade orderFacade = new OrderFacade(
+			cartService,
+			orderService,
+			paymentCommandService,
+			memberRepository,
+			productOptionRepository,
+			couponService
+		);
+
+		Long memberId = 1L;
+		Long memberCouponId = 30L;
+		Member member = mock(Member.class);
+		List<Long> cartItemIds = List.of(1L);
+		CreateCartOrderRequest request = new CreateCartOrderRequest(cartItemIds, memberCouponId);
+
+		CartItem cartItem = createCartItem(
+			1L,
+			100L,
+			"테스트 상품",
+			1000L,
+			"XL",
+			10000,
+			1500,
+			2
+		);
+
+		Order order = createOrder(10L, member, "ORD-1234567890", 23000, 5000, 3000, 21000);
+		OrderItem orderItem = createOrderItem(
+			100L,
+			order,
+			cartItem.getProductOption(),
+			1L,
+			100L,
+			"테스트 상품",
+			"XL",
+			11500,
+			2
+		);
+		Payment payment = createPayment(20L, order, "pay-123", 21000);
+
+		when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+		when(cartService.getPreviewItems(memberId, cartItemIds)).thenReturn(List.of(cartItem));
+		when(couponService.calculateDiscountPrice(memberId, memberCouponId, 23000)).thenReturn(5000);
+		when(orderService.createOrder(member, memberCouponId, 23000, 5000, 3000, 21000)).thenReturn(order);
+		when(orderService.createOrderItemsFromCartItems(order, List.of(cartItem))).thenReturn(List.of(orderItem));
+		when(paymentCommandService.createPayment(order)).thenReturn(payment);
+
+		// when
+		CreateOrderResponse response = orderFacade.createCartOrder(memberId, request);
+
+		// then
+		assertThat(response.orderPrice()).isEqualTo(23000);
+		assertThat(response.discountPrice()).isEqualTo(5000);
+		assertThat(response.deliveryPrice()).isEqualTo(3000);
+		assertThat(response.totalAmount()).isEqualTo(21000);
+
+		verify(couponService).calculateDiscountPrice(memberId, memberCouponId, 23000);
+		verify(orderService).createOrder(member, memberCouponId, 23000, 5000, 3000, 21000);
+	}
+
+	@Test
 	void 결제대기_주문이_있으면_장바구니_주문을_다시_생성하지_않는다() {
 		// given
 		CartService cartService = mock(CartService.class);
@@ -230,19 +307,21 @@ class OrderFacadeTest {
 		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+		CouponService couponService = mock(CouponService.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
 			orderService,
 			paymentCommandService,
 			memberRepository,
-			productOptionRepository
+			productOptionRepository,
+			couponService
 		);
 
 		Long memberId = 1L;
 		Member member = mock(Member.class);
 		List<Long> cartItemIds = List.of(1L);
-		CreateCartOrderRequest request = new CreateCartOrderRequest(cartItemIds);
+		CreateCartOrderRequest request = new CreateCartOrderRequest(cartItemIds, null);
 		CartItem cartItem = createCartItem(
 			1L,
 			100L,
@@ -276,18 +355,20 @@ class OrderFacadeTest {
 		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+		CouponService couponService = mock(CouponService.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
 			orderService,
 			paymentCommandService,
 			memberRepository,
-			productOptionRepository
+			productOptionRepository,
+			couponService
 		);
 
 		Long memberId = 1L;
 		Member member = mock(Member.class);
-		CreateDirectOrderRequest request = new CreateDirectOrderRequest(1000L, 2);
+		CreateDirectOrderRequest request = new CreateDirectOrderRequest(1000L, 2, null);
 		ProductOption productOption = createProductOption(
 			1000L,
 			100L,
@@ -340,13 +421,15 @@ class OrderFacadeTest {
 		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+		CouponService couponService = mock(CouponService.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
 			orderService,
 			paymentCommandService,
 			memberRepository,
-			productOptionRepository
+			productOptionRepository,
+			couponService
 		);
 
 		Long memberId = 1L;
@@ -399,13 +482,15 @@ class OrderFacadeTest {
 		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+		CouponService couponService = mock(CouponService.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
 			orderService,
 			paymentCommandService,
 			memberRepository,
-			productOptionRepository
+			productOptionRepository,
+			couponService
 		);
 
 		Long memberId = 1L;
@@ -452,13 +537,15 @@ class OrderFacadeTest {
 		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+		CouponService couponService = mock(CouponService.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
 			orderService,
 			paymentCommandService,
 			memberRepository,
-			productOptionRepository
+			productOptionRepository,
+			couponService
 		);
 
 		Member member = mock(Member.class);
@@ -508,13 +595,15 @@ class OrderFacadeTest {
 		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+		CouponService couponService = mock(CouponService.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
 			orderService,
 			paymentCommandService,
 			memberRepository,
-			productOptionRepository
+			productOptionRepository,
+			couponService
 		);
 
 		Long memberId = 1L;
@@ -546,13 +635,15 @@ class OrderFacadeTest {
 		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+		CouponService couponService = mock(CouponService.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
 			orderService,
 			paymentCommandService,
 			memberRepository,
-			productOptionRepository
+			productOptionRepository,
+			couponService
 		);
 
 		Long memberId = 1L;
