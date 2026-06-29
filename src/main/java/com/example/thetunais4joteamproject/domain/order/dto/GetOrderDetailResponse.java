@@ -16,6 +16,7 @@ public record GetOrderDetailResponse(
 	Integer totalAmount,
 	String orderStatus,
 	LocalDateTime orderedAt,
+	DeliveryAddressResponse deliveryAddress,
 	List<GetOrderItemResponse> items
 ) {
 
@@ -35,6 +36,7 @@ public record GetOrderDetailResponse(
 			order.getTotalAmount(),
 			order.getStatus().name(),
 			order.getCreatedAt(),
+			DeliveryAddressResponse.from(order.getDeliveryAddress()),
 			items
 		);
 	}

@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.thetunais4joteamproject.domain.address.entity.Address;
+import com.example.thetunais4joteamproject.domain.address.repository.AddressRepository;
 import com.example.thetunais4joteamproject.domain.cart.entity.CartItem;
 import com.example.thetunais4joteamproject.domain.cart.service.CartService;
 import com.example.thetunais4joteamproject.domain.coupon.service.CouponService;
@@ -15,6 +17,7 @@ import com.example.thetunais4joteamproject.domain.order.dto.GetOrderDetailRespon
 import com.example.thetunais4joteamproject.domain.order.dto.GetOrderResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.OrderPreviewItemResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.OrderPreviewResponse;
+import com.example.thetunais4joteamproject.domain.order.entity.DeliveryAddress;
 import com.example.thetunais4joteamproject.domain.order.entity.Order;
 import com.example.thetunais4joteamproject.domain.order.entity.OrderItem;
 import com.example.thetunais4joteamproject.domain.order.service.OrderService;
@@ -45,14 +48,13 @@ public class OrderFacade {
 	private final MemberRepository memberRepository;
 	private final ProductOptionRepository productOptionRepository;
 	private final CouponService couponService;
+	private final AddressRepository addressRepository;
 
-	// 주문 생성 전 장바구니 상품 기준으로 결제 예정 금액을 미리 계산합니다.
 	@Transactional(readOnly = true)
 	public OrderPreviewResponse previewOrder(Long memberId, List<Long> cartItemIds) {
 		return previewOrder(memberId, cartItemIds, null);
 	}
 
-	// 주문 생성 전 장바구니 상품과 선택한 사용자 쿠폰 기준으로 결제 예정 금액을 미리 계산합니다.
 	@Transactional(readOnly = true)
 	public OrderPreviewResponse previewOrder(Long memberId, List<Long> cartItemIds, Long memberCouponId) {
 		validateMemberExists(memberId);
@@ -66,7 +68,6 @@ public class OrderFacade {
 		return OrderPreviewResponse.of(items, discountPrice, DEFAULT_DELIVERY_PRICE);
 	}
 
-	// 장바구니 상품 기준으로 주문과 결제 대기 데이터를 같은 트랜잭션에서 생성합니다.
 	@Transactional
 	public CreateOrderResponse createCartOrder(Long memberId, CreateCartOrderRequest request) {
 		Member member = getMember(memberId);
@@ -74,6 +75,7 @@ public class OrderFacade {
 		List<CartItem> cartItems = cartService.getPreviewItems(memberId, cartItemIds);
 
 		orderService.validateNoPendingCartOrder(memberId, cartItems);
+		DeliveryAddress deliveryAddress = getDeliveryAddress(memberId, getMemberAddressId(request));
 		decreaseCartItemStock(cartItems);
 
 		int orderPrice = calculateCartOrderPrice(cartItems);
@@ -87,17 +89,16 @@ public class OrderFacade {
 			orderPrice,
 			discountPrice,
 			DEFAULT_DELIVERY_PRICE,
-			totalAmount
+			totalAmount,
+			deliveryAddress
 		);
 
 		List<OrderItem> orderItems = orderService.createOrderItemsFromCartItems(order, cartItems);
 		Payment payment = paymentCommandService.createPayment(order);
 
-		// 결제 확정 전에는 장바구니 상품을 삭제하지 않고, 결제 완료 처리 시점에 삭제합니다.
 		return CreateOrderResponse.of(order, payment, orderItems);
 	}
 
-	// 바로 주문은 장바구니를 거치지 않고 상품 옵션과 요청 수량으로 주문을 생성합니다.
 	@Transactional
 	public CreateOrderResponse createDirectOrder(Long memberId, CreateDirectOrderRequest request) {
 		Member member = getMember(memberId);
@@ -109,16 +110,17 @@ public class OrderFacade {
 
 		List<ProductOption> productOptions = List.of(productOption);
 		List<Integer> quantities = List.of(request.quantity());
+		DeliveryAddress deliveryAddress = getDeliveryAddress(memberId, request.memberAddressId());
 
 		return createOrderAndPayment(
 			member,
 			request.memberCouponId(),
+			deliveryAddress,
 			productOptions,
 			quantities
 		);
 	}
 
-	// 주문 취소 시 주문 생성 때 차감한 재고와 결제 대기 상태를 함께 되돌립니다.
 	@Transactional
 	public CancelOrderResponse cancelOrder(Long memberId, Long orderId) {
 		Order order = orderService.getOrder(memberId, orderId);
@@ -133,7 +135,6 @@ public class OrderFacade {
 		return CancelOrderResponse.of(order, payment);
 	}
 
-	// 결제 대기 시간이 지난 주문을 만료 처리하고 주문 생성 시 차감했던 재고를 원복합니다.
 	@Transactional
 	public void expirePendingOrders() {
 		LocalDateTime expiredAt = LocalDateTime.now()
@@ -145,7 +146,6 @@ public class OrderFacade {
 		}
 	}
 
-	// 주문 내역은 결제 대기, 결제 완료, 취소 주문을 모두 조회합니다.
 	@Transactional(readOnly = true)
 	public List<GetOrderResponse> getAll(Long memberId) {
 		validateMemberExists(memberId);
@@ -160,7 +160,6 @@ public class OrderFacade {
 		return responses;
 	}
 
-	// 주문 상세 내역은 로그인 회원의 주문이면 모두 조회합니다.
 	@Transactional(readOnly = true)
 	public GetOrderDetailResponse getOne(Long memberId, Long orderId) {
 		validateMemberExists(memberId);
@@ -174,6 +173,7 @@ public class OrderFacade {
 	private CreateOrderResponse createOrderAndPayment(
 		Member member,
 		Long memberCouponId,
+		DeliveryAddress deliveryAddress,
 		List<ProductOption> productOptions,
 		List<Integer> quantities
 	) {
@@ -189,7 +189,8 @@ public class OrderFacade {
 			orderPrice,
 			discountPrice,
 			DEFAULT_DELIVERY_PRICE,
-			totalAmount
+			totalAmount,
+			deliveryAddress
 		);
 
 		List<OrderItem> orderItems = orderService.createOrderItems(order, productOptions, quantities);
@@ -204,7 +205,8 @@ public class OrderFacade {
 		Integer orderPrice,
 		Integer discountPrice,
 		Integer deliveryPrice,
-		Integer totalAmount
+		Integer totalAmount,
+		DeliveryAddress deliveryAddress
 	) {
 		if (memberCouponId == null) {
 			return orderService.createOrder(
@@ -212,7 +214,8 @@ public class OrderFacade {
 				orderPrice,
 				discountPrice,
 				deliveryPrice,
-				totalAmount
+				totalAmount,
+				deliveryAddress
 			);
 		}
 
@@ -222,8 +225,19 @@ public class OrderFacade {
 			orderPrice,
 			discountPrice,
 			deliveryPrice,
-			totalAmount
+			totalAmount,
+			deliveryAddress
 		);
+	}
+
+	private DeliveryAddress getDeliveryAddress(Long memberId, Long memberAddressId) {
+		Address address = memberAddressId != null
+			? addressRepository.findByIdAndMemberId(memberAddressId, memberId)
+				.orElseThrow(() -> BusinessException.from(ErrorCode.ADDRESS_NOT_FOUND))
+			: addressRepository.findFirstByMemberIdAndDefaultAddressTrue(memberId)
+				.orElseThrow(() -> BusinessException.from(ErrorCode.ADDRESS_NOT_FOUND));
+
+		return DeliveryAddress.from(address);
 	}
 
 	private void expirePendingOrder(Order order) {
@@ -261,7 +275,6 @@ public class OrderFacade {
 
 	private void decreaseCartItemStock(List<CartItem> cartItems) {
 		for (CartItem cartItem : cartItems) {
-			// 주문 생성 시점에 재고를 먼저 차감하고, 이후 예외가 발생하면 트랜잭션으로 함께 롤백됩니다.
 			cartItem.getProductOption().decreaseStock(cartItem.getQuantity());
 		}
 	}
@@ -271,14 +284,12 @@ public class OrderFacade {
 		List<Integer> quantities
 	) {
 		for (int i = 0; i < productOptions.size(); i++) {
-			// 바로 주문은 장바구니 수량이 없으므로 요청 수량을 기준으로 재고를 차감합니다.
 			productOptions.get(i).decreaseStock(quantities.get(i));
 		}
 	}
 
 	private void restoreOrderItemStock(List<OrderItem> orderItems) {
 		for (OrderItem orderItem : orderItems) {
-			// 주문 생성 시 차감했던 재고를 주문 취소 시점에 다시 원복합니다.
 			orderItem.getProductOption().increaseStock(orderItem.getQuantity());
 		}
 	}
@@ -335,5 +346,9 @@ public class OrderFacade {
 
 	private Long getMemberCouponId(CreateCartOrderRequest request) {
 		return request == null ? null : request.memberCouponId();
+	}
+
+	private Long getMemberAddressId(CreateCartOrderRequest request) {
+		return request == null ? null : request.memberAddressId();
 	}
 }
