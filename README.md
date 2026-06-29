@@ -214,18 +214,20 @@ src/
 | 관계 | 설명 |
 | --- | --- |
 | `MEMBER 1:1 CART` | 회원은 하나의 장바구니를 가집니다. |
-| `MEMBER 1:N ORDERS` | 회원은 여러 주문을 생성할 수 있습니다. |
+| `MEMBER 1:N PRODUCT` | 회원은 여러 상품을 등록할 수 있습니다. |
+| `CATEGORY 1:N PRODUCT` | 카테고리는 여러 상품을 포함합니다. |
+| `PRODUCT 1:N PRODUCT_OPTION` | 상품은 여러 옵션을 가질 수 있습니다. |
 | `CART 1:N CART_ITEM` | 장바구니는 여러 장바구니 상품을 포함합니다. |
-| `PRODUCT 1:N CART_ITEM` | 상품은 여러 장바구니 상품에서 참조됩니다. |
+| `PRODUCT_OPTION 1:N CART_ITEM` | 장바구니 상품은 상품 옵션을 참조합니다. |
+| `MEMBER 1:N ORDERS` | 회원은 여러 주문을 생성할 수 있습니다. |
 | `ORDERS 1:N ORDER_ITEM` | 주문은 여러 주문 상품을 포함합니다. |
-| `PRODUCT 1:N ORDER_ITEM` | 주문 상품은 주문 당시 상품 정보를 참조합니다. |
-| `COUPON 1:N MEMBER_COUPON` | 쿠폰은 회원에게 발급됩니다. |
-| `MEMBER_COUPON 0..1:0..1 ORDERS` | 발급 쿠폰은 주문에 선택적으로 적용됩니다. |
-| `ORDERS 1:0..1 PAYMENT` | 주문은 하나의 결제 정보와 연결됩니다. |
-| `PAYMENT 1:N REFUND` | 결제는 여러 환불 요청과 연결될 수 있습니다. |
-| `PAYMENT 0..1:N WEBHOOK_EVENT` | 결제는 PortOne 웹훅 이벤트를 발생시킬 수 있습니다. |
+| `PRODUCT_OPTION 1:N ORDER_ITEM` | 주문 상품은 주문 당시 상품 옵션을 참조합니다. |
+| `ORDERS 1:1 PAYMENT` | 주문은 하나의 결제 정보와 연결됩니다. |
+| `COUPONS 1:N MEMBER_COUPONS` | 쿠폰은 여러 회원에게 발급될 수 있습니다. |
+| `MEMBER 1:N MEMBER_COUPONS` | 회원은 여러 쿠폰을 보유할 수 있습니다. |
 | `MEMBER 1:N CHAT_ROOM` | 회원은 문의 채팅방을 개설할 수 있습니다. |
 | `CHAT_ROOM 1:N CHAT_MESSAGE` | 채팅방은 여러 메시지를 기록합니다. |
+| `WEBHOOK_EVENTS` | PortOne 웹훅 이벤트 처리 상태를 기록합니다. |
 
 ### 주요 테이블 필드
 
@@ -242,17 +244,39 @@ src/
 | created_at | DATETIME |  | 생성일시 |
 | updated_at | DATETIME |  | 수정일시 |
 
+#### CATEGORY
+
+| 필드명 | 타입 | 키 | 설명 |
+| --- | --- | --- | --- |
+| id | BIGINT | PK | 카테고리 ID |
+| name | VARCHAR(50) |  | 카테고리명 |
+| created_at | DATETIME |  | 생성일시 |
+| updated_at | DATETIME |  | 수정일시 |
+
 #### PRODUCT
 
 | 필드명 | 타입 | 키 | 설명 |
 | --- | --- | --- | --- |
 | id | BIGINT | PK | 상품 ID |
+| member_id | BIGINT | FK | 상품 등록 회원 ID |
 | category_id | BIGINT | FK | 카테고리 참조 |
 | name | VARCHAR(255) |  | 상품명 |
 | price | INTEGER |  | 기본 판매가 |
 | description | TEXT |  | 상품 설명 |
-| stock | INTEGER |  | 상품 재고 |
-| status | VARCHAR(20) |  | ON_SALE, DISCONTINUED |
+| status | VARCHAR(20) |  | ON_SALE, DISCONTINUED, DELETED |
+| created_at | DATETIME |  | 생성일시 |
+| updated_at | DATETIME |  | 수정일시 |
+
+#### PRODUCT_OPTION
+
+| 필드명 | 타입 | 키 | 설명 |
+| --- | --- | --- | --- |
+| id | BIGINT | PK | 상품 옵션 ID |
+| product_id | BIGINT | FK | 상품 참조 |
+| option_name | VARCHAR(100) |  | 옵션명 |
+| option_stock | INTEGER |  | 옵션 재고 |
+| additional_price | INTEGER |  | 추가 금액 |
+| status | VARCHAR(20) |  | ON_SALE, SOLDOUT, DISCONTINUED |
 | created_at | DATETIME |  | 생성일시 |
 | updated_at | DATETIME |  | 수정일시 |
 
@@ -261,7 +285,7 @@ src/
 | 필드명 | 타입 | 키 | 설명 |
 | --- | --- | --- | --- |
 | id | BIGINT | PK | 장바구니 ID |
-| member_id | BIGINT | FK | 회원 참조 |
+| member_id | BIGINT | FK, UK | 회원 참조 |
 | created_at | DATETIME |  | 생성일시 |
 | updated_at | DATETIME |  | 수정일시 |
 
@@ -271,7 +295,7 @@ src/
 | --- | --- | --- | --- |
 | id | BIGINT | PK | 장바구니 상품 ID |
 | cart_id | BIGINT | FK | 장바구니 참조 |
-| product_id | BIGINT | FK | 상품 참조 |
+| product_option_id | BIGINT | FK | 상품 옵션 참조 |
 | quantity | INTEGER |  | 수량 |
 | created_at | DATETIME |  | 생성일시 |
 | updated_at | DATETIME |  | 수정일시 |
@@ -282,13 +306,12 @@ src/
 | --- | --- | --- | --- |
 | id | BIGINT | PK | 주문 ID |
 | member_id | BIGINT | FK | 회원 참조 |
-| member_coupon_id | BIGINT | FK | 사용 발급쿠폰 참조, Nullable |
 | order_number | VARCHAR(50) | UK | 노출용 고유 주문번호 |
-| original_amount | INTEGER |  | 상품 총액 |
-| discount_amount | INTEGER |  | 쿠폰 할인 금액 |
-| payment_amount | INTEGER |  | 최종 결제 금액 |
-| status | VARCHAR(30) |  | PENDING, COMPLETED, CANCELED, REFUNDED |
-| canceled_at | DATETIME |  | 주문취소일시 |
+| order_price | INTEGER |  | 주문 상품 금액 |
+| discount_price | INTEGER |  | 할인 금액 |
+| delivery_price | INTEGER |  | 배송비 |
+| total_amount | INTEGER |  | 최종 결제 금액 |
+| status | VARCHAR(30) |  | PENDING_PAYMENT, CONFIRMED, CANCELED, EXPIRED |
 | created_at | DATETIME |  | 생성일시 |
 | updated_at | DATETIME |  | 수정일시 |
 
@@ -298,12 +321,14 @@ src/
 | --- | --- | --- | --- |
 | id | BIGINT | PK | 주문 상품 ID |
 | order_id | BIGINT | FK | 주문 참조 |
-| product_id | BIGINT | FK | 상품 참조 |
+| product_option_id | BIGINT | FK | 상품 옵션 참조 |
+| cart_item_id | BIGINT |  | 장바구니 상품 스냅샷 ID, Nullable |
+| product_id | BIGINT |  | 주문 당시 상품 ID 스냅샷 |
 | product_name | VARCHAR(255) |  | 주문 당시 상품명 스냅샷 |
-| original_price | INTEGER |  | 주문 당시 정상 가격 |
-| sale_price | INTEGER |  | 주문 당시 실제 판매 가격 |
+| option_name | VARCHAR(255) |  | 주문 당시 옵션명 스냅샷 |
+| unit_price | INTEGER |  | 주문 당시 단가 |
 | quantity | INTEGER |  | 수량 |
-| total_amount | INTEGER |  | 주문 상품 총액 |
+| total_price | INTEGER |  | 주문 상품 총액 |
 | created_at | DATETIME |  | 생성일시 |
 | updated_at | DATETIME |  | 수정일시 |
 
@@ -315,64 +340,36 @@ src/
 | order_id | BIGINT | FK, UK | 주문 참조 |
 | portone_payment_id | VARCHAR(50) | UK | PortOne 결제 식별자 |
 | requested_amount | INTEGER |  | 결제 요청 금액 |
-| paid_amount | INTEGER |  | PG 실제 결제 금액 |
-| payment_method | VARCHAR(20) |  | 결제 수단 |
-| status | VARCHAR(20) |  | PENDING, PAID, FAILED, REFUNDED |
+| pg_amount | INTEGER |  | PG 실제 결제 금액 |
+| status | VARCHAR(20) |  | PENDING, PAID, FAILED, CANCELED, REFUNDED |
 | paid_at | DATETIME |  | 결제 완료 일시, Nullable |
 | created_at | DATETIME |  | 생성일시 |
 | updated_at | DATETIME |  | 수정일시 |
 
-#### REFUND
-
-| 필드명 | 타입 | 키 | 설명 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK | 환불 ID |
-| payment_id | BIGINT | FK | 결제 참조 |
-| requester_id | BIGINT | FK | 요청 회원 참조 |
-| admin_id | BIGINT | FK | 처리 관리자 |
-| reason | TEXT |  | 환불 사유 |
-| rejection_reason | TEXT |  | 관리자 거절 사유, Nullable |
-| failure_reason | TEXT |  | 실패 사유, Nullable |
-| coupon_restored | BOOLEAN |  | 쿠폰 복구 여부 |
-| refund_amount | INTEGER |  | PG 환불 금액 |
-| portone_cancellation_id | VARCHAR(50) | UK | PortOne 취소 식별자 |
-| status | VARCHAR(20) |  | REQUESTED, REJECTED, COMPLETED, FAILED |
-| requested_at | DATETIME |  | 요청 일시 |
-| processed_at | DATETIME |  | 처리 일시 |
-| created_at | DATETIME |  | 생성일시 |
-| updated_at | DATETIME |  | 수정일시 |
-
-#### COUPON
+#### COUPONS
 
 | 필드명 | 타입 | 키 | 설명 |
 | --- | --- | --- | --- |
 | id | BIGINT | PK | 쿠폰 ID |
-| name | VARCHAR(30) |  | 쿠폰 이름 |
-| discount_type | VARCHAR(20) |  | FIXED_AMOUNT, PERCENTAGE |
-| discount_value | INTEGER |  | 할인 값 |
-| minimum_order_amount | INTEGER |  | 최소 주문 금액 |
-| maximum_discount_amount | INTEGER |  | 최대 할인 금액 |
+| name | VARCHAR(255) |  | 쿠폰 이름 |
+| discount_price | INTEGER |  | 할인 금액 |
+| min_order_price | INTEGER |  | 최소 주문 금액 |
 | total_quantity | INTEGER |  | 총 발급 가능 수량 |
-| issued_quantity | INTEGER |  | 현재 발급 수량 |
-| max_per_member | INTEGER |  | 인당 최대 발급 가능 수량 |
-| issue_start_at | DATETIME |  | 발급 시작 시간 |
-| issue_end_at | DATETIME |  | 발급 종료 시간 |
-| expires_at | DATETIME |  | 사용 만료 시간 |
-| status | VARCHAR(20) |  | READY, ACTIVE, ENDED, STOPPED |
+| remaining_quantity | INTEGER |  | 남은 발급 가능 수량 |
+| coupon_status | VARCHAR(20) |  | ACTIVE, DISABLED |
+| expiration_at | DATETIME |  | 만료 일시 |
 | created_at | DATETIME |  | 생성일시 |
 | updated_at | DATETIME |  | 수정일시 |
 
-#### MEMBER_COUPON
+#### MEMBER_COUPONS
 
 | 필드명 | 타입 | 키 | 설명 |
 | --- | --- | --- | --- |
 | id | BIGINT | PK | 발급 쿠폰 ID |
-| coupon_id | BIGINT | FK | 쿠폰 참조 |
 | member_id | BIGINT | FK | 회원 참조 |
-| status | VARCHAR(20) |  | AVAILABLE, USED, EXPIRED |
-| issued_at | DATETIME |  | 발급 일시 |
-| used_at | DATETIME |  | 사용 일시 |
-| expires_at | DATETIME |  | 만료 일시 |
+| coupon_id | BIGINT | FK | 쿠폰 참조 |
+| coupon_status | VARCHAR(20) |  | UNUSED, USED, EXPIRED |
+| used_at | DATETIME |  | 사용 일시, Nullable |
 | created_at | DATETIME |  | 생성일시 |
 | updated_at | DATETIME |  | 수정일시 |
 
@@ -382,9 +379,10 @@ src/
 | --- | --- | --- | --- |
 | id | BIGINT | PK | 채팅방 ID |
 | member_id | BIGINT | FK | 문의 회원 참조 |
-| title | VARCHAR(255) |  | 문의 제목 |
-| status | VARCHAR(20) |  | WAITING, IN_PROGRESS, COMPLETED |
-| completed_at | DATETIME |  | 완료 일시 |
+| admin_id | BIGINT | FK | 담당 관리자, Nullable |
+| title | VARCHAR(100) |  | 문의 제목 |
+| status | VARCHAR(20) |  | WAITING, IN_PROGRESS, CLOSED |
+| completed_at | DATETIME |  | 종료 일시, Nullable |
 | created_at | DATETIME |  | 생성일시 |
 | updated_at | DATETIME |  | 수정일시 |
 
@@ -396,34 +394,35 @@ src/
 | chat_room_id | BIGINT | FK | 채팅방 참조 |
 | sender_id | BIGINT | FK | 발신 회원 참조 |
 | content | TEXT |  | 채팅 내용 |
-| message_type | VARCHAR(20) |  | TEXT, SYSTEM |
+| message_type | VARCHAR(20) |  | USER, ADMIN, SYSTEM |
 | created_at | DATETIME |  | 생성일시 |
+| updated_at | DATETIME |  | 수정일시 |
 
-#### WEBHOOK_EVENT
+#### WEBHOOK_EVENTS
 
 | 필드명 | 타입 | 키 | 설명 |
 | --- | --- | --- | --- |
 | id | BIGINT | PK | 웹훅 이벤트 ID |
-| payment_id | BIGINT | FK | 결제 참조 |
-| portone_event_id | VARCHAR(50) | UK | PortOne 이벤트 ID |
-| portone_payment_id | VARCHAR(50) |  | PortOne 결제 식별자 |
-| event_type | VARCHAR(30) |  | 이벤트 유형 |
-| status | VARCHAR(20) |  | RECEIVED, COMPLETED, FAILED |
-| payload | TEXT |  | 페이로드 |
-| failure_reason | TEXT |  | 실패 사유 |
-| received_at | DATETIME |  | 수신 일시 |
-| processed_at | DATETIME |  | 처리 일시 |
+| webhook_id | VARCHAR(200) | UK | PortOne 웹훅 식별자 |
+| type | VARCHAR(100) |  | 웹훅 이벤트 타입 |
+| status | VARCHAR(20) |  | RECEIVED, PROCESSED, IGNORED, FAILED |
+| payload | TEXT |  | 웹훅 원본 페이로드 |
+| finished_at | DATETIME |  | 처리 완료 일시, Nullable |
+| failure_reason | VARCHAR(500) |  | 실패 또는 무시 사유, Nullable |
 | created_at | DATETIME |  | 생성일시 |
+| updated_at | DATETIME |  | 수정일시 |
+
 ### 주요 상태 값
 
 | 구분 | 상태 값 |
 | --- | --- |
-| 상품 상태 | `ON_SALE`, `DISCONTINUED` |
-| 주문 상태 | `PENDING`, `COMPLETED`, `CANCELED`, `REFUNDED` |
-| 결제 상태 | `PENDING`, `PAID`, `FAILED`, `REFUNDED` |
-| 환불 상태 | `REQUESTED`, `REJECTED`, `COMPLETED`, `FAILED` |
-| 쿠폰 상태 | `READY`, `ACTIVE`, `ENDED`, `STOPPED` |
-| 발급 쿠폰 상태 | `AVAILABLE`, `USED`, `EXPIRED` |
-| 채팅방 상태 | `WAITING`, `IN_PROGRESS`, `COMPLETED` |
-| 메시지 타입 | `TEXT`, `SYSTEM` |
-| 웹훅 상태 | `RECEIVED`, `COMPLETED`, `FAILED` |
+| 회원 권한 | `USER`, `ADMIN` |
+| 상품 상태 | `ON_SALE`, `DISCONTINUED`, `DELETED` |
+| 상품 옵션 상태 | `ON_SALE`, `SOLDOUT`, `DISCONTINUED` |
+| 주문 상태 | `PENDING_PAYMENT`, `CONFIRMED`, `CANCELED`, `EXPIRED` |
+| 결제 상태 | `PENDING`, `PAID`, `FAILED`, `CANCELED`, `REFUNDED` |
+| 쿠폰 상태 | `ACTIVE`, `DISABLED` |
+| 발급 쿠폰 상태 | `UNUSED`, `USED`, `EXPIRED` |
+| 채팅방 상태 | `WAITING`, `IN_PROGRESS`, `CLOSED` |
+| 메시지 타입 | `USER`, `ADMIN`, `SYSTEM` |
+| 웹훅 상태 | `RECEIVED`, `PROCESSED`, `IGNORED`, `FAILED` |
