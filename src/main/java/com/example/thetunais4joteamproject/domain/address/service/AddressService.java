@@ -95,6 +95,18 @@ public class AddressService {
 		return AddressResponse.from(address);
 	}
 
+	@Transactional
+	public void delete(Long memberId, Long addressId) {
+		Address address = getAddress(memberId, addressId);
+		boolean deletedDefaultAddress = Boolean.TRUE.equals(address.getDefaultAddress());
+
+		addressRepository.delete(address);
+
+		if (deletedDefaultAddress) {
+			markFirstAddressAsDefault(memberId, addressId);
+		}
+	}
+
 	private Address getAddress(Long memberId, Long addressId) {
 		return addressRepository.findByIdAndMemberId(addressId, memberId)
 			.orElseThrow(() -> BusinessException.from(ErrorCode.ADDRESS_NOT_FOUND));
@@ -107,6 +119,16 @@ public class AddressService {
 		for (Address address : addresses) {
 			address.unmarkDefault();
 		}
+	}
+
+	private void markFirstAddressAsDefault(Long memberId, Long deletedAddressId) {
+		List<Address> addresses =
+			addressRepository.findAllByMemberIdOrderByDefaultAddressDescCreatedAtDesc(memberId);
+
+		addresses.stream()
+			.filter(address -> !address.getId().equals(deletedAddressId))
+			.findFirst()
+			.ifPresent(Address::markDefault);
 	}
 
 	private void validateCreateRequest(CreateAddressRequest request) {
