@@ -14,6 +14,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.example.thetunais4joteamproject.domain.address.entity.Address;
+import com.example.thetunais4joteamproject.domain.address.repository.AddressRepository;
 import com.example.thetunais4joteamproject.domain.cart.entity.CartItem;
 import com.example.thetunais4joteamproject.domain.cart.service.CartService;
 import com.example.thetunais4joteamproject.domain.coupon.service.CouponService;
@@ -24,6 +26,7 @@ import com.example.thetunais4joteamproject.domain.order.dto.CreateOrderResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.GetOrderDetailResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.GetOrderResponse;
 import com.example.thetunais4joteamproject.domain.order.dto.OrderPreviewResponse;
+import com.example.thetunais4joteamproject.domain.order.entity.DeliveryAddress;
 import com.example.thetunais4joteamproject.domain.order.entity.Order;
 import com.example.thetunais4joteamproject.domain.order.entity.OrderItem;
 import com.example.thetunais4joteamproject.domain.order.service.OrderService;
@@ -51,6 +54,7 @@ class OrderFacadeTest {
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 		CouponService couponService = mock(CouponService.class);
+		AddressRepository addressRepository = mock(AddressRepository.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
@@ -58,7 +62,8 @@ class OrderFacadeTest {
 			paymentCommandService,
 			memberRepository,
 			productOptionRepository,
-			couponService
+			couponService,
+			addressRepository
 		);
 
 		Long memberId = 1L;
@@ -113,6 +118,7 @@ class OrderFacadeTest {
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 		CouponService couponService = mock(CouponService.class);
+		AddressRepository addressRepository = mock(AddressRepository.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
@@ -120,7 +126,8 @@ class OrderFacadeTest {
 			paymentCommandService,
 			memberRepository,
 			productOptionRepository,
-			couponService
+			couponService,
+			addressRepository
 		);
 
 		Long memberId = 1L;
@@ -165,6 +172,7 @@ class OrderFacadeTest {
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 		CouponService couponService = mock(CouponService.class);
+		AddressRepository addressRepository = mock(AddressRepository.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
@@ -172,11 +180,13 @@ class OrderFacadeTest {
 			paymentCommandService,
 			memberRepository,
 			productOptionRepository,
-			couponService
+			couponService,
+			addressRepository
 		);
 
 		Long memberId = 1L;
 		Member member = mock(Member.class);
+		Address address = createAddress(member);
 		List<Long> cartItemIds = List.of(1L);
 		CreateCartOrderRequest request = new CreateCartOrderRequest(cartItemIds, null);
 
@@ -206,8 +216,11 @@ class OrderFacadeTest {
 		Payment payment = createPayment(20L, order, "pay-123", 26000);
 
 		when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+		when(addressRepository.findFirstByMemberIdAndDefaultAddressTrue(memberId))
+			.thenReturn(Optional.of(address));
 		when(cartService.getPreviewItems(memberId, cartItemIds)).thenReturn(List.of(cartItem));
-		when(orderService.createOrder(member, 23000, 0, 3000, 26000)).thenReturn(order);
+		when(orderService.createOrder(eq(member), eq(23000), eq(0), eq(3000), eq(26000), any(DeliveryAddress.class)))
+			.thenReturn(order);
 		when(orderService.createOrderItemsFromCartItems(order, List.of(cartItem))).thenReturn(List.of(orderItem));
 		when(paymentCommandService.createPayment(order)).thenReturn(payment);
 
@@ -238,6 +251,7 @@ class OrderFacadeTest {
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 		CouponService couponService = mock(CouponService.class);
+		AddressRepository addressRepository = mock(AddressRepository.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
@@ -245,12 +259,14 @@ class OrderFacadeTest {
 			paymentCommandService,
 			memberRepository,
 			productOptionRepository,
-			couponService
+			couponService,
+			addressRepository
 		);
 
 		Long memberId = 1L;
 		Long memberCouponId = 30L;
 		Member member = mock(Member.class);
+		Address address = createAddress(member);
 		List<Long> cartItemIds = List.of(1L);
 		CreateCartOrderRequest request = new CreateCartOrderRequest(cartItemIds, memberCouponId);
 
@@ -280,9 +296,12 @@ class OrderFacadeTest {
 		Payment payment = createPayment(20L, order, "pay-123", 21000);
 
 		when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+		when(addressRepository.findFirstByMemberIdAndDefaultAddressTrue(memberId))
+			.thenReturn(Optional.of(address));
 		when(cartService.getPreviewItems(memberId, cartItemIds)).thenReturn(List.of(cartItem));
 		when(couponService.calculateDiscountPrice(memberId, memberCouponId, 23000)).thenReturn(5000);
-		when(orderService.createOrder(member, memberCouponId, 23000, 5000, 3000, 21000)).thenReturn(order);
+		when(orderService.createOrder(eq(member), eq(memberCouponId), eq(23000), eq(5000), eq(3000), eq(21000), any(DeliveryAddress.class)))
+			.thenReturn(order);
 		when(orderService.createOrderItemsFromCartItems(order, List.of(cartItem))).thenReturn(List.of(orderItem));
 		when(paymentCommandService.createPayment(order)).thenReturn(payment);
 
@@ -296,7 +315,7 @@ class OrderFacadeTest {
 		assertThat(response.totalAmount()).isEqualTo(21000);
 
 		verify(couponService).calculateDiscountPrice(memberId, memberCouponId, 23000);
-		verify(orderService).createOrder(member, memberCouponId, 23000, 5000, 3000, 21000);
+		verify(orderService).createOrder(eq(member), eq(memberCouponId), eq(23000), eq(5000), eq(3000), eq(21000), any(DeliveryAddress.class));
 	}
 
 	@Test
@@ -308,6 +327,7 @@ class OrderFacadeTest {
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 		CouponService couponService = mock(CouponService.class);
+		AddressRepository addressRepository = mock(AddressRepository.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
@@ -315,7 +335,8 @@ class OrderFacadeTest {
 			paymentCommandService,
 			memberRepository,
 			productOptionRepository,
-			couponService
+			couponService,
+			addressRepository
 		);
 
 		Long memberId = 1L;
@@ -356,6 +377,7 @@ class OrderFacadeTest {
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 		CouponService couponService = mock(CouponService.class);
+		AddressRepository addressRepository = mock(AddressRepository.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
@@ -363,11 +385,13 @@ class OrderFacadeTest {
 			paymentCommandService,
 			memberRepository,
 			productOptionRepository,
-			couponService
+			couponService,
+			addressRepository
 		);
 
 		Long memberId = 1L;
 		Member member = mock(Member.class);
+		Address address = createAddress(member);
 		CreateDirectOrderRequest request = new CreateDirectOrderRequest(1000L, 2, null);
 		ProductOption productOption = createProductOption(
 			1000L,
@@ -393,8 +417,11 @@ class OrderFacadeTest {
 		Payment payment = createPayment(20L, order, "pay-123", 26000);
 
 		when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+		when(addressRepository.findFirstByMemberIdAndDefaultAddressTrue(memberId))
+			.thenReturn(Optional.of(address));
 		when(productOptionRepository.findById(1000L)).thenReturn(Optional.of(productOption));
-		when(orderService.createOrder(member, 23000, 0, 3000, 26000)).thenReturn(order);
+		when(orderService.createOrder(eq(member), eq(23000), eq(0), eq(3000), eq(26000), any(DeliveryAddress.class)))
+			.thenReturn(order);
 		when(orderService.createOrderItems(eq(order), any(), any())).thenReturn(List.of(orderItem));
 		when(paymentCommandService.createPayment(order)).thenReturn(payment);
 
@@ -422,6 +449,7 @@ class OrderFacadeTest {
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 		CouponService couponService = mock(CouponService.class);
+		AddressRepository addressRepository = mock(AddressRepository.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
@@ -429,7 +457,8 @@ class OrderFacadeTest {
 			paymentCommandService,
 			memberRepository,
 			productOptionRepository,
-			couponService
+			couponService,
+			addressRepository
 		);
 
 		Long memberId = 1L;
@@ -483,6 +512,7 @@ class OrderFacadeTest {
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 		CouponService couponService = mock(CouponService.class);
+		AddressRepository addressRepository = mock(AddressRepository.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
@@ -490,7 +520,8 @@ class OrderFacadeTest {
 			paymentCommandService,
 			memberRepository,
 			productOptionRepository,
-			couponService
+			couponService,
+			addressRepository
 		);
 
 		Long memberId = 1L;
@@ -538,6 +569,7 @@ class OrderFacadeTest {
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 		CouponService couponService = mock(CouponService.class);
+		AddressRepository addressRepository = mock(AddressRepository.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
@@ -545,7 +577,8 @@ class OrderFacadeTest {
 			paymentCommandService,
 			memberRepository,
 			productOptionRepository,
-			couponService
+			couponService,
+			addressRepository
 		);
 
 		Member member = mock(Member.class);
@@ -596,6 +629,7 @@ class OrderFacadeTest {
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 		CouponService couponService = mock(CouponService.class);
+		AddressRepository addressRepository = mock(AddressRepository.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
@@ -603,7 +637,8 @@ class OrderFacadeTest {
 			paymentCommandService,
 			memberRepository,
 			productOptionRepository,
-			couponService
+			couponService,
+			addressRepository
 		);
 
 		Long memberId = 1L;
@@ -636,6 +671,7 @@ class OrderFacadeTest {
 		MemberRepository memberRepository = mock(MemberRepository.class);
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 		CouponService couponService = mock(CouponService.class);
+		AddressRepository addressRepository = mock(AddressRepository.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
@@ -643,7 +679,8 @@ class OrderFacadeTest {
 			paymentCommandService,
 			memberRepository,
 			productOptionRepository,
-			couponService
+			couponService,
+			addressRepository
 		);
 
 		Long memberId = 1L;
@@ -741,6 +778,18 @@ class OrderFacadeTest {
 		when(product.getPrice()).thenReturn(productPrice);
 
 		return productOption;
+	}
+
+	private Address createAddress(Member member) {
+		return Address.of(
+			member,
+			"홍길동",
+			"010-1234-5678",
+			"12345",
+			"서울시 강남구 테헤란로",
+			"101동 1001호",
+			true
+		);
 	}
 
 	private Order createOrder(
