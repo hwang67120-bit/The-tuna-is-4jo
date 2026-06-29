@@ -224,6 +224,42 @@ class CouponServiceTest {
     }
 
     @Test
+    @DisplayName("쿠폰 사용 시 쿠폰 할인 금액이 주문 금액보다 크면 INVALID_COUPON_DISCOUNT_PRICE 예외가 발생한다.")
+    void useCoupon_InvalidDiscountPrice_ThrowsException() {
+        // given
+        Long memberId = 1L;
+        UseCouponRequest request = new UseCouponRequest(1L, 10000);
+        Coupon coupon = Coupon.of("쿠폰", 20000, 10000, 10, LocalDateTime.now().plusDays(1));
+        MemberCoupon memberCoupon = MemberCoupon.of(memberId, coupon);
+        ReflectionTestUtils.setField(memberCoupon, "id", 1L);
+
+        given(memberCouponRepository.findById(1L)).willReturn(Optional.of(memberCoupon));
+
+        // when & then
+        assertThatThrownBy(() -> couponService.useCoupon(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_COUPON_DISCOUNT_PRICE);
+    }
+
+    @Test
+    @DisplayName("쿠폰 할인 금액 계산 시 쿠폰 할인 금액이 주문 금액보다 크면 INVALID_COUPON_DISCOUNT_PRICE 예외가 발생한다.")
+    void calculateDiscountPrice_InvalidDiscountPrice_ThrowsException() {
+        // given
+        Long memberId = 1L;
+        Long memberCouponId = 1L;
+        Coupon coupon = Coupon.of("쿠폰", 20000, 10000, 10, LocalDateTime.now().plusDays(1));
+        MemberCoupon memberCoupon = MemberCoupon.of(memberId, coupon);
+        ReflectionTestUtils.setField(memberCoupon, "id", memberCouponId);
+
+        given(memberCouponRepository.findById(memberCouponId)).willReturn(Optional.of(memberCoupon));
+
+        // when & then
+        assertThatThrownBy(() -> couponService.calculateDiscountPrice(memberId, memberCouponId, 10000))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_COUPON_DISCOUNT_PRICE);
+    }
+
+    @Test
     @DisplayName("쿠폰 사용 정상 조건 시 쿠폰 상태가 USED로 변경되고 사용일시가 저장된다.")
     void useCoupon_Success() {
         // given
