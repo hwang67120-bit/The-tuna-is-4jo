@@ -1,11 +1,10 @@
-package com.example.thetunais4joteamproject.domain.product.repository.impl;
+package com.example.thetunais4joteamproject.domain.product.repository;
 
 import static com.example.thetunais4joteamproject.domain.product.entity.QProduct.*;
 import static com.example.thetunais4joteamproject.domain.product.entity.QProductOption.*;
 
 import com.example.thetunais4joteamproject.domain.product.dto.SearchProductResponse.SearchProductItem;
 import com.example.thetunais4joteamproject.domain.product.entity.ProductStatus;
-import com.example.thetunais4joteamproject.domain.product.repository.custom.ProductRepositoryCustom;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
