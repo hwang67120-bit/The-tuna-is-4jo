@@ -20,6 +20,9 @@ import com.example.thetunais4joteamproject.domain.product.repository.ProductRepo
 import com.example.thetunais4joteamproject.global.error.BusinessException;
 import com.example.thetunais4joteamproject.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -123,7 +126,10 @@ public class ProductService {
 
     /**
      * 상품 상세 조회
+     * value: 캐시의 고유 이름 (Redis 내부에서 접두사로 쓰임)
+     * key: 파라미터로 넘어온 productId별로 각각 캐싱 공간을 분리
      */
+    @Cacheable(value = "productDetail", key = "#productId", cacheManager = "cacheManager")
     public GetProductDetailResponse getProductDetail(Long productId) {
         Product product = productRepository.findById(productId)
             .orElseThrow(() -> BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND));
@@ -161,6 +167,7 @@ public class ProductService {
      * 상품 수정 (Admin)
      */
     @Transactional
+    @CacheEvict(value = "productDetail", key = "#productId")
     public void updateProduct(Long productId, UpdateProductRequest request) {
         Product product = productRepository.findById(productId)
             .orElseThrow(() -> BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND));
@@ -182,6 +189,7 @@ public class ProductService {
      * 상품 삭제 (Admin - Soft Delete)
      */
     @Transactional
+    @CacheEvict(value = "productDetail", key = "#productId")
     public void deleteProduct(Long productId) {
         Product product = productRepository.findById(productId)
             .orElseThrow(() -> BusinessException.from(ErrorCode.PRODUCT_NOT_FOUND));
