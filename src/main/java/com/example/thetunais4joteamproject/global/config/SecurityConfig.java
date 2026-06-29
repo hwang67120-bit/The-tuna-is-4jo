@@ -34,6 +34,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/members/signup", "/api/members/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/members/email-check").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         .requestMatchers("/h2-console/**").permitAll()
 
