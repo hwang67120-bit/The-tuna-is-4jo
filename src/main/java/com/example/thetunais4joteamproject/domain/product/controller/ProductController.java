@@ -3,7 +3,6 @@ package com.example.thetunais4joteamproject.domain.product.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -85,16 +84,16 @@ public class ProductController {
     }
 
     /**
-     * 상품 목록 조회 (시나리오 반영)
+     * 상품 목록 조회 (No-Offset 대용량 쿼리 최적화 반영)
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<GetAllProductResponse>>> getAllProducts(
-        @PageableDefault
-        Pageable pageable
+    public ResponseEntity<ApiResponse<List<GetAllProductResponse>>> getAllProducts(
+        @RequestParam(required = false) Long lastProductId,
+        @RequestParam(defaultValue = "10") int size
     ) {
-        Page<GetAllProductResponse> getAllProductResponse = productService.getAllProducts(pageable);
+        List<GetAllProductResponse> responses = productService.getAllProductsNoOffset(lastProductId, size);
 
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(getAllProductResponse));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(responses));
     }
 
     /**
