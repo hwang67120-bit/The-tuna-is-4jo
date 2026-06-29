@@ -61,6 +61,9 @@ public enum ErrorCode {
     // [회원(Member) 도메인 비즈니스 에러 코드]
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다"),
 
+    // [배송지(Address) 도메인 비즈니스 에러 코드]
+    ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 배송지입니다"),
+
     // [쿠폰(Coupon) 도메인 비즈니스 에러 코드]
     INVALID_COUPON_EXPIRATION(HttpStatus.BAD_REQUEST, "쿠폰 만료 일시는 현재 시간보다 과거일 수 없습니다."),
     COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 쿠폰입니다."),
