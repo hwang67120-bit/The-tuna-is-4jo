@@ -31,14 +31,10 @@ button {
     border-bottom: 1px solid #2d3036;
 }
 
-.menu-button, .brand, .main-nav button, .session-bar button {
+.brand, .main-nav button, .session-bar button {
     background: transparent;
     color: inherit;
     border: 0;
-}
-
-.menu-button {
-    font-size: 22px;
 }
 
 .brand {
@@ -75,6 +71,16 @@ button {
     background: #fff;
     color: #111;
     padding: 9px 13px;
+}
+
+.small-button {
+    padding: 6px 9px;
+    font-size: 12px;
+}
+
+.danger-button {
+    border-color: #e26d6d;
+    color: #b42318;
 }
 
 .primary-button {
@@ -254,6 +260,7 @@ h1, h2, h3 {
 
 .section-heading.compact {
     justify-content: flex-start;
+    gap: 10px;
     margin-top: 34px;
 }
 
@@ -285,7 +292,7 @@ h1, h2, h3 {
 }
 
 .cart-row.order-history-row {
-    grid-template-columns: 1.4fr .8fr auto auto;
+    grid-template-columns: 1.4fr .8fr auto auto auto;
 }
 
 .cart-total {
@@ -311,6 +318,9 @@ h1, h2, h3 {
 }
 
 .order-coupon-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin: 10px 0 18px;
 }
 
@@ -319,6 +329,33 @@ h1, h2, h3 {
     max-width: 420px;
     padding: 10px;
     border: 1px solid #cfd5dd;
+}
+
+.chip-panel {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-height: 42px;
+    padding: 10px 0 0;
+}
+
+.search-chip {
+    border: 1px solid #d5dae2;
+    border-radius: 999px;
+    background: #fff;
+    color: #252a31;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.search-chip:hover {
+    border-color: #0676ff;
+    color: #0676ff;
+}
+
+.muted-text {
+    color: #747b87;
+    font-size: 13px;
 }
 
 .order-summary {
@@ -372,6 +409,21 @@ h1, h2, h3 {
 .form-actions {
     padding: 16px 0;
     text-align: center;
+}
+
+.inline-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.empty-action-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    color: #747b87;
 }
 
 .admin-shell {
@@ -458,6 +510,113 @@ h1, h2, h3 {
     margin-top: 18px;
     padding: 18px;
     border: 1px solid #e2e5ea;
+}
+
+.console-form.danger-form {
+    border-color: #f0b4b4;
+    background: #fffafa;
+}
+
+.inline-form {
+    display: grid;
+    grid-template-columns: minmax(160px, 260px) auto;
+    gap: 8px;
+    margin: 0 0 12px;
+}
+
+.inline-form input {
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid #cfd5dd;
+}
+
+.readonly-select {
+    width: 100%;
+    min-height: 120px;
+    border: 1px solid #cfd5dd;
+    border-radius: 4px;
+    background: #fff;
+    padding: 8px;
+}
+
+.readonly-select option {
+    padding: 10px;
+}
+
+.compact-panel {
+    min-height: 48px;
+    margin-top: 10px;
+}
+
+.simple-row {
+    display: grid;
+    grid-template-columns: minmax(140px, .8fr) 1.4fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #e6e9ee;
+}
+
+.simple-row:last-child {
+    border-bottom: 0;
+}
+
+.simple-row small {
+    color: #747b87;
+}
+
+.row-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.selected-address-box, .payment-guide {
+    display: grid;
+    gap: 6px;
+    color: #374151;
+}
+
+.order-address-box {
+    gap: 10px;
+}
+
+.selected-address-box strong {
+    color: #111827;
+}
+
+.address-scroll-list {
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.simple-row.selected-row {
+    background: #f1f7ff;
+    border-radius: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.payment-guide {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 6px;
+    background: #f1f7ff;
+    border: 1px solid #cfe3ff;
+}
+
+.order-detail-panel {
+    margin-top: 12px;
+}
+
+.panel-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
 .console-form label {
@@ -549,6 +708,11 @@ h1, h2, h3 {
     color: #666;
 }
 
+.auth-switch-button {
+    justify-self: center;
+    color: #666;
+}
+
 .toast {
     position: fixed;
     right: 20px;
@@ -587,8 +751,13 @@ h1, h2, h3 {
         grid-template-columns: 1fr;
     }
 
-    .profile-table .row, .console-form label {
+    .profile-table .row, .console-form label, .simple-row, .inline-form, .product-search-form {
         grid-template-columns: 1fr;
+    }
+
+    .order-coupon-row {
+        align-items: stretch;
+        flex-direction: column;
     }
 }
 
