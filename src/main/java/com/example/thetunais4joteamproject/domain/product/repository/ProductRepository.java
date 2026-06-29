@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.example.thetunais4joteamproject.domain.product.entity.Product;
 import com.example.thetunais4joteamproject.domain.product.entity.ProductStatus;
-import com.example.thetunais4joteamproject.domain.product.repository.custom.ProductRepositoryCustom;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

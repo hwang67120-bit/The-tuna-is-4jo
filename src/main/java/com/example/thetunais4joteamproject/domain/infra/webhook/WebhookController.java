@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
-@RequestMapping("/api/webhooks")
+@RequestMapping("/webhooks")
 @RequiredArgsConstructor
 @Slf4j
 public class WebhookController {
@@ -33,6 +33,7 @@ public class WebhookController {
         @RequestHeader("webhook-signature") String signature,
         @RequestHeader("webhook-timestamp") String timestamp
     ) {
+        log.info("Webhook 진입");
         try {
             Webhook webhook = portOneWebhookVerifier.verify(body, webhookId, signature, timestamp);
             webhookHandler.handle(webhookId, webhook, body);

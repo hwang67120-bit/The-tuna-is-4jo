@@ -114,7 +114,7 @@ public class PaymentCommandService {
 
 	private void validatePortOnePaymentId(Payment payment, String portOnePaymentId) {
 		if (!payment.getPortonePaymentId().equals(portOnePaymentId)) {
-			log.warn("결제 승인 거부 - portOnePaymentId 불일치: paymentId={}, DB={}", payment.getId(), portOnePaymentId);
+			log.warn("결제 승인 거부 - portOnePaymentId 불일치: portOnePaymentId={}, DB={}", payment.getPortonePaymentId(), portOnePaymentId);
 			throw BusinessException.from(ErrorCode.PORTONE_PAYMENT_NOT_FOUND);
 		}
 	}
