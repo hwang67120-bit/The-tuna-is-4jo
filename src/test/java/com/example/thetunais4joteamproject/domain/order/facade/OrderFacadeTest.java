@@ -710,6 +710,8 @@ class OrderFacadeTest {
 		when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
 		when(orderService.getOrderDetail(memberId, orderId)).thenReturn(order);
 		when(orderService.getOrderItems(orderId)).thenReturn(List.of(orderItem));
+		Payment payment = createPayment(20L, order, "pay-test", 26000);
+		when(paymentCommandService.getPaymentByOrderId(orderId)).thenReturn(payment);
 
 		// when
 		GetOrderDetailResponse response = orderFacade.getOne(memberId, orderId);
@@ -717,6 +719,9 @@ class OrderFacadeTest {
 		// then
 		assertThat(response.orderId()).isEqualTo(orderId);
 		assertThat(response.orderStatus()).isEqualTo("PENDING_PAYMENT");
+		assertThat(response.paymentId()).isEqualTo(20L);
+		assertThat(response.portonePaymentId()).isEqualTo("pay-test");
+		assertThat(response.paymentStatus()).isEqualTo("PENDING");
 		assertThat(response.items()).hasSize(1);
 		assertThat(response.items().get(0).orderItemId()).isEqualTo(100L);
 		assertThat(response.items().get(0).productName()).isEqualTo("테스트 상품");
@@ -725,6 +730,7 @@ class OrderFacadeTest {
 		verify(memberRepository).findById(memberId);
 		verify(orderService).getOrderDetail(memberId, orderId);
 		verify(orderService).getOrderItems(orderId);
+		verify(paymentCommandService).getPaymentByOrderId(orderId);
 	}
 
 	private CartItem createCartItem(

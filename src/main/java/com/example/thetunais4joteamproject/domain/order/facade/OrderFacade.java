@@ -166,8 +166,9 @@ public class OrderFacade {
 
 		Order order = orderService.getOrderDetail(memberId, orderId);
 		List<OrderItem> orderItems = orderService.getOrderItems(order.getId());
+		Payment payment = paymentCommandService.getPaymentByOrderId(order.getId());
 
-		return GetOrderDetailResponse.of(order, orderItems);
+		return GetOrderDetailResponse.of(order, orderItems, payment);
 	}
 
 	private CreateOrderResponse createOrderAndPayment(

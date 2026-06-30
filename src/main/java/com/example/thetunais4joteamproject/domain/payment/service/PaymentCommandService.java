@@ -101,6 +101,11 @@ public class PaymentCommandService {
 			.orElseThrow(() -> BusinessException.from(ErrorCode.PAYMENT_NOT_FOUND));
 	}
 
+	public Payment getPaymentByOrderId(Long orderId) {
+		return paymentRepository.findByOrderId(orderId)
+			.orElseThrow(() -> BusinessException.from(ErrorCode.PAYMENT_NOT_FOUND));
+	}
+
 	public boolean isAlreadyPaid(Payment payment) {
 		return payment.getStatus() == PaymentStatus.PAID;
 	}
