@@ -85,7 +85,7 @@ class ProductSearchServiceTest {
         String cacheKey = "product:search:tuna:0:10";
         String serializedJson = "{\"products\":[],\"page\":0,\"size\":10,\"totalElements\":1}";
 
-        SearchProductItem mockItem = new SearchProductItem(1L, "참치캔", 2000, 100, ProductStatus.ON_SALE);
+        SearchProductItem mockItem = new SearchProductItem(1L, "참치캔", 2000, 100, ProductStatus.ON_SALE, null);
         Page<SearchProductItem> mockPage = new PageImpl<>(List.of(mockItem), pageable, 1);
         SearchProductResponse mockResponse = SearchProductResponse.of(List.of(mockItem), 0, 10, 1);
 
