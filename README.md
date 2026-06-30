@@ -1,4 +1,20 @@
-# The Tuna Is 4jo Team Project
+﻿# The Tuna Is 4jo Team Project
+
+## 기술 스택
+
+| 구분 | 사용 기술 |
+| --- | --- |
+| Language | Java 17 |
+| Framework | Spring Boot 4.0.6 |
+| Build | Gradle |
+| Database | MySQL, H2 |
+| ORM / Query | Spring Data JPA, Querydsl |
+| Security | Spring Security, JWT |
+| Realtime | WebSocket, STOMP, Redis Pub/Sub |
+| Cache / Lock | Redis, Redisson |
+| Payment | PortOne |
+| Test | JUnit 5, Postman, k6 |
+| Infra | Docker, AWS EC2, GitHub Actions |
 
 ## 프로젝트 파일 구조
 
@@ -11,11 +27,11 @@ src/
 │   │   ├── TheTunaIs4joTeamProjectApplication.java
 │   │   │
 │   │   ├── global                         # 전역 공통 계층
-│   │   │   ├── aop                        # 채팅 복구 API 시간 측정 등 공통 AOP
-│   │   │   ├── common                     # BaseEntity, 공통 API 응답
-│   │   │   ├── config                     # Security, JWT Filter, Redis, WebSocket, Querydsl 설정
-│   │   │   ├── entity                     # 전역 공통 엔티티
-│   │   │   ├── error                      # 공통 예외, 에러 코드, 예외 응답
+│   │   │   ├── aop                        # API 실행 시간 측정 등 공통 AOP
+│   │   │   ├── common                     # 공통 API 응답
+│   │   │   ├── config                     # Security, JWT, Redis, WebSocket, Querydsl 설정
+│   │   │   ├── entity                     # BaseTimeEntity 등 공통 엔티티
+│   │   │   ├── error                      # BusinessException, ErrorCode, 전역 예외 처리
 │   │   │   └── util                       # JwtProvider, PasswordEncryptor 등 유틸
 │   │   │
 │   │   └── domain                         # 도메인 비즈니스 로직 계층
@@ -26,14 +42,18 @@ src/
 │   │       │   ├── repository
 │   │       │   └── service
 │   │       │
-│   │       ├── product                    # 상품, 카테고리, 검색, 캐시
-│   │       │   ├── cache
+│   │       ├── address                    # 회원 배송지
 │   │       │   ├── controller
 │   │       │   ├── dto
 │   │       │   ├── entity
 │   │       │   ├── repository
-│   │       │   │   ├── custom             # Querydsl 커스텀 Repository 인터페이스
-│   │       │   │   └── impl               # Querydsl 커스텀 Repository 구현체
+│   │       │   └── service
+│   │       │
+│   │       ├── product                    # 상품, 카테고리, 검색
+│   │       │   ├── controller
+│   │       │   ├── dto
+│   │       │   ├── entity
+│   │       │   ├── repository
 │   │       │   └── service
 │   │       │
 │   │       ├── cart                       # 장바구니
@@ -44,7 +64,7 @@ src/
 │   │       │   ├── repository
 │   │       │   └── service
 │   │       │
-│   │       ├── order                      # 주문, 주문 스케줄러
+│   │       ├── order                      # 주문, 주문 만료 스케줄러
 │   │       │   ├── controller
 │   │       │   ├── dto
 │   │       │   ├── entity
@@ -64,11 +84,12 @@ src/
 │   │       │
 │   │       ├── refund                     # 환불
 │   │       │   ├── controller
+│   │       │   ├── dto
+│   │       │   ├── entity
 │   │       │   ├── repository
 │   │       │   └── service
 │   │       │
-│   │       ├── coupon                     # 쿠폰, 분산락, 쿠폰 스케줄러
-│   │       │   ├── aop
+│   │       ├── coupon                     # 쿠폰, 분산락, 쿠폰 만료 스케줄러
 │   │       │   ├── controller
 │   │       │   ├── dto
 │   │       │   ├── entity
@@ -77,37 +98,40 @@ src/
 │   │       │   ├── scheduler
 │   │       │   └── service
 │   │       │
-│   │       ├── chat                       # STOMP 채팅, 재연결 복구, Redis Pub/Sub
+│   │       ├── chat                       # STOMP 채팅, 누락 메시지 복구, Redis Pub/Sub
 │   │       │   ├── controller
 │   │       │   ├── dto
 │   │       │   ├── entity
-│   │       │   ├── pubsub                 # Redis Publisher/Subscriber, 브로드캐스터
+│   │       │   ├── pubsub                 # Redis Publisher/Subscriber, 채널 유틸
 │   │       │   ├── repository
 │   │       │   └── service
 │   │       │
 │   │       └── infra                      # 외부 인프라 연동
-│   │           ├── portone
+│   │           ├── portone                # PortOne 결제 조회/취소, 설정 응답
 │   │           │   ├── client
 │   │           │   ├── config
 │   │           │   ├── controller
 │   │           │   └── dto
-│   │           └── webhook                # PortOne 웹훅 처리
+│   │           └── webhook                # PortOne 웹훅 검증/처리
 │   │
 │   └── resources
-│       └── static                         # 테스트/데모용 정적 화면
+│       ├── application.yml                # 애플리케이션 설정
+│       ├── data.sql                       # 로컬 테스트용 초기 데이터
+│       └── static                         # 백엔드 API 검증/시연용 정적 화면
 │
 └── test
     ├── java/com/example/thetunais4joteamproject/
     │   ├── domain                         # 도메인별 단위/통합 테스트
     │   │   ├── chat                       # Pub/Sub, 상태 변화 테스트
-    │   │   ├── coupon
-    │   │   ├── infra
-    │   │   ├── order
-    │   │   ├── payment
-    │   │   ├── product
+    │   │   ├── coupon                     # 쿠폰 발급/동시성 테스트
+    │   │   ├── infra                      # 웹훅 테스트
+    │   │   ├── order                      # 주문 파사드 테스트
+    │   │   ├── payment                    # 결제 승인 테스트
+    │   │   ├── product                    # 상품/검색 테스트
+    │   │   ├── refund                     # 환불 테스트
     │   │   └── user                       # 로그인/JWT 테스트
     │   └── global                         # 보안 설정/JWT 필터 테스트
-    └── k6                                # 채팅 메시지 복구 성능 테스트 스크립트
+    └── k6                                 # 채팅 메시지 복구 성능 테스트 스크립트
 ```
 
 ## API 요약
@@ -155,17 +179,23 @@ src/
 | PAYMENT_AMOUNT_MISMATCH | 400 | 금액이 일치하지 않습니다. |
 | PAYMENT_NOT_PAID | 400 | 결제가 완료되지 않았습니다. |
 | PAYMENT_ORDER_MISMATCH | 400 | 결제와 주문이 일치하지 않습니다. |
+| INVALID_REFUND_STATUS_TRANSITION | 400 | 변경할 수 없는 환불 상태입니다. |
+| REFUND_NOT_FOUND | 404 | 해당 환불을 찾을 수 없습니다. |
+| INVALID_REFUND_AMOUNT | 400 | 금액이 맞지 않습니다. |
+| ALREADY_REQUESTED_REFUND | 400 | 이미 환불된 결제 건입니다. |
+| INVALID_REFUND_STATUS | 400 | 환불 상태가 존재하지 않습니다. |
 | WEBHOOK_EVENT_NOT_FOUND | 404 | 주문 금액보다 많이 사용할 수 없습니다. |
 | WEBHOOK_VERIFICATION_FAILED | 401 | 웹훅 서명 인증에 실패하였습니다. |
 | MEMBER_NOT_FOUND | 404 | 존재하지 않는 회원입니다 |
+| ADDRESS_NOT_FOUND | 404 | 존재하지 않는 배송지입니다 |
 | INVALID_COUPON_EXPIRATION | 400 | 쿠폰 만료 일시는 현재 시간보다 과거일 수 없습니다. |
 | COUPON_NOT_FOUND | 404 | 존재하지 않는 쿠폰입니다. |
 | COUPON_ALREADY_ISSUED | 400 | 이미 발급받은 쿠폰입니다. |
 | COUPON_OUT_OF_STOCK | 400 | 쿠폰 수량이 모두 소진되었습니다. |
 | COUPON_EXPIRED | 400 | 유효기간이 만료된 쿠폰입니다. |
 | INVALID_COUPON_ORDER_PRICE | 400 | 주문 금액이 쿠폰의 최소 주문 금액 조건을 충족하지 못했습니다. |
+| INVALID_COUPON_DISCOUNT_PRICE | 400 | 쿠폰 할인 금액은 주문 금액보다 클 수 없습니다. |
 | COUPON_NOT_USED | 400 | 사용 완료 상태의 쿠폰만 복구할 수 있습니다. |
-
 ---
 
 ### 사용자
@@ -252,6 +282,7 @@ src/
 | 관계 | 설명 |
 | --- | --- |
 | `MEMBER 1:1 CART` | 회원은 하나의 장바구니를 가집니다. |
+| `MEMBER 1:N MEMBER_ADDRESS` | 회원은 여러 배송지를 등록할 수 있습니다. |
 | `MEMBER 1:N PRODUCT` | 회원은 여러 상품을 등록할 수 있습니다. |
 | `CATEGORY 1:N PRODUCT` | 카테고리는 여러 상품을 포함합니다. |
 | `PRODUCT 1:N PRODUCT_OPTION` | 상품은 여러 옵션을 가질 수 있습니다. |
@@ -261,6 +292,7 @@ src/
 | `ORDERS 1:N ORDER_ITEM` | 주문은 여러 주문 상품을 포함합니다. |
 | `PRODUCT_OPTION 1:N ORDER_ITEM` | 주문 상품은 주문 당시 상품 옵션을 참조합니다. |
 | `ORDERS 1:1 PAYMENT` | 주문은 하나의 결제 정보와 연결됩니다. |
+| `PAYMENT 1:1 REFUND` | 결제 건은 하나의 환불 요청과 연결될 수 있습니다. |
 | `COUPONS 1:N MEMBER_COUPONS` | 쿠폰은 여러 회원에게 발급될 수 있습니다. |
 | `MEMBER 1:N MEMBER_COUPONS` | 회원은 여러 쿠폰을 보유할 수 있습니다. |
 | `MEMBER 1:N CHAT_ROOM` | 회원은 문의 채팅방을 개설할 수 있습니다. |
@@ -279,6 +311,21 @@ src/
 | name | VARCHAR(50) |  | 이름 |
 | phone_number | VARCHAR(20) |  | 전화번호 |
 | role | VARCHAR(20) |  | USER, ADMIN |
+| created_at | DATETIME |  | 생성일시 |
+| updated_at | DATETIME |  | 수정일시 |
+
+#### MEMBER_ADDRESS
+
+| 필드명 | 타입 | 키 | 설명 |
+| --- | --- | --- | --- |
+| id | BIGINT | PK | 배송지 ID |
+| member_id | BIGINT | FK | 회원 참조 |
+| receiver_name | VARCHAR(50) |  | 수령인 이름 |
+| receiver_phone | VARCHAR(20) |  | 수령인 연락처 |
+| zipcode | VARCHAR(10) |  | 우편번호 |
+| address | VARCHAR(255) |  | 기본 주소 |
+| detail_address | VARCHAR(255) |  | 상세 주소 |
+| default_address | BOOLEAN |  | 기본 배송지 여부 |
 | created_at | DATETIME |  | 생성일시 |
 | updated_at | DATETIME |  | 수정일시 |
 
@@ -345,10 +392,16 @@ src/
 | id | BIGINT | PK | 주문 ID |
 | member_id | BIGINT | FK | 회원 참조 |
 | order_number | VARCHAR(50) | UK | 노출용 고유 주문번호 |
+| member_coupon_id | BIGINT |  | 사용 쿠폰 ID, Nullable |
 | order_price | INTEGER |  | 주문 상품 금액 |
 | discount_price | INTEGER |  | 할인 금액 |
 | delivery_price | INTEGER |  | 배송비 |
 | total_amount | INTEGER |  | 최종 결제 금액 |
+| receiver_name | VARCHAR(50) |  | 주문 당시 수령인 이름 스냅샷 |
+| receiver_phone | VARCHAR(20) |  | 주문 당시 수령인 연락처 스냅샷 |
+| zipcode | VARCHAR(10) |  | 주문 당시 우편번호 스냅샷 |
+| address | VARCHAR(255) |  | 주문 당시 기본 주소 스냅샷 |
+| detail_address | VARCHAR(255) |  | 주문 당시 상세 주소 스냅샷 |
 | status | VARCHAR(30) |  | PENDING_PAYMENT, CONFIRMED, CANCELED, EXPIRED |
 | created_at | DATETIME |  | 생성일시 |
 | updated_at | DATETIME |  | 수정일시 |
@@ -381,6 +434,25 @@ src/
 | pg_amount | INTEGER |  | PG 실제 결제 금액 |
 | status | VARCHAR(20) |  | PENDING, PAID, FAILED, CANCELED, REFUNDED |
 | paid_at | DATETIME |  | 결제 완료 일시, Nullable |
+| created_at | DATETIME |  | 생성일시 |
+| updated_at | DATETIME |  | 수정일시 |
+
+#### REFUND
+
+| 필드명 | 타입 | 키 | 설명 |
+| --- | --- | --- | --- |
+| id | BIGINT | PK | 환불 ID |
+| payment_id | BIGINT | FK, UK | 결제 참조 |
+| requester_id | BIGINT | FK | 환불 요청 회원 참조 |
+| admin_id | BIGINT | FK | 처리 관리자, Nullable |
+| reason | TEXT |  | 환불 요청 사유 |
+| rejection_reason | TEXT |  | 환불 거절 사유, Nullable |
+| failure_reason | TEXT |  | 환불 실패 사유, Nullable |
+| coupon_restored | BOOLEAN |  | 쿠폰 복구 여부 |
+| refund_amount | INTEGER |  | 환불 금액 |
+| status | VARCHAR(20) |  | REQUESTED, REJECTED, COMPLETED, FAILED |
+| requested_at | DATETIME |  | 환불 요청 일시 |
+| processed_at | DATETIME |  | 환불 처리 일시, Nullable |
 | created_at | DATETIME |  | 생성일시 |
 | updated_at | DATETIME |  | 수정일시 |
 
@@ -429,7 +501,7 @@ src/
 | 필드명 | 타입 | 키 | 설명 |
 | --- | --- | --- | --- |
 | id | BIGINT | PK | 메시지 ID |
-| chat_room_id | BIGINT | FK | 채팅방 참조 |
+| chat_room_id | BIGINT | FK, IDX | 채팅방 참조 |
 | sender_id | BIGINT | FK | 발신 회원 참조 |
 | content | TEXT |  | 채팅 내용 |
 | message_type | VARCHAR(20) |  | USER, ADMIN, SYSTEM |
@@ -459,9 +531,13 @@ src/
 | `OptionStatus` | 상품 옵션 상태 | `ON_SALE`, `SOLDOUT`, `DISCONTINUED` |
 | `OrderStatus` | 주문 상태 | `PENDING_PAYMENT`, `CONFIRMED`, `CANCELED`, `EXPIRED` |
 | `PaymentStatus` | 결제 상태 | `PENDING`, `PAID`, `FAILED`, `CANCELED`, `REFUNDED` |
+| `RefundStatus` | 환불 상태 | `REQUESTED`, `REJECTED`, `COMPLETED`, `FAILED` |
 | `CouponStatus` | 쿠폰 상태 | `ACTIVE`, `DISABLED` |
 | `MemberCouponStatus` | 발급 쿠폰 상태 | `UNUSED`, `USED`, `EXPIRED` |
 | `ChatRoomStatus` | 채팅방 상태 | `WAITING`, `IN_PROGRESS`, `CLOSED` |
 | `WebhookStatus` | 웹훅 처리 상태 | `RECEIVED`, `PROCESSED`, `IGNORED`, `FAILED` |
 
 > `ErrorCode` enum은 공통 예외 응답 표에서 관리합니다.
+
+
+
