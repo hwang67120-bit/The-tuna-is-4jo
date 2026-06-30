@@ -3,6 +3,7 @@ package com.example.thetunais4joteamproject.domain.infra.webhook;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import java.util.Optional;
 
@@ -13,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.example.thetunais4joteamproject.domain.coupon.service.CouponService;
 import com.example.thetunais4joteamproject.domain.order.entity.Order;
 import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
 import com.example.thetunais4joteamproject.domain.payment.entity.PaymentStatus;
@@ -27,11 +29,14 @@ class RefundWebhookServiceTest {
 	@Mock
 	private RefundRepository refundRepository;
 
+	@Mock
+	private CouponService couponService;
+
 	private RefundWebhookService refundWebhookService;
 
 	@BeforeEach
 	void setUp() {
-		refundWebhookService = new RefundWebhookService(refundRepository);
+		refundWebhookService = new RefundWebhookService(refundRepository, couponService);
 	}
 
 	@Test
@@ -51,6 +56,26 @@ class RefundWebhookServiceTest {
 		// then
 		assertThat(payment.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
 		assertThat(refund.getStatus()).isEqualTo(RefundStatus.COMPLETED);
+	}
+
+	@Test
+	void completeRefundByWebhook_쿠폰을_사용한_주문이면_쿠폰을_복구한다() {
+		// given
+		Long memberCouponId = 30L;
+		Payment payment = createPaidPayment(10L, "pay-123", 26000);
+		ReflectionTestUtils.setField(payment.getOrder(), "memberCouponId", memberCouponId);
+		Refund refund = createRefund(100L, payment);
+
+		given(refundRepository.findTopByPaymentIdAndStatusInOrderByRequestedAtDesc(
+			org.mockito.ArgumentMatchers.eq(payment.getId()),
+			anyList()
+		)).willReturn(Optional.of(refund));
+
+		// when
+		refundWebhookService.completeRefundByWebhook(payment);
+
+		// then
+		verify(couponService).restoreCouponIfUsed(payment.getOrder().getMember().getId(), memberCouponId);
 	}
 
 	@Test

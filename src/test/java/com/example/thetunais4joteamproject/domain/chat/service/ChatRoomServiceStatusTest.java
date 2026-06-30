@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import com.example.thetunais4joteamproject.domain.chat.dto.CloseChatRoomResponse;
 import com.example.thetunais4joteamproject.domain.chat.dto.CreateChatRoomRequest;
 import com.example.thetunais4joteamproject.domain.chat.dto.CreateChatRoomResponse;
+import com.example.thetunais4joteamproject.domain.chat.dto.GetChatRoomResponse;
 import com.example.thetunais4joteamproject.domain.chat.dto.JoinChatRoomResponse;
 import com.example.thetunais4joteamproject.domain.chat.entity.ChatMessage;
 import com.example.thetunais4joteamproject.domain.chat.entity.ChatRoom;
@@ -19,6 +20,7 @@ import com.example.thetunais4joteamproject.domain.chat.repository.ChatRoomReposi
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
 import com.example.thetunais4joteamproject.domain.user.entity.MemberRole;
 import com.example.thetunais4joteamproject.domain.user.repository.MemberRepository;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -89,6 +91,49 @@ class ChatRoomServiceStatusTest {
         assertThat(chatRoom.getCompletedAt()).isNotNull();
 
         verify(chatRoomRepository).save(any(ChatRoom.class));
+    }
+
+    @Test
+    @DisplayName("관리자는 진행중인 채팅방을 종료할 수 있다.")
+    void adminCanCloseInProgressChatRoom() {
+        // given
+        Member admin = createMember(ADMIN_ID, MemberRole.ADMIN);
+        ChatRoom chatRoom = ChatRoom.create(USER_ID, "상품 문의");
+        ReflectionTestUtils.setField(chatRoom, "id", CHAT_ROOM_ID);
+        chatRoom.joinAdmin(ADMIN_ID);
+
+        given(memberRepository.findById(ADMIN_ID)).willReturn(Optional.of(admin));
+        given(chatRoomRepository.findByIdForUpdate(CHAT_ROOM_ID)).willReturn(Optional.of(chatRoom));
+        given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        CloseChatRoomResponse response = chatRoomService.close(ADMIN_ID, CHAT_ROOM_ID);
+
+        // then
+        assertThat(response.status()).isEqualTo(ChatRoomStatus.CLOSED);
+        assertThat(chatRoom.getStatus()).isEqualTo(ChatRoomStatus.CLOSED);
+        assertThat(chatRoom.getCompletedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("관리자는 종료된 채팅방 내용을 조회할 수 있다.")
+    void adminCanReadClosedChatRoom() {
+        // given
+        Member admin = createMember(ADMIN_ID, MemberRole.ADMIN);
+        ChatRoom chatRoom = ChatRoom.create(USER_ID, "상품 문의");
+        ReflectionTestUtils.setField(chatRoom, "id", CHAT_ROOM_ID);
+        chatRoom.joinAdmin(ADMIN_ID);
+        chatRoom.closeByUser(USER_ID);
+
+        given(memberRepository.findById(ADMIN_ID)).willReturn(Optional.of(admin));
+        given(chatRoomRepository.findById(CHAT_ROOM_ID)).willReturn(Optional.of(chatRoom));
+        given(chatMessageRepository.findByChatRoomIdOrderByCreatedAtAsc(CHAT_ROOM_ID)).willReturn(List.of());
+
+        // when
+        GetChatRoomResponse response = chatRoomService.getOne(ADMIN_ID, CHAT_ROOM_ID);
+
+        // then
+        assertThat(response.status()).isEqualTo(ChatRoomStatus.CLOSED);
     }
 
     private Member createMember(Long memberId, MemberRole memberRole) {

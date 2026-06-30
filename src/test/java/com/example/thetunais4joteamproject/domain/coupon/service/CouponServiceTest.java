@@ -350,4 +350,45 @@ class CouponServiceTest {
         assertThat(memberCoupon.getCouponStatus()).isEqualTo(MemberCouponStatus.UNUSED);
         assertThat(memberCoupon.getUsedAt()).isNull();
     }
+
+    @Test
+    @DisplayName("내부 쿠폰 복구 시 사용된 쿠폰이면 UNUSED로 복구한다.")
+    void restoreCouponIfUsed_UsedCoupon_RestoresCoupon() {
+        // given
+        Long memberId = 1L;
+        Long memberCouponId = 1L;
+        Coupon coupon = Coupon.of("쿠폰", 1000, 10000, 10, LocalDateTime.now().plusDays(1));
+        MemberCoupon memberCoupon = MemberCoupon.of(memberId, coupon);
+        memberCoupon.use(20000);
+        ReflectionTestUtils.setField(memberCoupon, "id", memberCouponId);
+
+        given(memberCouponRepository.findById(memberCouponId)).willReturn(Optional.of(memberCoupon));
+
+        // when
+        couponService.restoreCouponIfUsed(memberId, memberCouponId);
+
+        // then
+        assertThat(memberCoupon.getCouponStatus()).isEqualTo(MemberCouponStatus.UNUSED);
+        assertThat(memberCoupon.getUsedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("내부 쿠폰 복구 시 사용 전 쿠폰이면 예외 없이 유지한다.")
+    void restoreCouponIfUsed_UnusedCoupon_DoesNothing() {
+        // given
+        Long memberId = 1L;
+        Long memberCouponId = 1L;
+        Coupon coupon = Coupon.of("쿠폰", 1000, 10000, 10, LocalDateTime.now().plusDays(1));
+        MemberCoupon memberCoupon = MemberCoupon.of(memberId, coupon);
+        ReflectionTestUtils.setField(memberCoupon, "id", memberCouponId);
+
+        given(memberCouponRepository.findById(memberCouponId)).willReturn(Optional.of(memberCoupon));
+
+        // when
+        couponService.restoreCouponIfUsed(memberId, memberCouponId);
+
+        // then
+        assertThat(memberCoupon.getCouponStatus()).isEqualTo(MemberCouponStatus.UNUSED);
+        assertThat(memberCoupon.getUsedAt()).isNull();
+    }
 }
