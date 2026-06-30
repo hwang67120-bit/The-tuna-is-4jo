@@ -24,13 +24,16 @@ public record CreateProductRequest(
         @Size(max = 5000, message = "상품 설명은 최대 5000자까지 입력 가능합니다.")
         String description,
 
+        @Size(max = 1000, message = "이미지 URL은 최대 1000자까지 가능합니다.")
+        String imageUrl,
+
         @Valid
         @NotEmpty(message = "옵션 목록은 필수입니다. 빈 배열이라도 채워주세요.")
 		List<ProductOptionRequest> options
 ) {
     // 정적 팩토리 메서드 공통 규칙 반영
-    public static CreateProductRequest of(Long categoryId, String name, int price, String description, List<ProductOptionRequest> options) {
-        return new CreateProductRequest(categoryId, name, price, description, options);
+    public static CreateProductRequest of(Long categoryId, String name, int price, String description, String imageUrl, List<ProductOptionRequest> options) {
+        return new CreateProductRequest(categoryId, name, price, description, imageUrl, options);
     }
 
     /**
