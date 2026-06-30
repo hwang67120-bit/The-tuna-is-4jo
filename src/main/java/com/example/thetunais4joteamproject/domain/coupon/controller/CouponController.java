@@ -2,6 +2,7 @@ package com.example.thetunais4joteamproject.domain.coupon.controller;
 
 import java.util.List;
 
+import com.example.thetunais4joteamproject.domain.coupon.dto.AvailableCouponResponse;
 import com.example.thetunais4joteamproject.domain.coupon.dto.IssueCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.dto.IssueCouponResponse;
 import com.example.thetunais4joteamproject.domain.coupon.dto.MemberCouponInfoResponse;
@@ -58,6 +59,19 @@ public class CouponController {
         List<MemberCouponInfoResponse> responseData = couponService.getMyCoupons(memberId);
 
         // ApiResponse.ok 적용, 보유 쿠폰이 0개여도 [] 빈 리스트 반환 방어
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(responseData));
+    }
+
+    /**
+     * [GET] 사용자 발급 가능 쿠폰 목록 조회
+     */
+    @GetMapping("/available")
+    public ResponseEntity<ApiResponse<List<AvailableCouponResponse>>> getAvailableCoupons(
+            @AuthenticationPrincipal
+            Long memberId
+    ) {
+        List<AvailableCouponResponse> responseData = couponService.getAvailableCoupons(memberId);
+
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(responseData));
     }
 
