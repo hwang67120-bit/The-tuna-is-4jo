@@ -308,7 +308,9 @@ src/
 
 | 기능 | Method | API Path | 인증 | 요청 | 응답 |
 | --- | --- | --- | --- | --- | --- |
+| 카테고리 목록 조회 | GET | `/api/categories` | X | 카테고리 목록 조회 요청 | 카테고리 목록 반환 |
 | 카테고리 생성 | POST | `/api/categories` | 관리자 | 카테고리 정보 전달 | 카테고리 ID 반환 |
+| 카테고리 삭제 | DELETE | `/api/categories/{categoryId}` | 관리자 | 카테고리 ID 전달 | 삭제 성공 반환 |
 
 ### 상품
 
@@ -370,6 +372,7 @@ src/
 | 쿠폰 관리 목록 조회 | GET | `/api/admin/coupons` | 관리자 | 쿠폰 관리 조회 요청 | 쿠폰 발급/사용 현황 반환 |
 | 쿠폰 발급 | POST | `/api/coupons/issue` | O | 발급할 쿠폰 정보 전달 | 발급 결과 반환 |
 | 보유 쿠폰 조회 | GET | `/api/coupons` | O | 인증 정보 기준 조회 | 보유 쿠폰 목록 반환 |
+| 발급 가능 쿠폰 목록 조회 | GET | `/api/coupons/available` | O | 인증 정보 기준 조회 | 발급 가능 쿠폰 목록 반환 |
 | 쿠폰 사용 처리 | POST | `/api/coupons/use` | O | 사용할 쿠폰 정보 전달 | 사용 처리 결과 반환 |
 | 쿠폰 복구 처리 | POST | `/api/coupons/restore` | O | 복구할 쿠폰 정보 전달 | 복구 처리 결과 반환 |
 
@@ -657,6 +660,7 @@ src/
 | `WebhookStatus` | 웹훅 처리 상태 | `RECEIVED`, `PROCESSED`, `IGNORED`, `FAILED` |
 
 > `ErrorCode` enum은 공통 예외 응답 표에서 관리합니다.
+
 
 
 
