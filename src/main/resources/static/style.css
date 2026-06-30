@@ -376,29 +376,76 @@ h1, h2, h3 {
     border: 1px solid #cfd5dd;
 }
 
-.chip-panel {
-    display: flex;
+.popular-search-card {
+    display: grid;
     gap: 8px;
-    flex-wrap: wrap;
-    min-height: 42px;
-    padding: 10px 0 0;
+    min-height: 58px;
+    padding: 12px;
+    border: 1px solid #dfe3e8;
+    border-radius: 8px;
+    background: #fff;
 }
 
-.search-chip {
-    border: 1px solid #d5dae2;
-    border-radius: 999px;
-    background: #fff;
-    color: #252a31;
-    padding: 8px 12px;
+.popular-search-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+}
+
+.popular-search-row {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e5e9ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    text-align: left;
+}
+
+.popular-search-row:hover {
+    border-color: #0676ff;
+    background: #f3f8ff;
+}
+
+.popular-search-row.top-rank {
+    border-color: #ffd2bf;
+    background: #fff7f2;
+}
+
+.popular-rank {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #eef1f5;
+    color: #4f5965;
+    font-weight: 900;
+}
+
+.popular-search-row.top-rank .popular-rank {
+    background: #ff6b2d;
+    color: #fff;
+}
+
+.popular-keyword {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 800;
+}
+
+.popular-score {
+    color: #747b87;
     font-size: 13px;
 }
 
-.search-chip:hover {
-    border-color: #0676ff;
-    color: #0676ff;
-}
-
-.muted-text {
+.popular-search-meta,
+.popular-search-empty {
     color: #747b87;
     font-size: 13px;
 }
@@ -449,6 +496,62 @@ h1, h2, h3 {
     max-width: 260px;
     border: 1px solid #cfd5dd;
     height: 34px;
+}
+
+.empty-text {
+    color: #747b87;
+    font-weight: 600;
+}
+
+.available-coupon-panel {
+    margin-bottom: 12px;
+}
+
+.coupon-subtitle {
+    margin: 12px 0 8px;
+    font-size: 15px;
+    color: #4f5965;
+}
+
+.available-coupon-list,
+.admin-refund-list {
+    display: grid;
+    gap: 10px;
+}
+
+.available-coupon-card,
+.admin-refund-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border: 1px solid #dfe3e8;
+    background: #fff;
+    padding: 14px 16px;
+}
+
+.available-coupon-card div,
+.admin-refund-row div:first-child {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+
+.available-coupon-card strong,
+.admin-refund-row strong {
+    font-size: 16px;
+}
+
+.available-coupon-card span,
+.admin-refund-row span,
+.available-coupon-card small,
+.admin-refund-row small {
+    color: #747b87;
+}
+
+.admin-refund-row p {
+    margin: 4px 0 0;
+    color: #111820;
 }
 
 .form-actions {
@@ -562,6 +665,40 @@ h1, h2, h3 {
     background: #fffafa;
 }
 
+.console-form.admin-edit-form {
+    margin-top: 12px;
+}
+
+.admin-product-layout {
+    display: grid;
+    grid-template-columns: minmax(260px, .85fr) 1.35fr;
+    gap: 16px;
+    align-items: start;
+    margin-top: 14px;
+}
+
+.admin-product-row {
+    display: grid;
+    gap: 5px;
+    width: 100%;
+    padding: 13px 0;
+    border: 0;
+    border-bottom: 1px solid #e6e9ee;
+    background: transparent;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+}
+
+.admin-product-row:hover {
+    background: #f8fafc;
+}
+
+.admin-product-row span {
+    color: #747b87;
+    font-size: 13px;
+}
+
 .inline-form {
     display: grid;
     grid-template-columns: minmax(160px, 260px) auto;
@@ -612,6 +749,20 @@ h1, h2, h3 {
 
 .simple-row small {
     color: #747b87;
+}
+
+.admin-option-row {
+    width: 100%;
+    border-width: 0 0 1px;
+    border-color: #e6e9ee;
+    background: transparent;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+}
+
+.admin-option-row:hover {
+    background: #f8fafc;
 }
 
 .row-actions {
@@ -859,7 +1010,7 @@ h1, h2, h3 {
         padding: 14px;
     }
 
-    .detail-layout, .admin-shell {
+    .detail-layout, .admin-shell, .admin-product-layout {
         grid-template-columns: 1fr;
     }
 
@@ -1006,7 +1157,7 @@ h1, h2, h3 {
 
 .support-tabs {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 4px;
     padding: 10px 24px 18px;
     border-top: 1px solid #eee;
@@ -1026,7 +1177,8 @@ h1, h2, h3 {
 
 .support-admin {
     margin-top: 12px;
-    padding: 14px;
+    padding: 16px;
+    border: 1px solid #eceff3;
 }
 
 .support-section-title, .support-detail-head {
@@ -1037,18 +1189,21 @@ h1, h2, h3 {
 }
 
 .support-section-title button {
-    border: 0;
-    background: transparent;
-    color: #666;
+    border: 1px solid #e0e4eb;
+    border-radius: 999px;
+    background: #fff;
+    color: #444;
     font-weight: 800;
+    padding: 7px 12px;
 }
 
 .support-chat-list {
     display: grid;
     gap: 8px;
     margin-top: 10px;
-    max-height: 170px;
+    max-height: 146px;
     overflow: auto;
+    padding-right: 4px;
 }
 
 .support-chat-list button {
@@ -1056,10 +1211,16 @@ h1, h2, h3 {
     gap: 4px;
     width: 100%;
     text-align: left;
-    border: 1px solid #edf0f3;
-    border-radius: 10px;
-    background: #fafafa;
-    padding: 10px;
+    border: 1px solid #e8ebf0;
+    border-radius: 12px;
+    background: #fff;
+    padding: 11px 12px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.support-chat-list button:hover {
+    border-color: #ffb08c;
+    background: #fff8f4;
 }
 
 .support-chat-list span, .support-message span, .support-created span {
@@ -1068,25 +1229,75 @@ h1, h2, h3 {
 }
 
 .support-chat-detail {
+    margin-top: 12px;
+}
+
+.support-detail-card {
+    display: grid;
+    gap: 10px;
     margin-top: 10px;
+    padding: 12px;
+    border: 1px solid #eceff3;
+    border-radius: 14px;
+    background: #fff;
 }
 
 .support-detail-head {
-    padding: 10px 0;
-    border-top: 1px solid #eee;
+    padding: 0 0 8px;
+    border-bottom: 1px solid #edf0f3;
+}
+
+.support-detail-head > div {
+    display: grid;
+    gap: 3px;
+}
+
+.support-detail-head strong {
+    font-size: 15px;
+}
+
+.support-detail-head span {
+    color: #777;
+    font-size: 12px;
 }
 
 .support-messages {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 8px;
-    max-height: 190px;
+    max-height: 220px;
     overflow: auto;
+    padding-right: 4px;
 }
 
 .support-message {
-    padding: 10px;
-    border-radius: 10px;
+    width: fit-content;
+    max-width: 84%;
+    padding: 10px 12px;
+    border-radius: 14px;
     background: #f5f6f8;
+}
+
+.support-message.mine {
+    align-self: flex-end;
+    background: #ff6b2d;
+    color: #fff;
+}
+
+.support-message.mine span {
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.support-message.other {
+    align-self: flex-start;
+}
+
+.support-message.system {
+    align-self: center;
+    max-width: 100%;
+    background: #f0f2f5;
+    color: #666;
+    text-align: center;
 }
 
 .support-message p, .support-created p {

@@ -44,7 +44,7 @@
       <h2>인기검색어</h2>
       <button id="refreshPopularSearchButton" class="outline-button" type="button">새로고침</button>
     </div>
-    <div id="popularSearchPanel" class="chip-panel"></div>
+    <div id="popularSearchPanel" class="popular-search-card"></div>
     <div id="productGrid" class="product-grid"></div>
   </section>
 
@@ -83,7 +83,6 @@
       <select id="orderCouponSelect">
         <option value="">쿠폰을 사용하지 않음</option>
       </select>
-      <button id="refreshCouponButton" class="outline-button" type="button">내 쿠폰 조회</button>
     </div>
 
     <div class="order-summary">
@@ -122,9 +121,13 @@
     </div>
     <div id="profileAddressSummaryPanel" class="table-panel compact-panel"></div>
 
-    <div class="section-heading compact">
+    <div class="section-heading compact split-heading">
       <h2>내 쿠폰</h2>
+      <button id="openCouponIssueButton" class="outline-button" type="button">새로고침</button>
     </div>
+    <h3 class="coupon-subtitle">발급 가능 쿠폰</h3>
+    <div id="availableCouponPanel" class="available-coupon-panel table-panel compact-panel"></div>
+    <h3 class="coupon-subtitle">보유 쿠폰</h3>
     <div id="couponPanel" class="table-panel"></div>
 
   </section>
@@ -141,21 +144,20 @@
     <div class="admin-shell">
       <aside class="admin-menu">
         <strong>SAVER Admin</strong>
-        <button class="active" type="button" data-admin-panel="productCreatePanel">상품등록</button>
-        <button type="button" data-admin-panel="productManagePanel">상품수정/삭제</button>
-        <button type="button" data-admin-panel="stockOptionPanel">상품재고/옵션</button>
+        <button class="active" type="button" data-admin-panel="productManagePanel">상품 관리</button>
+        <button type="button" data-admin-panel="productCreatePanel">상품 등록</button>
         <button type="button" data-admin-panel="categoryPanel">카테고리</button>
         <button type="button" data-admin-panel="couponAdminPanel">쿠폰</button>
         <button type="button" data-admin-panel="refundAdminPanel">환불</button>
         <button type="button" data-view="home">상품목록</button>
       </aside>
       <div class="admin-content">
-        <section id="productCreatePanel" class="admin-panel">
+        <section id="productCreatePanel" class="admin-panel hidden">
           <h2>상품등록</h2>
           <div class="notice-box"><strong>!</strong><span>상품 기본정보와 최초 옵션을 함께 등록합니다.</span></div>
           <form id="productCreateForm" class="console-form">
             <h3>기본정보</h3>
-            <label><span>카테고리 ID</span><input name="categoryId" type="number" min="1" value="1" required></label>
+            <label><span>카테고리</span><select name="categoryId" required><option value="">카테고리를 선택해 주세요</option></select></label>
             <label><span>상품명</span><input name="name" required placeholder="오버핏 후드티"></label>
             <label><span>판매가</span><input name="price" type="number" min="0" required placeholder="39000"></label>
             <label><span>상세설명</span><textarea name="description" rows="5" placeholder="상세설명..."></textarea></label>
@@ -166,44 +168,57 @@
             <button class="primary-button" type="submit">상품 등록</button>
           </form>
         </section>
-        <section id="stockOptionPanel" class="admin-panel hidden">
-          <h2>상품재고/옵션</h2>
-          <form id="stockForm" class="console-form">
-            <h3>대표 재고 설정</h3>
-            <label><span>상품 ID</span><input name="productId" type="number" min="1" required></label>
-            <label><span>재고 수량</span><input name="stockQuantity" type="number" min="0" required></label>
-            <button class="outline-button" type="submit">재고 수정</button>
-          </form>
-          <form id="optionForm" class="console-form">
-            <h3>옵션 상태 변경</h3>
-            <label><span>상품 ID</span><input name="productId" type="number" min="1" required></label>
-            <label><span>옵션 ID</span><input name="optionId" type="number" min="1" required></label>
-            <label><span>옵션 재고</span><input name="optionStock" type="number" min="0" required></label>
-            <label><span>추가 금액</span><input name="additionalPrice" type="number" min="0" value="0" required></label>
-            <label><span>판매 상태</span><select name="status"><option>ON_SALE</option><option>SOLDOUT</option><option>DISCONTINUED</option></select></label>
-            <button class="outline-button" type="submit">옵션 수정</button>
-          </form>
-        </section>
-        <section id="productManagePanel" class="admin-panel hidden">
-          <h2>상품수정/삭제</h2>
-          <form id="productUpdateForm" class="console-form">
-            <label><span>상품 ID</span><input name="productId" type="number" min="1" required></label>
-            <label><span>카테고리 ID</span><input name="categoryId" type="number" min="1" required></label>
-            <label><span>상품명</span><input name="name" required></label>
-            <label><span>판매가</span><input name="price" type="number" min="0" required></label>
-            <label><span>상세설명</span><textarea name="description" rows="5"></textarea></label>
-            <button class="outline-button" type="submit">상품 수정</button>
-          </form>
-          <form id="productDeleteForm" class="console-form danger-form">
-            <label><span>상품 ID</span><input name="productId" type="number" min="1" required></label>
-            <button class="outline-button danger-button" type="submit">상품 삭제</button>
-          </form>
+        <section id="productManagePanel" class="admin-panel">
+          <div class="section-heading compact">
+            <h2>상품 관리</h2>
+            <button id="loadAdminProductsButton" class="outline-button" type="button">목록 새로고침</button>
+          </div>
+          <div class="admin-product-layout">
+            <div>
+              <div id="adminProductListPanel" class="table-panel compact-panel"></div>
+            </div>
+            <div>
+              <div id="adminProductDetailPanel" class="table-panel compact-panel">상품을 선택하면 수정, 삭제, 재고, 옵션 관리가 표시됩니다.</div>
+              <form id="productUpdateForm" class="console-form admin-edit-form hidden">
+                <h3>상품 정보 수정</h3>
+                <label><span>상품 ID</span><input name="productId" type="number" min="1" required readonly></label>
+                <label><span>카테고리</span><select name="categoryId" required><option value="">카테고리를 선택해 주세요</option></select></label>
+                <label><span>상품명</span><input name="name" required></label>
+                <label><span>판매가</span><input name="price" type="number" min="0" required></label>
+                <label><span>상세설명</span><textarea name="description" rows="4"></textarea></label>
+                <div class="row-actions">
+                  <button class="primary-button" type="submit">상품 수정</button>
+                  <button id="adminDeleteSelectedProductButton" class="outline-button danger-button" type="button">상품 삭제</button>
+                </div>
+              </form>
+              <form id="stockForm" class="console-form admin-edit-form hidden">
+                <h3>대표 재고 설정</h3>
+                <label><span>상품 ID</span><input name="productId" type="number" min="1" required readonly></label>
+                <label><span>재고 수량</span><input name="stockQuantity" type="number" min="0" required></label>
+                <button class="outline-button" type="submit">재고 수정</button>
+              </form>
+              <div id="optionLookupPanel" class="table-panel compact-panel hidden"></div>
+              <form id="optionForm" class="console-form admin-edit-form hidden">
+                <h3>옵션 상태 변경</h3>
+                <label><span>상품 ID</span><input name="productId" type="number" min="1" required readonly></label>
+                <label><span>옵션 ID</span><input name="optionId" type="number" min="1" required readonly></label>
+                <label><span>옵션 재고</span><input name="optionStock" type="number" min="0" required></label>
+                <label><span>추가 금액</span><input name="additionalPrice" type="number" min="0" value="0" required></label>
+                <label><span>판매 상태</span><select name="status"><option>ON_SALE</option><option>SOLDOUT</option><option>DISCONTINUED</option></select></label>
+                <button class="outline-button" type="submit">옵션 수정</button>
+              </form>
+            </div>
+          </div>
         </section>
         <section id="categoryPanel" class="admin-panel hidden">
           <h2>카테고리</h2>
           <form id="categoryCreateForm" class="console-form">
             <label><span>카테고리명</span><input name="name" required></label>
             <button class="outline-button" type="submit">카테고리 생성</button>
+          </form>
+          <form id="categoryDeleteForm" class="console-form danger-form">
+            <label><span>카테고리</span><select name="categoryId" required><option value="">삭제할 카테고리를 선택해 주세요</option></select></label>
+            <button class="outline-button danger-button" type="submit">카테고리 삭제</button>
           </form>
         </section>
         <section id="couponAdminPanel" class="admin-panel hidden">
@@ -223,16 +238,11 @@
           <div id="adminCouponPanel" class="table-panel"></div>
         </section>
         <section id="refundAdminPanel" class="admin-panel hidden">
-          <h2>환불 승인 처리</h2>
-          <form id="refundApproveForm" class="console-form">
-            <label><span>환불 ID</span><input name="refundId" type="number" min="1" required></label>
-            <button class="primary-button" type="submit">승인</button>
-          </form>
-          <form id="refundRejectForm" class="console-form">
-            <label><span>환불 ID</span><input name="refundId" type="number" min="1" required></label>
-            <label><span>거절 사유</span><textarea name="rejectionReason" rows="3" required></textarea></label>
-            <button class="outline-button danger-button" type="submit">거절</button>
-          </form>
+          <div class="section-heading compact split-heading">
+            <h2>환불 요청</h2>
+            <button id="loadAdminRefundsButton" class="outline-button" type="button">새로고침</button>
+          </div>
+          <div id="adminRefundListPanel" class="table-panel compact-panel"></div>
           <div id="adminRefundResultPanel" class="table-panel compact-panel"></div>
         </section>
       </div>
@@ -322,7 +332,7 @@
       </div>
     </div>
     <section id="supportHomePanel" class="support-panel">
-      <div class="support-greeting">
+      <div id="supportGreeting" class="support-greeting">
         <div class="support-small-logo">P</div>
         <div><strong>SAVER 문의</strong><p>안녕하세요.<br>궁금한 점을 남겨주시면 확인 후 답변드릴게요.</p></div>
       </div>
@@ -336,14 +346,12 @@
         <div id="supportChatList" class="support-chat-list"></div>
         <div id="supportChatDetail" class="support-chat-detail"></div>
       </div>
-      <div class="support-time">오전 10:00부터 운영해요</div>
+      <div id="supportTime" class="support-time">오전 10:00부터 운영해요</div>
     </section>
     <section id="supportTalkPanel" class="support-panel hidden"><div id="supportTalkContent" class="support-empty">생성된 문의가 여기에 표시됩니다.</div></section>
-    <section id="supportSettingsPanel" class="support-panel hidden"><div class="support-empty">로그인 상태와 문의 권한을 확인할 수 있어요.</div></section>
     <nav class="support-tabs">
       <button class="active" type="button" data-support-tab="home">홈</button>
       <button type="button" data-support-tab="talk">대화</button>
-      <button type="button" data-support-tab="settings">설정</button>
     </nav>
   </div>
 </aside>

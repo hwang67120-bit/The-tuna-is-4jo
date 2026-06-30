@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.example.thetunais4joteamproject.domain.coupon.service.CouponService;
 import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
 import com.example.thetunais4joteamproject.domain.payment.entity.PaymentStatus;
 import com.example.thetunais4joteamproject.domain.refund.entity.Refund;
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class RefundWebhookService {
 
 	private final RefundRepository refundRepository;
+	private final CouponService couponService;
 
 	public void completeRefundByWebhook(Payment payment) {
 
@@ -46,5 +48,14 @@ public class RefundWebhookService {
 		}
 
 		refund.completeByWebhook();
+		restoreCouponIfUsed(payment, refund);
+	}
+
+	private void restoreCouponIfUsed(Payment payment, Refund refund) {
+		couponService.restoreCouponIfUsed(
+			payment.getOrder().getMember().getId(),
+			payment.getOrder().getMemberCouponId()
+		);
+		refund.restoreCoupon();
 	}
 }

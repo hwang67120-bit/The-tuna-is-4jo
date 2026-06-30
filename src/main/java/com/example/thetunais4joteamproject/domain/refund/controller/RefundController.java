@@ -1,9 +1,12 @@
 package com.example.thetunais4joteamproject.domain.refund.controller;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import com.example.thetunais4joteamproject.domain.refund.dto.AdminRefundResponse;
 import com.example.thetunais4joteamproject.domain.refund.dto.RefundRejectRequest;
 import com.example.thetunais4joteamproject.domain.refund.dto.RefundRequest;
 import com.example.thetunais4joteamproject.domain.refund.dto.RefundResponse;
@@ -25,6 +28,11 @@ public class RefundController {
 		@Valid @RequestBody RefundRequest request
 	) {
 		return ResponseEntity.ok(refundService.requestRefund(memberId, request));
+	}
+
+	@GetMapping("/admin/refunds")
+	public ResponseEntity<List<AdminRefundResponse>> getAdminRefunds() {
+		return ResponseEntity.ok(refundService.getAdminRefunds());
 	}
 
 	@PostMapping("/admin/refunds/{refundId}/approve")

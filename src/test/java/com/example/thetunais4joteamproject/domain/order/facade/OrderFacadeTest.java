@@ -504,6 +504,66 @@ class OrderFacadeTest {
 	}
 
 	@Test
+	void 쿠폰을_사용한_결제대기_주문을_취소하면_쿠폰을_복구한다() {
+		// given
+		CartService cartService = mock(CartService.class);
+		OrderService orderService = mock(OrderService.class);
+		PaymentCommandService paymentCommandService = mock(PaymentCommandService.class);
+		MemberRepository memberRepository = mock(MemberRepository.class);
+		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
+		CouponService couponService = mock(CouponService.class);
+		AddressRepository addressRepository = mock(AddressRepository.class);
+
+		OrderFacade orderFacade = new OrderFacade(
+			cartService,
+			orderService,
+			paymentCommandService,
+			memberRepository,
+			productOptionRepository,
+			couponService,
+			addressRepository
+		);
+
+		Long memberId = 1L;
+		Long orderId = 10L;
+		Long memberCouponId = 30L;
+		Member member = mock(Member.class);
+		ProductOption productOption = createProductOption(
+			1000L,
+			100L,
+			"테스트 상품",
+			"XL",
+			10000,
+			1500
+		);
+		Order order = createOrder(orderId, member, "ORD-1234567890", 23000, 5000, 3000, 21000);
+		ReflectionTestUtils.setField(order, "memberCouponId", memberCouponId);
+		OrderItem orderItem = createOrderItem(
+			100L,
+			order,
+			productOption,
+			1L,
+			100L,
+			"테스트 상품",
+			"XL",
+			11500,
+			2
+		);
+		Payment payment = createPayment(20L, order, "pay-123", 21000);
+		payment.cancel();
+
+		when(orderService.getOrder(memberId, orderId)).thenReturn(order);
+		when(orderService.getOrderItems(orderId)).thenReturn(List.of(orderItem));
+		when(paymentCommandService.cancelPayment(order)).thenReturn(payment);
+
+		// when
+		orderFacade.cancelOrder(memberId, orderId);
+
+		// then
+		verify(couponService).restoreCouponIfUsed(memberId, memberCouponId);
+	}
+
+	@Test
 	void 결제완료_주문은_주문취소로_취소할_수_없다() {
 		// given
 		CartService cartService = mock(CartService.class);
