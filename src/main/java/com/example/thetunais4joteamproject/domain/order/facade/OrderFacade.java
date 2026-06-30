@@ -131,6 +131,7 @@ public class OrderFacade {
 		restoreOrderItemStock(orderItems);
 
 		Payment payment = paymentCommandService.cancelPayment(order);
+		restoreCouponIfUsed(memberId, order);
 
 		return CancelOrderResponse.of(order, payment);
 	}
@@ -248,6 +249,11 @@ public class OrderFacade {
 		restoreOrderItemStock(orderItems);
 
 		paymentCommandService.expirePayment(order);
+		restoreCouponIfUsed(order.getMember().getId(), order);
+	}
+
+	private void restoreCouponIfUsed(Long memberId, Order order) {
+		couponService.restoreCouponIfUsed(memberId, order.getMemberCouponId());
 	}
 
 	private Member getMember(Long memberId) {
