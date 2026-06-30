@@ -35,3 +35,9 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Add to .gitignore ###
+.env
+.env.*
+!.env.example
+
