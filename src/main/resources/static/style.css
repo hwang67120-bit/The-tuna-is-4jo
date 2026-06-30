@@ -376,7 +376,7 @@ h1, h2, h3 {
     border: 1px solid #cfd5dd;
 }
 
-성.popular-search-card {
+.popular-search-card {
     display: grid;
     gap: 8px;
     min-height: 58px;
