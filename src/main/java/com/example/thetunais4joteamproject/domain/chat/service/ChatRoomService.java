@@ -98,11 +98,10 @@ public class ChatRoomService {
     public CloseChatRoomResponse close(Long memberId, Long chatRoomId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> BusinessException.from(ErrorCode.UNAUTHORIZED));
-        validateUserRole(member);
 
         ChatRoom chatRoom = chatRoomRepository.findByIdForUpdate(chatRoomId)
                 .orElseThrow(() -> BusinessException.from(ErrorCode.NOT_FOUND));
-        chatRoom.closeByUser(member.getId());
+        closeByRole(member, chatRoom);
         sendCloseSystemMessage(chatRoom, member);
         sendAdminChatRoomEvent(chatRoom, EVENT_CLOSED);
 
@@ -250,6 +249,19 @@ public class ChatRoomService {
         if (member.getRole() != MemberRole.USER) {
             throw BusinessException.from(ErrorCode.FORBIDDEN);
         }
+    }
+
+    private void closeByRole(Member member, ChatRoom chatRoom) {
+        if (member.getRole() == MemberRole.ADMIN) {
+            chatRoom.closeByAdmin(member.getId());
+            return;
+        }
+        if (member.getRole() == MemberRole.USER) {
+            chatRoom.closeByUser(member.getId());
+            return;
+        }
+
+        throw BusinessException.from(ErrorCode.FORBIDDEN);
     }
 
     private List<ChatRoom> getChatRoomsByRole(Member member) {

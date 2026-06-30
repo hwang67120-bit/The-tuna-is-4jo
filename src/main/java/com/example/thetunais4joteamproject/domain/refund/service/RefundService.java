@@ -5,10 +5,12 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.thetunais4joteamproject.domain.coupon.service.CouponService;
 import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
 import com.example.thetunais4joteamproject.domain.payment.entity.PaymentStatus;
 import com.example.thetunais4joteamproject.domain.payment.port.PaymentGateway;
 import com.example.thetunais4joteamproject.domain.payment.repository.PaymentRepository;
+import com.example.thetunais4joteamproject.domain.refund.dto.AdminRefundResponse;
 import com.example.thetunais4joteamproject.domain.refund.dto.RefundRequest;
 import com.example.thetunais4joteamproject.domain.refund.dto.RefundResponse;
 import com.example.thetunais4joteamproject.domain.refund.entity.Refund;
@@ -29,6 +31,15 @@ public class RefundService {
 	private final PaymentRepository paymentRepository;
 	private final MemberRepository memberRepository;
 	private final PaymentGateway paymentGateway;
+	private final CouponService couponService;
+
+	@Transactional(readOnly = true)
+	public List<AdminRefundResponse> getAdminRefunds() {
+		return refundRepository.findAllByOrderByRequestedAtDesc()
+			.stream()
+			.map(AdminRefundResponse::from)
+			.toList();
+	}
 
 	@Transactional
 	public RefundResponse requestRefund(Long memberId, RefundRequest request) {
@@ -68,6 +79,7 @@ public class RefundService {
 
 			payment.refund();
 			refund.complete(admin);
+			restoreCouponIfUsed(payment, refund);
 
 			return RefundResponse.from(refund);
 
@@ -116,5 +128,13 @@ public class RefundService {
 		if (existsRefund) {
 			throw BusinessException.from(ErrorCode.ALREADY_REQUESTED_REFUND);
 		}
+	}
+
+	private void restoreCouponIfUsed(Payment payment, Refund refund) {
+		couponService.restoreCouponIfUsed(
+			payment.getOrder().getMember().getId(),
+			payment.getOrder().getMemberCouponId()
+		);
+		refund.restoreCoupon();
 	}
 }

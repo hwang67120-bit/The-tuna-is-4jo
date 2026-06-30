@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.example.thetunais4joteamproject.domain.coupon.service.CouponService;
 import com.example.thetunais4joteamproject.domain.order.entity.Order;
 import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
 import com.example.thetunais4joteamproject.domain.payment.entity.PaymentStatus;
@@ -49,6 +50,9 @@ class RefundTest {
 	@Mock
 	private PaymentGateway paymentGateway;
 
+	@Mock
+	private CouponService couponService;
+
 	private RefundService refundService;
 
 	@BeforeEach
@@ -57,7 +61,8 @@ class RefundTest {
 			refundRepository,
 			paymentRepository,
 			memberRepository,
-			paymentGateway
+			paymentGateway,
+			couponService
 		);
 	}
 
@@ -234,6 +239,27 @@ class RefundTest {
 		assertThat(refund.getStatus()).isEqualTo(RefundStatus.COMPLETED);
 		assertThat(response.status()).isEqualTo(RefundStatus.COMPLETED);
 		verify(paymentGateway).cancelPayment(payment.getPortonePaymentId(), refund.getReason());
+	}
+
+	@Test
+	void approveRefund_쿠폰을_사용한_주문이면_쿠폰을_복구한다() {
+		// given
+		Long adminId = 99L;
+		Long memberCouponId = 30L;
+		Member member = createMember(1L);
+		Member admin = createMember(adminId);
+		Payment payment = createPaidPayment(10L, member, "pay-123", 26000);
+		ReflectionTestUtils.setField(payment.getOrder(), "memberCouponId", memberCouponId);
+		Refund refund = createRefund(100L, payment, member, "단순 변심", 26000);
+
+		given(refundRepository.findById(refund.getId())).willReturn(Optional.of(refund));
+		given(memberRepository.findById(adminId)).willReturn(Optional.of(admin));
+
+		// when
+		refundService.approveRefund(adminId, refund.getId());
+
+		// then
+		verify(couponService).restoreCouponIfUsed(member.getId(), memberCouponId);
 	}
 
 	@Test

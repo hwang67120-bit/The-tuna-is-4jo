@@ -1,5 +1,6 @@
 package com.example.thetunais4joteamproject.domain.coupon.service;
 
+import com.example.thetunais4joteamproject.domain.coupon.dto.AvailableCouponResponse;
 import com.example.thetunais4joteamproject.domain.coupon.dto.CouponAdminResponse;
 import com.example.thetunais4joteamproject.domain.coupon.dto.CreateCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.dto.IssueCouponRequest;
@@ -7,7 +8,9 @@ import com.example.thetunais4joteamproject.domain.coupon.dto.MemberCouponInfoRes
 import com.example.thetunais4joteamproject.domain.coupon.dto.RestoreCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.dto.UseCouponRequest;
 import com.example.thetunais4joteamproject.domain.coupon.entity.Coupon;
+import com.example.thetunais4joteamproject.domain.coupon.entity.CouponStatus;
 import com.example.thetunais4joteamproject.domain.coupon.entity.MemberCoupon;
+import com.example.thetunais4joteamproject.domain.coupon.entity.MemberCouponStatus;
 import com.example.thetunais4joteamproject.domain.coupon.repository.CouponRepository;
 import com.example.thetunais4joteamproject.domain.coupon.repository.MemberCouponRepository;
 import com.example.thetunais4joteamproject.global.error.BusinessException;
@@ -95,6 +98,21 @@ public class CouponService {
     }
 
     /**
+     * [사용자] 발급 가능한 쿠폰 목록 조회
+     */
+    public List<AvailableCouponResponse> getAvailableCoupons(Long memberId) {
+        LocalDateTime now = LocalDateTime.now();
+
+        return couponRepository.findByCouponStatusAndExpirationAtAfterOrderByExpirationAtAsc(CouponStatus.ACTIVE, now)
+            .stream()
+            .map(coupon -> AvailableCouponResponse.of(
+                coupon,
+                memberCouponRepository.existsByMemberIdAndCouponId(memberId, coupon.getId())
+            ))
+            .toList();
+    }
+
+    /**
      * [주문 연동] 선택한 사용자 쿠폰 검증 및 할인 금액 계산
      */
     public int calculateDiscountPrice(Long memberId, Long memberCouponId, int orderPrice) {
@@ -172,6 +190,29 @@ public class CouponService {
         } catch (IllegalArgumentException e) {
             throw BusinessException.from(ErrorCode.COUPON_NOT_USED);
         }
+    }
+
+    /**
+     * [주문/환불 내부 연동] 사용 처리된 쿠폰만 복구하고, 아직 사용 전이면 그대로 둔다.
+     */
+    @Transactional
+    public void restoreCouponIfUsed(Long memberId, Long memberCouponId) {
+        if (memberCouponId == null) {
+            return;
+        }
+
+        MemberCoupon memberCoupon = memberCouponRepository.findById(memberCouponId)
+            .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
+
+        if (!memberCoupon.getMemberId().equals(memberId)) {
+            throw BusinessException.from(ErrorCode.UNAUTHORIZED);
+        }
+
+        if (memberCoupon.getCouponStatus() != MemberCouponStatus.USED) {
+            return;
+        }
+
+        memberCoupon.restore();
     }
 
     /**
