@@ -86,6 +86,15 @@ public class ChatRoom extends BaseEntity {
         close();
     }
 
+    public void closeByAdmin(Long adminId) {
+        validateNotClosed();
+        if (this.adminId == null || !this.adminId.equals(adminId)) {
+            throw BusinessException.from(ErrorCode.FORBIDDEN);
+        }
+
+        close();
+    }
+
     public void closeBySystem() {
         validateNotClosed();
         close();
