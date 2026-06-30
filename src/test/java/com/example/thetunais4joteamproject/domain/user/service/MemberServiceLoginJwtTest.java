@@ -27,6 +27,8 @@ class MemberServiceLoginJwtTest {
 
     private static final long MEMBER_ID = 1L;
     private static final String EMAIL = "jwtuser@test.com";
+    private static final String NAME = "JWT User";
+    private static final String PHONE_NUMBER = "01012345678";
     private static final String PASSWORD = "Test!1234";
     private static final long ACCESS_TOKEN_EXPIRATION = 3_600_000L;
 
@@ -49,7 +51,7 @@ class MemberServiceLoginJwtTest {
     void loginSuccess_CreatesValidJwtToken() {
         // given
         String encryptedPassword = passwordEncryptor.encrypt(PASSWORD);
-        Member member = Member.create(EMAIL, encryptedPassword, "JWT User", "01012345678", MemberRole.USER);
+        Member member = Member.create(EMAIL, encryptedPassword, NAME, PHONE_NUMBER, MemberRole.USER);
         ReflectionTestUtils.setField(member, "id", MEMBER_ID);
 
         given(memberRepository.findByEmail(EMAIL)).willReturn(Optional.of(member));
@@ -60,6 +62,9 @@ class MemberServiceLoginJwtTest {
 
         // then
         assertThat(response.memberId()).isEqualTo(MEMBER_ID);
+        assertThat(response.email()).isEqualTo(EMAIL);
+        assertThat(response.name()).isEqualTo(NAME);
+        assertThat(response.phoneNumber()).isEqualTo(PHONE_NUMBER);
         assertThat(response.role()).isEqualTo(MemberRole.USER);
         assertThat(response.accessToken()).isNotBlank();
         assertThatCode(() -> jwtProvider.validateToken(response.accessToken())).doesNotThrowAnyException();

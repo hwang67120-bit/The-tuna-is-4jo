@@ -31,14 +31,10 @@ button {
     border-bottom: 1px solid #2d3036;
 }
 
-.menu-button, .brand, .main-nav button, .session-bar button {
+.brand, .session-bar button {
     background: transparent;
     color: inherit;
     border: 0;
-}
-
-.menu-button {
-    font-size: 22px;
 }
 
 .brand {
@@ -48,18 +44,7 @@ button {
 }
 
 .main-nav {
-    display: flex;
-    gap: 14px;
     flex: 1;
-}
-
-.main-nav button {
-    color: #d7d9de;
-    font-weight: 700;
-}
-
-.main-nav button:hover {
-    color: #fff;
 }
 
 .session-bar {
@@ -69,12 +54,33 @@ button {
     font-size: 13px;
 }
 
+.session-bar button {
+    font-size: 14px;
+    font-weight: 700;
+}
+
 .outline-button, .primary-button, .pill, .text-button {
     border-radius: 4px;
     border: 1px solid #c9ced6;
     background: #fff;
     color: #111;
     padding: 9px 13px;
+}
+
+.small-button {
+    padding: 6px 9px;
+    font-size: 12px;
+}
+
+.address-change-button {
+    padding: 9px 18px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.danger-button {
+    border-color: #e26d6d;
+    color: #b42318;
 }
 
 .primary-button {
@@ -213,7 +219,7 @@ h1, h2, h3 {
     font-weight: 900;
 }
 
-.detail-info, .table-panel, .profile-table, .admin-content, .auth-panel {
+.detail-info, .table-panel, .profile-table, .admin-content, .auth-panel, .edit-panel {
     background: #fff;
     border: 1px solid #dfe3e8;
     border-radius: 6px;
@@ -231,18 +237,59 @@ h1, h2, h3 {
 
 .option-row {
     display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 10px;
-    align-items: center;
+    gap: 14px;
     padding: 12px;
     border: 1px solid #e2e5ea;
     border-radius: 6px;
 }
 
-.option-row input {
-    width: 72px;
-    padding: 8px;
+.option-head,
+.option-quantity-row,
+.option-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.quantity-stepper {
+    display: grid;
+    grid-template-columns: 44px 64px 44px;
     border: 1px solid #cfd5dd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.quantity-stepper button {
+    border: 0;
+    background: #fff;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.quantity-stepper input {
+    width: 64px;
+    padding: 8px;
+    border: 0;
+    border-left: 1px solid #cfd5dd;
+    border-right: 1px solid #cfd5dd;
+    text-align: center;
+}
+
+.option-total {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.option-total strong {
+    color: #d40020;
+    font-size: 24px;
+}
+
+.option-actions button {
+    flex: 1;
+    min-height: 46px;
 }
 
 .section-heading {
@@ -254,7 +301,12 @@ h1, h2, h3 {
 
 .section-heading.compact {
     justify-content: flex-start;
+    gap: 10px;
     margin-top: 34px;
+}
+
+.section-heading.split-heading {
+    justify-content: space-between;
 }
 
 .table-panel {
@@ -311,6 +363,9 @@ h1, h2, h3 {
 }
 
 .order-coupon-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin: 10px 0 18px;
 }
 
@@ -319,6 +374,33 @@ h1, h2, h3 {
     max-width: 420px;
     padding: 10px;
     border: 1px solid #cfd5dd;
+}
+
+.chip-panel {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-height: 42px;
+    padding: 10px 0 0;
+}
+
+.search-chip {
+    border: 1px solid #d5dae2;
+    border-radius: 999px;
+    background: #fff;
+    color: #252a31;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.search-chip:hover {
+    border-color: #0676ff;
+    color: #0676ff;
+}
+
+.muted-text {
+    color: #747b87;
+    font-size: 13px;
 }
 
 .order-summary {
@@ -372,6 +454,21 @@ h1, h2, h3 {
 .form-actions {
     padding: 16px 0;
     text-align: center;
+}
+
+.inline-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.empty-action-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    color: #747b87;
 }
 
 .admin-shell {
@@ -460,6 +557,157 @@ h1, h2, h3 {
     border: 1px solid #e2e5ea;
 }
 
+.console-form.danger-form {
+    border-color: #f0b4b4;
+    background: #fffafa;
+}
+
+.inline-form {
+    display: grid;
+    grid-template-columns: minmax(160px, 260px) auto;
+    gap: 8px;
+    margin: 0 0 12px;
+}
+
+.inline-form input {
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid #cfd5dd;
+}
+
+.readonly-select {
+    width: 100%;
+    min-height: 120px;
+    border: 1px solid #cfd5dd;
+    border-radius: 4px;
+    background: #fff;
+    padding: 8px;
+}
+
+.readonly-select option {
+    padding: 10px;
+}
+
+.compact-panel {
+    min-height: 48px;
+    margin-top: 10px;
+}
+
+.simple-row {
+    display: grid;
+    grid-template-columns: minmax(140px, .8fr) 1.4fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #e6e9ee;
+}
+
+.address-manage-row {
+    grid-template-columns: 1fr auto;
+}
+
+.simple-row:last-child {
+    border-bottom: 0;
+}
+
+.simple-row small {
+    color: #747b87;
+}
+
+.row-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.selected-address-box, .payment-guide {
+    display: grid;
+    gap: 6px;
+    color: #374151;
+}
+
+.address-summary-row {
+    padding: 4px 0;
+}
+
+.address-info {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+}
+
+.address-badge {
+    min-height: 18px;
+    color: #0676ff;
+    font-size: 13px;
+}
+
+.empty-badge {
+    display: none;
+}
+
+.address-line {
+    display: grid;
+    grid-template-columns: 76px 1fr;
+    gap: 12px;
+    align-items: start;
+}
+
+.address-line span {
+    color: #747b87;
+    font-size: 13px;
+}
+
+.address-line strong {
+    min-width: 0;
+    color: #111827;
+    overflow-wrap: anywhere;
+}
+
+.order-address-box {
+    gap: 10px;
+}
+
+.selected-address-box strong {
+    color: #111827;
+}
+
+.address-scroll-list {
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.simple-row.selected-row {
+    background: #f1f7ff;
+    border-radius: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.payment-guide {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 6px;
+    background: #f1f7ff;
+    border: 1px solid #cfe3ff;
+}
+
+.order-detail-panel {
+    width: min(860px, calc(100vw - 30px));
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
+}
+
+.panel-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
 .console-form label {
     display: grid;
     grid-template-columns: 130px 1fr;
@@ -487,6 +735,33 @@ h1, h2, h3 {
     width: min(460px, calc(100vw - 30px));
     padding: 34px 24px 24px;
     background: #f4f4f4;
+}
+
+.edit-panel {
+    position: relative;
+    width: min(420px, calc(100vw - 30px));
+    padding: 32px 24px 24px;
+}
+
+.address-manage-panel {
+    width: min(760px, calc(100vw - 30px));
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
+}
+
+.edit-panel h2 {
+    font-size: 24px;
+    margin-bottom: 24px;
+}
+
+.address-manage-panel h2 {
+    margin-bottom: 0;
+}
+
+.address-add-actions {
+    display: flex;
+    justify-content: center;
+    padding: 18px 0 0;
 }
 
 .auth-panel h2 {
@@ -549,6 +824,11 @@ h1, h2, h3 {
     color: #666;
 }
 
+.auth-switch-button {
+    justify-self: center;
+    color: #666;
+}
+
 .toast {
     position: fixed;
     right: 20px;
@@ -587,8 +867,13 @@ h1, h2, h3 {
         grid-template-columns: 1fr;
     }
 
-    .profile-table .row, .console-form label {
+    .profile-table .row, .console-form label, .simple-row, .inline-form, .product-search-form {
         grid-template-columns: 1fr;
+    }
+
+    .order-coupon-row {
+        align-items: stretch;
+        flex-direction: column;
     }
 }
 
@@ -884,6 +1169,8 @@ h1, h2, h3 {
 .order-result-actions {
     display: flex;
     justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
     margin-top: 18px;
 }
 .inline-check input {
@@ -891,8 +1178,13 @@ h1, h2, h3 {
     height: 18px;
 }
 .order-detail-panel {
-    margin-top: 16px;
     border-color: #b7c7dc;
+}
+
+.refund-form {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #e6e9ee;
 }
 
 .order-detail-panel h3 {
