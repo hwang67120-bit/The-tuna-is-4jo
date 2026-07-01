@@ -30,6 +30,7 @@ import com.example.thetunais4joteamproject.domain.payment.port.PaymentGateway;
 import com.example.thetunais4joteamproject.domain.payment.port.PaymentGatewayResponse;
 import com.example.thetunais4joteamproject.domain.payment.repository.PaymentRepository;
 import com.example.thetunais4joteamproject.domain.payment.service.PaymentCommandService;
+import com.example.thetunais4joteamproject.domain.payment.service.PaymentConfirmTransactionService;
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
 import com.example.thetunais4joteamproject.global.error.BusinessException;
 
@@ -64,18 +65,23 @@ class PaymentFacadeTest {
 	private Member otherMember;
 
 	private PaymentCommandService paymentCommandService;
+	private PaymentConfirmTransactionService paymentConfirmTransactionService;
 	private PaymentFacade paymentFacade;
 
 	@BeforeEach
 	void setUp() {
 		paymentCommandService = new PaymentCommandService(paymentRepository);
-		paymentFacade = new PaymentFacade(
+		paymentConfirmTransactionService = new PaymentConfirmTransactionService(
 			paymentCommandService,
-			paymentGateway,
+			paymentRepository,
 			orderRepository,
 			orderService,
 			cartService,
 			couponService
+		);
+		paymentFacade = new PaymentFacade(
+			paymentGateway,
+			paymentConfirmTransactionService
 		);
 	}
 
@@ -94,6 +100,7 @@ class PaymentFacadeTest {
 
 		given(orderRepository.findById(order.getId())).willReturn(Optional.of(order));
 		given(paymentRepository.findById(payment.getId())).willReturn(Optional.of(payment));
+		given(paymentRepository.findByIdForUpdate(payment.getId())).willReturn(Optional.of(payment));
 		given(paymentGateway.getPayment("pay-123")).willReturn(pgResponse);
 		given(pgResponse.status()).willReturn("PAID");
 		given(pgResponse.totalAmount()).willReturn(26000);
@@ -126,6 +133,7 @@ class PaymentFacadeTest {
 
 		given(orderRepository.findById(order.getId())).willReturn(Optional.of(order));
 		given(paymentRepository.findById(payment.getId())).willReturn(Optional.of(payment));
+		given(paymentRepository.findByIdForUpdate(payment.getId())).willReturn(Optional.of(payment));
 		given(orderService.getOrderItems(order.getId())).willReturn(List.of());
 
 		// when
@@ -154,6 +162,7 @@ class PaymentFacadeTest {
 
 		given(orderRepository.findById(order.getId())).willReturn(Optional.of(order));
 		given(paymentRepository.findById(payment.getId())).willReturn(Optional.of(payment));
+		given(paymentRepository.findByIdForUpdate(payment.getId())).willReturn(Optional.of(payment));
 		given(paymentGateway.getPayment("pay-123")).willReturn(pgResponse);
 		given(pgResponse.status()).willReturn("PAID");
 		given(pgResponse.totalAmount()).willReturn(26000);
@@ -184,6 +193,7 @@ class PaymentFacadeTest {
 
 		given(orderRepository.findById(order.getId())).willReturn(Optional.of(order));
 		given(paymentRepository.findById(payment.getId())).willReturn(Optional.of(payment));
+		given(paymentRepository.findByIdForUpdate(payment.getId())).willReturn(Optional.of(payment));
 		given(paymentGateway.getPayment("pay-123")).willReturn(pgResponse);
 		given(pgResponse.status()).willReturn("FAILED");
 
@@ -210,6 +220,7 @@ class PaymentFacadeTest {
 
 		given(orderRepository.findById(order.getId())).willReturn(Optional.of(order));
 		given(paymentRepository.findById(payment.getId())).willReturn(Optional.of(payment));
+		given(paymentRepository.findByIdForUpdate(payment.getId())).willReturn(Optional.of(payment));
 		given(paymentGateway.getPayment("pay-123")).willReturn(pgResponse);
 		given(pgResponse.status()).willReturn("PAID");
 		given(pgResponse.totalAmount()).willReturn(25000);
