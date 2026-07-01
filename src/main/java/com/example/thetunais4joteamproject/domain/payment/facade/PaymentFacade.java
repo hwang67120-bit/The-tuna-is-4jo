@@ -1,24 +1,12 @@
 package com.example.thetunais4joteamproject.domain.payment.facade;
 
-import java.util.List;
-import java.util.Objects;
-
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.example.thetunais4joteamproject.domain.cart.service.CartService;
-import com.example.thetunais4joteamproject.domain.coupon.dto.UseCouponRequest;
-import com.example.thetunais4joteamproject.domain.coupon.service.CouponService;
-import com.example.thetunais4joteamproject.domain.order.entity.Order;
-import com.example.thetunais4joteamproject.domain.order.entity.OrderItem;
-import com.example.thetunais4joteamproject.domain.order.repository.OrderRepository;
-import com.example.thetunais4joteamproject.domain.order.service.OrderService;
 import com.example.thetunais4joteamproject.domain.payment.dto.PaymentConfirmRequest;
 import com.example.thetunais4joteamproject.domain.payment.dto.PaymentConfirmResponse;
-import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
 import com.example.thetunais4joteamproject.domain.payment.port.PaymentGateway;
 import com.example.thetunais4joteamproject.domain.payment.port.PaymentGatewayResponse;
-import com.example.thetunais4joteamproject.domain.payment.service.PaymentCommandService;
+import com.example.thetunais4joteamproject.domain.payment.dto.PaymentConfirmContext;
+import com.example.thetunais4joteamproject.domain.payment.service.PaymentConfirmTransactionService;
 import com.example.thetunais4joteamproject.global.error.BusinessException;
 import com.example.thetunais4joteamproject.global.error.ErrorCode;
 
@@ -32,12 +20,8 @@ public class PaymentFacade {
 
 	private static final String PG_STATUS_PAID = "PAID";
 
-	private final PaymentCommandService paymentCommandService;
 	private final PaymentGateway paymentGateway;
-	private final OrderRepository orderRepository;
-	private final OrderService orderService;
-	private final CartService cartService;
-	private final CouponService couponService;
+	private final PaymentConfirmTransactionService paymentConfirmTransactionService;
 
 	// order 조회
 	// order 소유권 검증 호출
@@ -49,105 +33,51 @@ public class PaymentFacade {
 	// payment 승인 호출
 	// order 완료 호출
 	// 주문에 포함된 장바구니 상품 삭제 호출
-	@Transactional
 	public PaymentConfirmResponse confirmPayment(Long memberId, PaymentConfirmRequest request) {
-		Order order = getOrder(request.orderId());
-		validateOrderOwner(order, memberId);
-
-		Payment payment = paymentCommandService.getPayment(request.paymentId());
-
-		validatePaymentBelongsToOrder(payment, order);
+		PaymentConfirmContext context = paymentConfirmTransactionService.prepare(memberId, request);
 
 		// 멱등성 처리
-		if (paymentCommandService.isAlreadyPaid(payment)) {
-			deleteOrderedCartItems(memberId, order);
-
-			return PaymentConfirmResponse.of(payment, "이미 승인된 결제입니다.");
+		if (context.alreadyPaid()) {
+			return paymentConfirmTransactionService.complete(memberId, request);
 		}
-
-		// 내부 결제 검증
-		paymentCommandService.validatePayment(
-			payment,
-			request.portonePaymentId(),
-			order.getTotalAmount()
-		);
 
 		// PG 결제 조회
-		PaymentGatewayResponse pgResponse = paymentGateway.getPayment(payment.getPortonePaymentId());
+		PaymentGatewayResponse pgResponse = paymentGateway.getPayment(context.portonePaymentId());
 
 		// PG 결제 검증
-		validatePgPaymentCompleted(payment, pgResponse);
-		validatePgAmount(payment, pgResponse);
+		validatePgPaymentCompleted(context, pgResponse);
+		validatePgAmount(context, pgResponse);
 
-		useCoupon(memberId, order);
-
-		paymentCommandService.completePayment(payment);
-		order.confirm();
-
-		deleteOrderedCartItems(memberId, order);
-
-		return PaymentConfirmResponse.of(payment, "결제가 승인되었습니다.");
+		return paymentConfirmTransactionService.complete(memberId, request);
 	}
 
-	private Order getOrder(Long orderId) {
-		return orderRepository.findById(orderId)
-			.orElseThrow(() -> BusinessException.from(ErrorCode.ORDER_NOT_FOUND));
-	}
-
-	private void validateOrderOwner(Order order, Long memberId) {
-		if (!order.getMember().getId().equals(memberId)) {
-			throw BusinessException.from(ErrorCode.FORBIDDEN);
-		}
-	}
-
-	private void validatePgPaymentCompleted(Payment payment, PaymentGatewayResponse pgResponse) {
+	private void validatePgPaymentCompleted(PaymentConfirmContext context, PaymentGatewayResponse pgResponse) {
 		if (!PG_STATUS_PAID.equals(pgResponse.status())) {
 			log.error(
 				"결제 승인 실패 - PG 상태 비정상: paymentId={}, pgStatus={}",
-				payment.getId(),
+				context.paymentId(),
 				pgResponse.status()
 			);
 
-			paymentCommandService.failPayment(payment);
+			paymentConfirmTransactionService.fail(context.paymentId());
 
 			throw BusinessException.from(ErrorCode.PAYMENT_NOT_PAID);
 		}
 	}
 
-	private void validatePgAmount(Payment payment, PaymentGatewayResponse pgResponse) {
-		if (!payment.getPgAmount().equals(pgResponse.totalAmount())) {
+	private void validatePgAmount(PaymentConfirmContext context, PaymentGatewayResponse pgResponse) {
+		if (!context.pgAmount().equals(pgResponse.totalAmount())) {
 			log.error(
 				"결제 승인 실패 - PG 금액 불일치: paymentId={}, expected={}, actual={}",
-				payment.getId(),
-				payment.getPgAmount(),
+				context.paymentId(),
+				context.pgAmount(),
 				pgResponse.totalAmount()
 			);
 
-			paymentCommandService.failPayment(payment);
+			paymentConfirmTransactionService.fail(context.paymentId());
 
 			throw BusinessException.from(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
 		}
 	}
 
-	private void validatePaymentBelongsToOrder(Payment payment, Order order) {
-		if (!Objects.equals(payment.getOrder().getId(), order.getId())) {
-			throw BusinessException.from(ErrorCode.PAYMENT_ORDER_MISMATCH);
-		}
-	}
-
-	private void deleteOrderedCartItems(Long memberId, Order order) {
-		List<OrderItem> orderItems = orderService.getOrderItems(order.getId());
-		List<Long> cartItemIds = orderService.getCartItemIds(orderItems);
-
-		cartService.deleteOrderedCartItems(memberId, cartItemIds);
-	}
-
-	private void useCoupon(Long memberId, Order order) {
-		if (order.getMemberCouponId() != null) {
-			couponService.useCoupon(
-				memberId,
-				new UseCouponRequest(order.getMemberCouponId(), order.getOrderPrice())
-			);
-		}
-	}
 }
