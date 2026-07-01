@@ -19,7 +19,8 @@ public record SearchProductResponse(
             String productName,
             int price,
             int stock,
-            ProductStatus saleStatus
+            ProductStatus saleStatus,
+            String imageUrl
     ) {
     }
 }

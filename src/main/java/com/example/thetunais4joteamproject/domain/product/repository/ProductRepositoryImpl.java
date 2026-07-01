@@ -29,7 +29,8 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                         product.name,
                         product.price,
                         productOption.optionStock.sum().coalesce(0),
-                        product.status
+                        product.status,
+                        product.imageUrl
                 ))
                 .from(product)
                 .leftJoin(productOption).on(productOption.product.eq(product))

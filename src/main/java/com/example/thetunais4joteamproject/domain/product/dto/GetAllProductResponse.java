@@ -9,7 +9,8 @@ public record GetAllProductResponse(
         int price,
         String description,
         ProductStatus status,
-        String categoryName
+        String categoryName,
+        String imageUrl
 ) {
     // 엔티티 객체를 받아 DTO로 안전하게 전환해 주는 정적 팩토리 메서드
     public static GetAllProductResponse from(Product product) {
@@ -19,7 +20,8 @@ public record GetAllProductResponse(
                 product.getPrice(),
                 product.getDescription(),
                 product.getStatus(),
-                product.getCategory().getName()
+                product.getCategory().getName(),
+                product.getImageUrl()
         );
     }
 }

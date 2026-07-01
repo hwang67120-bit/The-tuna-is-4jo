@@ -17,10 +17,13 @@ public record UpdateProductRequest(
         int price,
 
         @Size(max = 5000, message = "상품 설명은 최대 5000자까지 입력 가능합니다.")
-        String description
+        String description,
+
+        @Size(max = 1000, message = "이미지 URL은 최대 1000자까지 가능합니다.")
+        String imageUrl
 ) {
 
-    public static UpdateProductRequest of(Long categoryId, String name, int price, String description) {
-        return new UpdateProductRequest(categoryId, name, price, description);
+    public static UpdateProductRequest of(Long categoryId, String name, int price, String description, String imageUrl) {
+        return new UpdateProductRequest(categoryId, name, price, description, imageUrl);
     }
 }
