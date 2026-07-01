@@ -6,9 +6,15 @@ const state = {
   memberEmail: '',
   memberPhoneNumber: '',
   products: [],
+  selectedCategoryId: 'all',
   portOneConfig: null,
   pendingOrder: null,
   orderPreviewed: false,
+  popularSearches: [],
+  popularSearchAggregatedAt: '',
+  popularSearchExpanded: false,
+  popularSearchOffset: 0,
+  popularSearchTimer: null,
   supportChatRoomId: localStorage.getItem('saverSupportChatRoomId') || '',
   supportSocket: null,
   supportConnectedRoomId: '',
@@ -102,6 +108,10 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.remove('hidden');
   setTimeout(() => toast.classList.add('hidden'), 2800);
+}
+
+function hideErrorToast(error) {
+  console.warn(error);
 }
 
 
@@ -230,6 +240,7 @@ function showView(name) {
   $(`#${name}View`).classList.remove('hidden');
   setRouteHash(name);
   if (name === 'home') {
+    loadCategoryFilters();
     loadProducts();
     loadPopularSearches();
   }
@@ -248,6 +259,7 @@ function restoreRoute() {
 
 async function loadProducts(categoryId = 'all') {
   try {
+    state.selectedCategoryId = String(categoryId);
     const url = categoryId === 'all' ? '/api/products?page=0&size=20' : `/api/products/categories/${categoryId}`;
     const payload = await api(url, { method: 'GET' });
     const data = payload.data;
@@ -255,8 +267,25 @@ async function loadProducts(categoryId = 'all') {
     state.products = products;
     renderProducts(products);
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
+}
+
+async function loadCategoryFilters() {
+  try {
+    const payload = await api('/api/categories', { method: 'GET' });
+    renderCategoryFilters(payload.data || []);
+  } catch (error) {
+    hideErrorToast(error);
+  }
+}
+
+function renderCategoryFilters(categories) {
+  const panel = $('#categoryFilterPanel');
+  const categoryButtons = categories.map((category) => `<button class="pill" type="button" data-category="${escapeHtml(category.categoryId)}">${escapeHtml(category.name)}</button>`).join('');
+  panel.innerHTML = `<button class="pill" type="button" data-category="all">전체</button>${categoryButtons}`;
+  const selectedButton = panel.querySelector(`[data-category="${CSS.escape(state.selectedCategoryId)}"]`) || panel.querySelector('[data-category="all"]');
+  selectedButton?.classList.add('active');
 }
 
 async function searchProducts(keyword) {
@@ -264,7 +293,7 @@ async function searchProducts(keyword) {
     const payload = await api(`/api/products/search?keyword=${encodeURIComponent(keyword)}&page=0&size=20`, { method: 'GET' });
     renderProducts(payload.data?.products || []);
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -273,25 +302,86 @@ async function loadPopularSearches() {
     const payload = await api('/api/products/popular-searches', { method: 'GET' });
     const data = payload.data || {};
     const searches = data.popularSearches || data.keywords || data.searches || data.content || [];
-    const panel = $('#popularSearchPanel');
     if (!searches.length) {
-      panel.innerHTML = '<div class="popular-search-empty">인기검색어가 없습니다.</div>';
+      state.popularSearches = [];
+      state.popularSearchAggregatedAt = '';
+      stopPopularSearchSlider();
+      $('#popularSearchPanel').innerHTML = '<div class="popular-search-empty">인기검색어가 없습니다.</div>';
+      $('#popularSearchToggleButton').textContent = '전체 보기';
       return;
     }
-    const list = searches.map((item, index) => {
-      const rank = item.rank || index + 1;
-      const keyword = item.keyword || item.searchKeyword || item.word || item.name || String(item);
-      const score = item.score ?? item.count ?? item.searchCount ?? '';
-      return `<button class="popular-search-row ${rank <= 3 ? 'top-rank' : ''}" type="button" data-popular-keyword="${escapeHtml(keyword)}">
-        <span class="popular-rank">${escapeHtml(rank)}</span>
-        <span class="popular-keyword">${escapeHtml(keyword)}</span>
-        ${score !== '' ? `<span class="popular-score">${escapeHtml(score)}</span>` : ''}
-      </button>`;
-    }).join('');
-    const meta = data.aggregatedAt ? `<div class="popular-search-meta">최근 집계 ${escapeHtml(formatDateTime(data.aggregatedAt))}</div>` : '';
-    panel.innerHTML = `<div class="popular-search-list">${list}</div>${meta}`;
+    state.popularSearches = searches.slice(0, 10).map(normalizePopularSearch);
+    state.popularSearchAggregatedAt = data.aggregatedAt || '';
+    renderPopularSearches();
   } catch (error) {
     $('#popularSearchPanel').innerHTML = '<div class="popular-search-empty">인기검색어를 불러오지 못했습니다.</div>';
+  }
+}
+
+function normalizePopularSearch(item, index) {
+  return {
+    rank: item.rank || index + 1,
+    keyword: item.keyword || item.searchKeyword || item.word || item.name || String(item)
+  };
+}
+
+function renderPopularSearches() {
+  const panel = $('#popularSearchPanel');
+  const toggleButton = $('#popularSearchToggleButton');
+  const listItems = state.popularSearchExpanded
+    ? state.popularSearches
+    : [...state.popularSearches].reverse();
+  const list = listItems.map(({ rank, keyword }) => `<button class="popular-search-row ${rank <= 3 ? 'top-rank' : ''}" type="button" data-popular-keyword="${escapeHtml(keyword)}">
+    <span class="popular-rank">${escapeHtml(rank)}</span>
+    <span class="popular-keyword">${escapeHtml(keyword)}</span>
+  </button>`).join('');
+  const meta = state.popularSearchAggregatedAt ? `<div class="popular-search-meta">최근 집계 ${escapeHtml(formatDateTime(state.popularSearchAggregatedAt))}</div>` : '';
+  panel.classList.toggle('expanded', state.popularSearchExpanded);
+  toggleButton.textContent = state.popularSearchExpanded ? '접기' : '전체 보기';
+
+  if (state.popularSearchExpanded) {
+    stopPopularSearchSlider();
+    panel.innerHTML = `<div class="popular-search-list expanded">${list}</div>${meta}`;
+    return;
+  }
+
+  state.popularSearchOffset = Math.max(state.popularSearches.length - 1, 0);
+  panel.innerHTML = `<div class="popular-search-window">
+    <div class="popular-search-list">${list}</div>
+  </div>${meta}`;
+  updatePopularSearchOffset(false);
+  startPopularSearchSlider();
+}
+
+function startPopularSearchSlider() {
+  stopPopularSearchSlider();
+  if (state.popularSearchExpanded || state.popularSearches.length <= 1) return;
+
+  state.popularSearchTimer = window.setInterval(() => {
+    state.popularSearchOffset -= 1;
+    if (state.popularSearchOffset < 0) {
+      state.popularSearchOffset = state.popularSearches.length - 1;
+      updatePopularSearchOffset(false);
+      return;
+    }
+    updatePopularSearchOffset(true);
+  }, 2400);
+}
+
+function stopPopularSearchSlider() {
+  if (!state.popularSearchTimer) return;
+  window.clearInterval(state.popularSearchTimer);
+  state.popularSearchTimer = null;
+}
+
+function updatePopularSearchOffset(animate) {
+  const list = $('#popularSearchPanel .popular-search-list:not(.expanded)');
+  if (!list) return;
+  list.classList.toggle('no-transition', !animate);
+  list.style.setProperty('--popular-offset', state.popularSearchOffset);
+  if (!animate) {
+    list.offsetHeight;
+    list.classList.remove('no-transition');
   }
 }
 
@@ -325,7 +415,7 @@ async function loadProductDetail(productId) {
     renderProductDetail(payload.data);
     showView('detail');
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -413,7 +503,7 @@ async function loadCart() {
         <button class="primary-button" type="button" data-cart-order-selected>선택 상품 구매</button>
       </div>`;
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -435,7 +525,7 @@ async function loadProfile() {
     await loadAvailableCoupons();
     await loadAddresses('#profileAddressSummaryPanel', false);
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -453,7 +543,7 @@ async function addCartItem(optionId) {
     });
     showToast('장바구니에 담았습니다.');
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -661,7 +751,7 @@ async function previewPendingOrder(options = {}) {
     renderOrderPreview(payload.data);
     if (!options.silent) showToast('주문 금액이 갱신되었습니다.');
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -685,7 +775,7 @@ async function submitPendingOrder() {
       state.orderPreviewed = false;
     }
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -818,7 +908,7 @@ async function createDirectOrder(optionId, quantity = getOptionQuantity(optionId
     await startPaymentForOrder(payload.data);
     return true;
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
     return false;
   }
 }
@@ -841,7 +931,7 @@ async function createCartOrder(cartItemIds, memberAddressId = null) {
     await loadCart();
     return true;
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
     return false;
   }
 }
@@ -865,7 +955,7 @@ async function confirmPayment(orderId, paymentId, portonePaymentId) {
     await loadCart();
     showView('orders');
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -880,7 +970,7 @@ async function updateCartItemQuantity(cartItemId, quantity) {
     showToast('수량이 변경되었습니다.');
     loadCart();
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
     loadCart();
   }
 }
@@ -893,7 +983,7 @@ async function deleteCartItem(cartItemId) {
     showToast('장바구니 상품을 삭제했습니다.');
     loadCart();
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -905,7 +995,7 @@ async function clearCart() {
     showToast('장바구니를 비웠습니다.');
     loadCart();
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 async function loadOrderHistory() {
@@ -929,7 +1019,7 @@ async function loadOrderHistory() {
       <button class="outline-button" type="button" data-order-detail-id="${order.orderId}">상세</button>
     </div>`).join('');
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 async function loadOrderDetail(orderId) {
@@ -939,7 +1029,7 @@ async function loadOrderDetail(orderId) {
     const payload = await api(`/api/orders/${orderId}`, { method: 'GET' });
     renderOrderDetail(payload.data);
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1003,7 +1093,7 @@ async function cancelOrder(orderId) {
     showToast('주문이 취소되었습니다.');
     await loadOrderHistory();
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1035,7 +1125,7 @@ async function loadMyCoupons(targetSelector = '#couponPanel') {
     renderCoupons(coupons, targetSelector);
     return coupons;
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
     return [];
   }
 }
@@ -1072,7 +1162,7 @@ async function loadAvailableCoupons() {
     const payload = await api('/api/coupons/available', { method: 'GET' });
     renderAvailableCoupons(payload.data || []);
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1089,7 +1179,7 @@ async function issueCoupon(couponId, button) {
     await loadAvailableCoupons();
   } catch (error) {
     if (button) button.disabled = false;
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1105,7 +1195,7 @@ async function loadCouponsForOrder() {
       return `<option value="${memberCouponId}">${escapeHtml(name)} · ${formatPrice(coupon.discountPrice)}</option>`;
     }).join('');
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1273,7 +1363,7 @@ async function loadAddresses(targetSelector = '#profileAddressPanel', selectable
     renderAddresses(addresses, targetSelector, selectable);
     return addresses;
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
     return [];
   }
 }
@@ -1288,7 +1378,7 @@ async function changeDefaultAddress(addressId, targetSelector = '#profileAddress
       await loadAddresses('#profileAddressSummaryPanel', false);
     }
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1301,7 +1391,7 @@ async function deleteAddress(addressId) {
     await loadAddresses('#profileAddressPanel', false);
     await loadAddresses('#profileAddressSummaryPanel', false);
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1322,7 +1412,7 @@ async function requestRefund(form) {
     form.reset();
     showToast('환불 요청이 접수되었습니다.');
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1366,7 +1456,7 @@ async function loadAdminCategories(selectedCategoryName = '') {
     renderAdminCategorySelects(categories, selectedCategoryName);
     return categories;
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
     return [];
   }
 }
@@ -1417,7 +1507,7 @@ async function loadAdminProducts() {
       </button>`;
     }).join('');
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1430,7 +1520,7 @@ async function selectAdminProduct(productId) {
     renderAdminProductDetail(product);
     showToast('상품을 선택했습니다.');
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1512,7 +1602,7 @@ async function uploadImageFileIfSelected(fileInput) {
     const payload = await api('/api/upload', { method: 'POST', body: formData });
     return payload.data;
   } catch (error) {
-    showToast('이미지 파일 업로드 실패: ' + error.message);
+    hideErrorToast(error);
     throw error;
   }
 }
@@ -1544,7 +1634,7 @@ async function updateProduct(form) {
     await loadAdminProducts();
     await loadProducts();
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1568,7 +1658,7 @@ async function deleteProductById(productId) {
     await loadAdminProducts();
     await loadProducts();
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1594,8 +1684,9 @@ async function createCategory(form) {
     showToast(`카테고리가 생성되었습니다. ID ${payload.data}`);
     form.reset();
     await loadAdminCategories();
+    await loadCategoryFilters();
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1615,9 +1706,10 @@ async function deleteCategory(form) {
     showToast('카테고리가 삭제되었습니다.');
     form.reset();
     await loadAdminCategories();
+    await loadCategoryFilters();
     await loadProducts();
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1639,7 +1731,7 @@ async function createCoupon(form) {
     form.reset();
     await loadAdminCoupons();
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1659,7 +1751,7 @@ async function loadAdminCoupons() {
       <small>${formatDateTime(coupon.expirationAt)}</small>
     </div>`).join('');
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1697,7 +1789,7 @@ async function loadAdminRefunds() {
     const payload = await api('/api/admin/refunds', { method: 'GET' });
     renderAdminRefunds(payload.data || payload || []);
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1709,7 +1801,7 @@ async function approveRefundById(refundId) {
     showToast('환불이 승인되었습니다.');
     await loadAdminRefunds();
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1726,7 +1818,7 @@ async function rejectRefundById(refundId) {
     showToast('환불이 거절되었습니다.');
     await loadAdminRefunds();
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1822,7 +1914,7 @@ async function loadMissingSupportMessages(chatRoomId) {
     const messages = payload.data || [];
     messages.forEach((message) => appendSupportMessage({ ...message, chatRoomId: Number(roomId) }));
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1858,7 +1950,7 @@ function connectSupportRoom(chatRoomId) {
       appendSupportMessage(JSON.parse(body));
     }
   };
-  state.supportSocket.onerror = () => showToast('채팅 연결을 확인해 주세요.');
+  state.supportSocket.onerror = () => hideErrorToast('채팅 연결을 확인해 주세요.');
   state.supportSocket.onclose = () => {
     state.supportStompConnected = false;
     if (state.token && state.supportConnectedRoomId === roomId) {
@@ -1932,7 +2024,7 @@ async function createSupportChat(form) {
     setSupportTab('talk');
     showToast('문의가 접수되었습니다.');
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1942,7 +2034,7 @@ function supportSendWhenReady(payload, attempt = 0) {
     return;
   }
   if (attempt >= 20) {
-    showToast('채팅 연결을 확인해 주세요.');
+    hideErrorToast('채팅 연결을 확인해 주세요.');
     return;
   }
   window.setTimeout(() => supportSendWhenReady(payload, attempt + 1), 100);
@@ -1971,7 +2063,7 @@ async function loadSupportChatList() {
     }
     list.innerHTML = chatRooms.map((room) => `<button type="button" data-support-room-id="${room.chatRoomId}" data-support-room-status="${escapeHtml(room.status)}"><strong>${escapeHtml(room.title)}</strong><span>#${room.chatRoomId} · ${escapeHtml(room.status)} · ${formatDateTime(room.createdAt)}</span></button>`).join('');
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -1990,7 +2082,7 @@ async function loadUserSupportHistory() {
     const selectedRoom = chatRooms.find((room) => String(room.chatRoomId) === savedRoomId) || chatRooms[0];
     await loadUserSupportDetail(selectedRoom.chatRoomId);
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -2005,7 +2097,7 @@ async function loadUserSupportDetail(chatRoomId) {
       connectSupportRoom(room.chatRoomId);
     }
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -2052,7 +2144,7 @@ async function loadSupportChatDetail(chatRoomId, shouldJoin = true) {
     }
     loadSupportChatList();
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 
@@ -2064,7 +2156,7 @@ async function closeSupportChat(chatRoomId) {
     await loadSupportChatDetail(chatRoomId, false);
     await loadSupportChatList();
   } catch (error) {
-    showToast(error.message);
+    hideErrorToast(error);
   }
 }
 function bindEvents() {
@@ -2100,11 +2192,13 @@ function bindEvents() {
     if (button) closeSupportChat(button.dataset.supportCloseId);
   });
   $$('[data-view]').forEach((button) => button.addEventListener('click', () => showView(button.dataset.view)));
-  $$('.pill').forEach((button) => button.addEventListener('click', () => {
+  $('#categoryFilterPanel').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-category]');
+    if (!button) return;
     $$('.pill').forEach((item) => item.classList.remove('active'));
     button.classList.add('active');
     loadProducts(button.dataset.category);
-  }));
+  });
   $('#loginOpenButton').addEventListener('click', () => openAuthModal('login'));
   $('#signupOpenButton').addEventListener('click', () => openAuthModal('signup'));
   $('#authCloseButton').addEventListener('click', closeAuthModal);
@@ -2127,7 +2221,7 @@ function bindEvents() {
       setSession(payload.data);
       closeAuthModal();
       showToast('로그인 성공');
-    } catch (error) { showToast(error.message); }
+    } catch (error) { hideErrorToast(error); }
   });
   $('#signupForm').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -2136,7 +2230,7 @@ function bindEvents() {
       showToast('회원가입 성공');
       clearSignupForm();
       event.currentTarget.classList.add('hidden');
-    } catch (error) { showToast(error.message); }
+    } catch (error) { hideErrorToast(error); }
   });
   $("#productSearchForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -2148,10 +2242,10 @@ function bindEvents() {
     $('#productSearchForm').elements.keyword.value = button.dataset.popularKeyword;
     searchProducts(button.dataset.popularKeyword);
   });
-  $('#refreshPopularSearchButton').addEventListener('click', loadPopularSearches);
-  $("#clearProductSearchButton").addEventListener("click", () => {
-    $("#productSearchForm").reset();
-    loadProducts('all');
+  $('#popularSearchToggleButton').addEventListener('click', () => {
+    if (!state.popularSearches.length) return;
+    state.popularSearchExpanded = !state.popularSearchExpanded;
+    renderPopularSearches();
   });
   $('#productGrid').addEventListener('click', (event) => {
     const button = event.target.closest('[data-detail-id]');
@@ -2236,7 +2330,7 @@ function bindEvents() {
       button.dataset.portonePaymentId,
       button.dataset.orderName,
       button.dataset.totalAmount
-    ).catch((error) => showToast(error.message));
+    ).catch((error) => hideErrorToast(error));
   });
   $('#refreshOrderHistoryButton').addEventListener('click', loadOrderHistory);
   $('#orderHistoryPanel').addEventListener('click', (event) => {
@@ -2257,7 +2351,7 @@ function bindEvents() {
       paymentButton.dataset.portonePaymentId,
       paymentButton.dataset.orderName,
       paymentButton.dataset.totalAmount
-    ).catch((error) => showToast(error.message));
+    ).catch((error) => hideErrorToast(error));
     const refundButton = event.target.closest('[data-open-refund-form]');
     if (refundButton) {
       const form = $('#orderDetailPanel').querySelector('[data-refund-request-form]');
@@ -2337,7 +2431,7 @@ function bindEvents() {
       showToast('회원정보가 수정되었습니다.');
       closeProfileEditModal();
       await loadProfile();
-    } catch (error) { showToast(error.message); }
+    } catch (error) { hideErrorToast(error); }
   });
   $$('[data-admin-panel]').forEach((button) => button.addEventListener('click', () => showAdminPanel(button.dataset.adminPanel)));
   $('#loadAdminProductsButton').addEventListener('click', loadAdminProducts);
@@ -2381,7 +2475,7 @@ function bindEvents() {
       form.reset();
       loadAdminProducts();
       loadProducts();
-    } catch (error) { showToast(error.message); }
+    } catch (error) { hideErrorToast(error); }
   });
   $('#stockForm').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -2390,7 +2484,7 @@ function bindEvents() {
       await api(`/api/products/${body.productId}/stock`, { method: 'PUT', body: JSON.stringify({ stockQuantity: Number(body.stockQuantity) }) });
       showToast('재고가 수정되었습니다.');
       await selectAdminProduct(body.productId);
-    } catch (error) { showToast(error.message); }
+    } catch (error) { hideErrorToast(error); }
   });
   $('#optionForm').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -2400,7 +2494,7 @@ function bindEvents() {
       await api(`/api/products/${body.productId}/options`, { method: 'PUT', body: JSON.stringify([option]) });
       showToast('옵션이 수정되었습니다.');
       await selectAdminProduct(body.productId);
-    } catch (error) { showToast(error.message); }
+    } catch (error) { hideErrorToast(error); }
   });
   $('#productUpdateForm').addEventListener('submit', async (event) => {
     event.preventDefault();

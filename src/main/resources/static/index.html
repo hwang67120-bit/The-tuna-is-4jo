@@ -29,20 +29,17 @@
         <p class="eyebrow">SAVER MARKET</p>
         <h1>지금 확인할 상품</h1>
       </div>
-      <div class="hero-actions">
+      <div id="categoryFilterPanel" class="hero-actions">
         <button class="pill" type="button" data-category="all">전체</button>
-        <button class="pill" type="button" data-category="1">상의</button>
-        <button class="pill" type="button" data-category="2">하의</button>
       </div>
     </div>
     <form id="productSearchForm" class="product-search-form">
       <input name="keyword" placeholder="상품명 검색" autocomplete="off" required>
       <button class="primary-button" type="submit">검색</button>
-      <button class="outline-button" type="button" id="clearProductSearchButton">전체 보기</button>
     </form>
     <div class="section-heading compact">
       <h2>인기검색어</h2>
-      <button id="refreshPopularSearchButton" class="outline-button" type="button">새로고침</button>
+      <button class="outline-button" type="button" id="popularSearchToggleButton">전체 보기</button>
     </div>
     <div id="popularSearchPanel" class="popular-search-card"></div>
     <div id="productGrid" class="product-grid"></div>
