@@ -9,6 +9,8 @@ import com.example.thetunais4joteamproject.domain.payment.entity.PaymentStatus;
 import com.example.thetunais4joteamproject.domain.payment.port.PaymentGateway;
 import com.example.thetunais4joteamproject.domain.payment.port.PaymentGatewayResponse;
 import com.example.thetunais4joteamproject.domain.payment.service.PaymentCommandService;
+import com.example.thetunais4joteamproject.domain.payment.service.PaymentConfirmTransactionService;
+import com.example.thetunais4joteamproject.domain.payment.service.PaymentWebhookTransactionService;
 
 import io.portone.sdk.server.webhook.Webhook;
 import io.portone.sdk.server.webhook.WebhookTransactionCancelledCancelled;
@@ -25,6 +27,7 @@ public class WebhookHandler {
 	private final PaymentGateway paymentGateway;
 	private final WebhookEventService webhookEventService;
 	private final RefundWebhookService refundWebhookService;
+	private final PaymentWebhookTransactionService paymentWebhookTransactionService;
 
 	// 웹훅 진입점
 	public void handle(String webhookId, Webhook webhook, String rawPayload) {
@@ -55,10 +58,8 @@ public class WebhookHandler {
 
 	// 결제 완료 웹훅 처리
 	private void handlePaid(Long eventId, String portonePaymentId) {
-		// [보안] PG 페이로드는 신뢰하지 않고 실체를 직접 조회한다.
 		PaymentGatewayResponse pg = paymentGateway.getPayment(portonePaymentId);
 
-		// PG 실체 상태가 PAID가 아니면 처리 대상이 아님
 		if (!"PAID".equals(pg.status())) {
 			webhookEventService.markIgnored(eventId, "PG 상태가 PAID가 아님: " + pg.status());
 			return;
@@ -66,15 +67,15 @@ public class WebhookHandler {
 
 		Payment payment = paymentCommandService.findByPortonePaymentId(portonePaymentId);
 
-		// 우리가 생성한 결제 금액(DB)과 PG가 실제로 승인한 금액이 다르면 FAILED로 기록
-		if (pg.totalAmount() != payment.getPgAmount()) {
-			webhookEventService.markFailed(eventId, "금액 불일치: db=" + payment.getPgAmount() + ", pg=" + pg.totalAmount());
+		if (!payment.getPgAmount().equals(pg.totalAmount())) {
+			webhookEventService.markFailed(
+				eventId,
+				"금액 불일치: db=" + payment.getPgAmount() + ", pg=" + pg.totalAmount()
+			);
 			return;
 		}
 
-		if (payment.getStatus() == PaymentStatus.PENDING) {
-			paymentCommandService.completePayment(payment);
-		}
+		paymentWebhookTransactionService.completePaidPayment(portonePaymentId);
 
 		webhookEventService.markProcessed(eventId);
 	}
