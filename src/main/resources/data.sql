@@ -19,7 +19,7 @@ VALUES (2, 1, '화이트 / M', 0, 0, 'SOLDOUT', CURRENT_TIMESTAMP, CURRENT_TIMES
 INSERT INTO product_option (id, product_id, option_name, option_stock, additional_price, status, created_at, updated_at)
 VALUES (3, 2, '청색 / M', 8, 1000, 'ON_SALE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
-ALTER TABLE category ALTER COLUMN id RESTART WITH 3;
+ALTER TABLE category AUTO_INCREMENT = 3;
 INSERT INTO product (id, member_id, category_id, name, price, description, status, created_at, updated_at)
 VALUES (3, 1, 1, '베이직 반팔 티셔츠', 19000, '데일리로 입기 좋은 기본 반팔 티셔츠', 'ON_SALE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 INSERT INTO product (id, member_id, category_id, name, price, description, status, created_at, updated_at)
@@ -101,5 +101,5 @@ INSERT INTO product_option (id, product_id, option_name, option_stock, additiona
 VALUES (22, 21, '진청 / L', 11, 1000, 'ON_SALE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 INSERT INTO product_option (id, product_id, option_name, option_stock, additional_price, status, created_at, updated_at)
 VALUES (23, 22, '베이지 / M', 13, 0, 'ON_SALE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-ALTER TABLE product ALTER COLUMN id RESTART WITH 23;
-ALTER TABLE product_option ALTER COLUMN id RESTART WITH 24;
+ALTER TABLE product AUTO_INCREMENT = 23;
+ALTER TABLE product_option AUTO_INCREMENT = 24;

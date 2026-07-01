@@ -1,8 +1,10 @@
 .git
 .gradle
-build
 out
 .idea
 *.iml
 .env
-src/main/resources/application-local.yml
+
+build/*
+!build/libs/
+!build/libs/*.jar

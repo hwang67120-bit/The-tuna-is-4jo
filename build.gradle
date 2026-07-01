@@ -47,6 +47,11 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testAnnotationProcessor 'org.projectlombok:lombok'
     testImplementation 'com.github.codemonstur:embedded-redis:1.4.3'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // AWS
+    implementation platform('io.awspring.cloud:spring-cloud-aws-dependencies:4.0.0-RC1')
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-parameter-store'
 
     // portone
     implementation 'io.portone:server-sdk:0.23.0'
