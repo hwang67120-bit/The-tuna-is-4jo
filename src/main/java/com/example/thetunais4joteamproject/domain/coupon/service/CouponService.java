@@ -76,11 +76,7 @@ public class CouponService {
         }
 
         // 4. 쿠폰 잔여 수량 확인 및 차감 (0개 이하면 내부에서 예외 발생)
-        try {
-            coupon.decreaseRemainingQuantity();
-        } catch (IllegalArgumentException e) {
-            throw BusinessException.from(ErrorCode.COUPON_OUT_OF_STOCK);
-        }
+        coupon.decreaseRemainingQuantity();
 
         // 5. 회원의 쿠폰함에 신규 매핑 데이터 적재
         MemberCoupon memberCoupon = MemberCoupon.of(memberId, coupon);
@@ -127,17 +123,7 @@ public class CouponService {
             throw BusinessException.from(ErrorCode.UNAUTHORIZED);
         }
 
-        try {
-            return memberCoupon.calculateDiscountPrice(orderPrice);
-        } catch (IllegalArgumentException e) {
-            if (e.getMessage().contains("최소 주문 금액")) {
-                throw BusinessException.from(ErrorCode.INVALID_COUPON_ORDER_PRICE);
-            }
-            if (e.getMessage().contains("쿠폰 할인 금액")) {
-                throw BusinessException.from(ErrorCode.INVALID_COUPON_DISCOUNT_PRICE);
-            }
-            throw BusinessException.from(ErrorCode.COUPON_EXPIRED);
-        }
+        return memberCoupon.calculateDiscountPrice(orderPrice);
     }
 
     /**
@@ -156,18 +142,7 @@ public class CouponService {
         }
 
         // 3. 엔티티 내부 핵심 비즈니스 메서드 호출
-        try {
-            memberCoupon.use(request.orderPrice());
-        } catch (IllegalArgumentException e) {
-            // 엔티티 내부에서 터진 예외 메시지에 따라 적절한 비즈니스 예외로 전환하여 프론트에 전달
-            if (e.getMessage().contains("최소 주문 금액")) {
-                throw BusinessException.from(ErrorCode.INVALID_COUPON_ORDER_PRICE);
-            }
-            if (e.getMessage().contains("쿠폰 할인 금액")) {
-                throw BusinessException.from(ErrorCode.INVALID_COUPON_DISCOUNT_PRICE);
-            }
-            throw BusinessException.from(ErrorCode.COUPON_EXPIRED);
-        }
+        memberCoupon.use(request.orderPrice());
     }
 
     /**
@@ -185,11 +160,7 @@ public class CouponService {
         }
 
         // 3. 엔티티 내부 핵심 비즈니스 메서드 호출
-        try {
-            memberCoupon.restore();
-        } catch (IllegalArgumentException e) {
-            throw BusinessException.from(ErrorCode.COUPON_NOT_USED);
-        }
+        memberCoupon.restore();
     }
 
     /**
