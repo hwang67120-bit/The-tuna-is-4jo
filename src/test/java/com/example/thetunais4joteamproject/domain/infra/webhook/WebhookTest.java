@@ -24,6 +24,7 @@ import com.example.thetunais4joteamproject.domain.payment.port.PaymentGateway;
 import com.example.thetunais4joteamproject.domain.payment.port.PaymentGatewayResponse;
 import com.example.thetunais4joteamproject.domain.payment.repository.PaymentRepository;
 import com.example.thetunais4joteamproject.domain.payment.service.PaymentCommandService;
+import com.example.thetunais4joteamproject.domain.payment.service.PaymentWebhookTransactionService;
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
 import com.example.thetunais4joteamproject.global.error.BusinessException;
 
@@ -64,17 +65,23 @@ class WebhookTest {
 	private WebhookTransactionCancelledDataCancelled cancelledWebhookData;
 
 	private PaymentCommandService paymentCommandService;
+	private PaymentWebhookTransactionService paymentWebhookTransactionService;
 	private WebhookHandler webhookHandler;
 	private WebhookController webhookController;
 
 	@BeforeEach
 	void setUp() {
 		paymentCommandService = new PaymentCommandService(paymentRepository);
+		paymentWebhookTransactionService = new PaymentWebhookTransactionService(
+			paymentRepository,
+			paymentCommandService
+		);
 		webhookHandler = new WebhookHandler(
 			paymentCommandService,
 			paymentGateway,
 			webhookEventService,
-			refundWebhookService
+			refundWebhookService,
+			paymentWebhookTransactionService
 		);
 		webhookController = new WebhookController(portOneWebhookVerifier, webhookHandler);
 	}
@@ -95,6 +102,8 @@ class WebhookTest {
 		given(paymentGateway.getPayment(portonePaymentId))
 			.willReturn(new PaymentGatewayResponse(portonePaymentId, "PAID", 26000));
 		given(paymentRepository.findByPortonePaymentId(portonePaymentId))
+			.willReturn(Optional.of(payment));
+		given(paymentRepository.findByPortonePaymentIdForUpdate(portonePaymentId))
 			.willReturn(Optional.of(payment));
 
 		// when
