@@ -1,5 +1,7 @@
 package com.example.thetunais4joteamproject.global.config;
 
+import com.example.thetunais4joteamproject.global.error.BusinessException;
+import com.example.thetunais4joteamproject.global.error.ErrorCode;
 import com.example.thetunais4joteamproject.global.util.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
@@ -38,7 +40,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         }
 
         if (StompCommand.SEND.equals(accessor.getCommand()) && accessor.getUser() == null) {
-            throw new IllegalArgumentException("로그인이 필요합니다");
+            throw BusinessException.from(ErrorCode.UNAUTHORIZED);
         }
 
         if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
@@ -54,13 +56,13 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
             return;
         }
         if (!(accessor.getUser() instanceof Authentication authentication)) {
-            throw new IllegalArgumentException("로그인이 필요합니다");
+            throw BusinessException.from(ErrorCode.UNAUTHORIZED);
         }
 
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(authority -> ADMIN_AUTHORITY.equals(authority.getAuthority()));
         if (!isAdmin) {
-            throw new IllegalArgumentException("관리자 권한이 필요합니다");
+            throw BusinessException.from(ErrorCode.FORBIDDEN);
         }
     }
 }

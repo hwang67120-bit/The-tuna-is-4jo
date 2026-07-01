@@ -1,6 +1,8 @@
 package com.example.thetunais4joteamproject.domain.coupon.entity;
 
 import com.example.thetunais4joteamproject.global.common.BaseEntity;
+import com.example.thetunais4joteamproject.global.error.BusinessException;
+import com.example.thetunais4joteamproject.global.error.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -56,24 +58,24 @@ public class MemberCoupon extends BaseEntity {
 
     private void validateUsable(int orderPrice) {
         if (this.couponStatus != MemberCouponStatus.UNUSED) {
-            throw new IllegalArgumentException("이미 사용되었거나 만료된 쿠폰입니다.");
+            throw BusinessException.from(ErrorCode.COUPON_EXPIRED);
         }
         if (orderPrice < this.coupon.getMinOrderPrice()) {
-            throw new IllegalArgumentException("주문 금액이 쿠폰의 최소 주문 금액보다 적습니다.");
+            throw BusinessException.from(ErrorCode.INVALID_COUPON_ORDER_PRICE);
         }
         if (this.coupon.getDiscountPrice() > orderPrice) {
-            throw new IllegalArgumentException("쿠폰 할인 금액이 주문 금액보다 클 수 없습니다.");
+            throw BusinessException.from(ErrorCode.INVALID_COUPON_DISCOUNT_PRICE);
         }
         if (LocalDateTime.now().isAfter(this.coupon.getExpirationAt())) {
             this.couponStatus = MemberCouponStatus.EXPIRED;
-            throw new IllegalArgumentException("만료된 쿠폰입니다.");
+            throw BusinessException.from(ErrorCode.COUPON_EXPIRED);
         }
     }
 
     // 비즈니스 메서드: 주문 취소 시 복구
     public void restore() {
         if (this.couponStatus != MemberCouponStatus.USED) {
-            throw new IllegalArgumentException("사용 완료 상태의 쿠폰만 복구할 수 있습니다.");
+            throw BusinessException.from(ErrorCode.COUPON_NOT_USED);
         }
         if (LocalDateTime.now().isAfter(this.coupon.getExpirationAt())) {
             this.couponStatus = MemberCouponStatus.EXPIRED;

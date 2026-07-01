@@ -27,7 +27,8 @@ public record GetCategoryProductsResponse(
             Long productId,
             String productName,
             int price,
-            ProductStatus saleStatus
+            ProductStatus saleStatus,
+            String imageUrl
     ) {
         // // 상품 엔티티를 레코드 DTO로 전환하는 정적 팩토리 메서드
         public static CategoryProductResponse from(Product product) {
@@ -35,7 +36,8 @@ public record GetCategoryProductsResponse(
                     product.getId(),
                     product.getName(),
                     product.getPrice(),
-                    product.getStatus()
+                    product.getStatus(),
+                    product.getImageUrl()
             );
         }
     }

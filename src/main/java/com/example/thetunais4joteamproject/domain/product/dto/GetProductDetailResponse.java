@@ -14,6 +14,7 @@ public record GetProductDetailResponse(
         String description,
         ProductStatus status,
         String categoryName,
+        String imageUrl,
         List<ProductOptionResponse> options
 ) {
     // 상품 엔티티와 변환된 옵션 DTO 리스트를 받아 결합하는 정적 팩토리 메서드
@@ -25,6 +26,7 @@ public record GetProductDetailResponse(
                 product.getDescription(),
                 product.getStatus(),
                 product.getCategory().getName(),
+                product.getImageUrl(),
                 options
         );
     }

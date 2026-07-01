@@ -1,6 +1,8 @@
 package com.example.thetunais4joteamproject.domain.coupon.entity;
 
 import com.example.thetunais4joteamproject.global.common.BaseEntity;
+import com.example.thetunais4joteamproject.global.error.BusinessException;
+import com.example.thetunais4joteamproject.global.error.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -56,7 +58,7 @@ public class Coupon extends BaseEntity {
     // 비즈니스 메서드: 발급 수량 차감
     public void decreaseRemainingQuantity() {
         if (this.remainingQuantity <= 0) {
-            throw new IllegalArgumentException("발급 가능한 쿠폰 수량이 소진되었습니다.");
+            throw BusinessException.from(ErrorCode.COUPON_OUT_OF_STOCK);
         }
         this.remainingQuantity--;
     }

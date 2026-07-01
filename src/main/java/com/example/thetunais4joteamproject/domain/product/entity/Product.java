@@ -33,33 +33,43 @@ public class Product extends BaseEntity {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private ProductStatus status;
 
     // 정적 팩토리 메서드 사용을 강제하기 위해 외부 생성자를 private으로 차단
-    private Product(Long memberId, Category category, String name, int price, String description, ProductStatus status) {
+    private Product(Long memberId, Category category, String name, int price, String description, String imageUrl, ProductStatus status) {
         this.memberId = memberId;
         this.category = category;
         this.name = name;
         this.price = price;
         this.description = description;
+        this.imageUrl = imageUrl;
         this.status = status;
     }
 
     // 정적 팩토리 메서드
     public static Product of(Long memberId, Category category, String name, int price, String description, ProductStatus status) {
+        return Product.of(memberId, category, name, price, description, null, status);
+    }
+
+    // 이미지 URL을 포함하는 신규 정적 팩토리 메서드
+    public static Product of(Long memberId, Category category, String name, int price, String description, String imageUrl, ProductStatus status) {
         Product product = new Product();
         product.memberId = memberId;
         product.category = category;
         product.name = name;
         product.price = price;
         product.description = description;
+        product.imageUrl = imageUrl;
         product.status = status;
         return product;
     }
 
-    public void updateProduct(Category category, String name, int price, String description) {
+    public void updateProduct(Category category, String name, int price, String description, String imageUrl) {
         // 카테고리 참조 변경 무결성 보장
         if (category != null) {
             this.category = category;
@@ -67,6 +77,7 @@ public class Product extends BaseEntity {
         this.name = name;
         this.price = price;
         this.description = description;
+        this.imageUrl = imageUrl;
     }
 
     public void changeStatus(ProductStatus status) {
