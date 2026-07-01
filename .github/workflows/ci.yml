@@ -141,7 +141,7 @@ jobs:
               \"docker stop tuna-app || true\",
               \"docker rm tuna-app || true\",
               \"docker run -d --name tuna-app --restart unless-stopped -p 8080:8080 -e SPRING_PROFILES_ACTIVE=prod ${IMAGE_URI}\",
-              \"i=1; while [ \\\"$i\\\" -le 30 ]; do if curl -fsS http://localhost:8080/actuator/health | grep -q '\\\"status\\\":\\\"UP\\\"'; then exit 0; fi; i=$((i + 1)); sleep 5; done\",
+              \"i=1; while [ \\\"\\$i\\\" -le 30 ]; do if curl -fsS http://localhost:8080/actuator/health | grep -q '\\\"status\\\":\\\"UP\\\"'; then exit 0; fi; i=\\$((i + 1)); sleep 5; done\",
               \"docker logs --tail 200 tuna-app\",
               \"exit 1\"
             ]" \
