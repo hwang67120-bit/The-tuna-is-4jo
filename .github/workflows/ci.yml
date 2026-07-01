@@ -81,11 +81,21 @@ jobs:
         id: image
         run: echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      # 7. PR 단계에서도 Docker 이미지 빌드가 가능한지 검증한다.
-      - name: Build Docker Image
-        run: docker build -t tuna-app:${{ steps.image.outputs.tag }} .
+      # 7. ARM64 Docker 이미지를 빌드하기 위해 Docker Buildx를 설정한다.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      # 8. push 이벤트에서만 OIDC로 AWS IAM Role을 Assume한다.
+      # 8. PR 단계에서도 ARM64 Docker 이미지 빌드가 가능한지 검증한다.
+      - name: Build ARM64 Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          load: true
+          tags: tuna-app:${{ steps.image.outputs.tag }}
+
+      # 9. push 이벤트에서만 OIDC로 AWS IAM Role을 Assume한다.
       - name: Configure AWS Credentials
         if: github.event_name == 'push'
         uses: aws-actions/configure-aws-credentials@v4
@@ -93,25 +103,25 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      # 9. Amazon ECR에 로그인한다.
+      # 10. Amazon ECR에 로그인한다.
       - name: Login to Amazon ECR
         if: github.event_name == 'push'
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # 10. Docker 이미지를 커밋 해시 태그와 latest 태그로 ECR에 푸시한다.
-      - name: Tag and Push Docker Image to ECR
+      # 11. Docker 이미지를 ARM64로 빌드하여 커밋 해시 태그와 latest 태그로 ECR에 푸시한다.
+      - name: Build and Push ARM64 Docker Image to ECR
         if: github.event_name == 'push'
-        env:
-          ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
-          IMAGE_TAG: ${{ steps.image.outputs.tag }}
-        run: |
-          docker tag tuna-app:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-          docker tag tuna-app:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
-          docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-          docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.image.outputs.tag }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
-      # 11. ECR에 푸시된 이미지를 EC2에서 pull 받아 새 컨테이너로 배포한다.
+      # 12. ECR에 푸시된 이미지를 EC2에서 pull 받아 새 컨테이너로 배포한다.
       - name: Deploy to EC2 with SSM
         if: github.event_name == 'push'
         env:
@@ -131,7 +141,7 @@ jobs:
               \"docker stop tuna-app || true\",
               \"docker rm tuna-app || true\",
               \"docker run -d --name tuna-app --restart unless-stopped -p 8080:8080 -e SPRING_PROFILES_ACTIVE=prod ${IMAGE_URI}\",
-              \"i=1; while [ $i -le 30 ]; do if curl -fsS http://localhost:8080/actuator/health | grep -q '\\\"status\\\":\\\"UP\\\"'; then exit 0; fi; i=$((i + 1)); sleep 5; done\",
+              \"i=1; while [ \\\"$i\\\" -le 30 ]; do if curl -fsS http://localhost:8080/actuator/health | grep -q '\\\"status\\\":\\\"UP\\\"'; then exit 0; fi; i=$((i + 1)); sleep 5; done\",
               \"docker logs --tail 200 tuna-app\",
               \"exit 1\"
             ]" \
