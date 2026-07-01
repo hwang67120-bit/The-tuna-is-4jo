@@ -4,7 +4,6 @@ out
 .idea
 *.iml
 .env
-src/main/resources/application-prod.yml
 
 build/*
 !build/libs/
