@@ -304,8 +304,11 @@ function renderProducts(products) {
   grid.innerHTML = products.map((product) => {
     const id = product.id ?? product.productId;
     const name = product.name ?? product.productName;
+    const imgUrl = product.imageUrl || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500';
     return `<article class="product-card">
-      <div class="product-thumb">S</div>
+      <div class="product-thumb">
+        <img src="${imgUrl}" alt="${escapeHtml(name)}" style="width:100%; height:100%; object-fit:cover; border-radius: 8px;">
+      </div>
       <div class="product-card-body">
         <span class="badge">${product.status || 'ON_SALE'}</span>
         <h3>${name}</h3>
@@ -328,7 +331,10 @@ async function loadProductDetail(productId) {
 
 function renderProductDetail(product) {
   const options = product.options || [];
-  $('#productDetail').innerHTML = `<div class="detail-visual">S</div>
+  const imgUrl = product.imageUrl || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500';
+  $('#productDetail').innerHTML = `<div class="detail-visual">
+      <img src="${imgUrl}" alt="${escapeHtml(product.name)}" style="width:100%; height:100%; object-fit:cover; border-radius: 12px;">
+    </div>
     <div class="detail-info">
       <span class="badge">${escapeHtml(product.status)}</span>
       <h1>${escapeHtml(product.name)}</h1>
@@ -1444,6 +1450,7 @@ function fillAdminProductForms(product) {
   updateForm.elements.name.value = product.name || '';
   updateForm.elements.price.value = Number(product.price || 0);
   updateForm.elements.description.value = product.description || '';
+  updateForm.elements.imageUrl.value = product.imageUrl || '';
 
   stockForm.elements.productId.value = productId;
   optionForm.elements.productId.value = productId;
@@ -1494,17 +1501,42 @@ function fillAdminOptionForm(button) {
   optionForm.elements.status.value = button.dataset.adminOptionStatus || 'ON_SALE';
 }
 
+async function uploadImageFileIfSelected(fileInput) {
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+    return null;
+  }
+  const file = fileInput.files[0];
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const payload = await api('/api/upload', { method: 'POST', body: formData });
+    return payload.data;
+  } catch (error) {
+    showToast('이미지 파일 업로드 실패: ' + error.message);
+    throw error;
+  }
+}
+
 async function updateProduct(form) {
   if (!requireAdmin()) return;
   const body = formToObject(form);
   try {
+    let imageUrl = body.imageUrl || '';
+    if (form.elements.imageFile && form.elements.imageFile.files.length > 0) {
+      const uploadedUrl = await uploadImageFileIfSelected(form.elements.imageFile);
+      if (uploadedUrl) {
+        imageUrl = uploadedUrl;
+      }
+    }
+
     await api(`/api/products/${body.productId}`, {
       method: 'PUT',
       body: JSON.stringify({
         categoryId: Number(body.categoryId),
         name: body.name,
         price: Number(body.price),
-        description: body.description
+        description: body.description,
+        imageUrl: imageUrl
       })
     });
     showToast('상품이 수정되었습니다.');
@@ -2320,22 +2352,33 @@ function bindEvents() {
   });
   $('#productCreateForm').addEventListener('submit', async (event) => {
     event.preventDefault();
-    const body = formToObject(event.currentTarget);
-    const request = {
-      categoryId: Number(body.categoryId),
-      name: body.name,
-      price: Number(body.price),
-      description: body.description,
-      options: [{
-        optionName: body.optionName,
-        optionStock: Number(body.optionStock),
-        additionalPrice: Number(body.additionalPrice)
-      }]
-    };
+    const form = event.currentTarget;
+    const body = formToObject(form);
     try {
+      let imageUrl = body.imageUrl || '';
+      if (form.elements.imageFile && form.elements.imageFile.files.length > 0) {
+        const uploadedUrl = await uploadImageFileIfSelected(form.elements.imageFile);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+
+      const request = {
+        categoryId: Number(body.categoryId),
+        name: body.name,
+        price: Number(body.price),
+        description: body.description,
+        imageUrl: imageUrl,
+        options: [{
+          optionName: body.optionName,
+          optionStock: Number(body.optionStock),
+          additionalPrice: Number(body.additionalPrice)
+        }]
+      };
+
       const payload = await api('/api/products', { method: 'POST', body: JSON.stringify(request) });
       showToast(`상품이 등록되었습니다. ID ${payload.data.productId}`);
-      event.currentTarget.reset();
+      form.reset();
       loadAdminProducts();
       loadProducts();
     } catch (error) { showToast(error.message); }
