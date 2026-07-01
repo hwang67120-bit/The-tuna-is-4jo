@@ -5,7 +5,7 @@ import com.example.thetunais4joteamproject.domain.payment.dto.PaymentConfirmRequ
 import com.example.thetunais4joteamproject.domain.payment.dto.PaymentConfirmResponse;
 import com.example.thetunais4joteamproject.domain.payment.port.PaymentGateway;
 import com.example.thetunais4joteamproject.domain.payment.port.PaymentGatewayResponse;
-import com.example.thetunais4joteamproject.domain.payment.service.PaymentConfirmContext;
+import com.example.thetunais4joteamproject.domain.payment.dto.PaymentConfirmContext;
 import com.example.thetunais4joteamproject.domain.payment.service.PaymentConfirmTransactionService;
 import com.example.thetunais4joteamproject.global.error.BusinessException;
 import com.example.thetunais4joteamproject.global.error.ErrorCode;

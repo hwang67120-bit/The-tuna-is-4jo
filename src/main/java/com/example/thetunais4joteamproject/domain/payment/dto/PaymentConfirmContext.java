@@ -1,4 +1,4 @@
-package com.example.thetunais4joteamproject.domain.payment.service;
+package com.example.thetunais4joteamproject.domain.payment.dto;
 
 import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
 
