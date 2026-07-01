@@ -10,6 +10,7 @@ const state = {
   portOneConfig: null,
   pendingOrder: null,
   orderPreviewed: false,
+  orderCoupons: [],
   popularSearches: [],
   popularSearchAggregatedAt: '',
   popularSearchExpanded: false,
@@ -77,7 +78,6 @@ function closeAuthModal() {
 function openProfileEditModal() {
   $('#profileEditName').value = $('#profileNameText').textContent === '-' ? '' : $('#profileNameText').textContent;
   $('#profileEditPhone').value = $('#profilePhoneText').textContent === '-' ? '' : $('#profilePhoneText').textContent;
-  $('#profileEditNickname').value = $('#profileNicknameText').textContent === '-' ? '' : $('#profileNicknameText').textContent;
   $('#profileEditPassword').value = '';
   $('#profileEditPassword').type = 'password';
   $('#profileEditModal').classList.remove('hidden');
@@ -519,7 +519,6 @@ async function loadProfile() {
     $('#profileEmail').textContent = member.email;
     $('#profileRole').textContent = member.role;
     $('#profilePhoneText').textContent = member.phoneNumber || '-';
-    $('#profileNicknameText').textContent = member.nickname || '-';
     setSessionMemberInfo(member);
     await loadMyCoupons();
     await loadAvailableCoupons();
@@ -619,7 +618,11 @@ function renderDirectOrderSummary(items) {
     const itemTotal = Number(item.totalPrice || Number(item.unitPrice || 0) * Number(item.quantity || 0));
     return sum + itemTotal;
   }, 0);
-  const discountPrice = 0;
+  const coupon = getSelectedOrderCoupon();
+  const canUseCoupon = coupon
+    && String(coupon.couponStatus || coupon.status || 'UNUSED') === 'UNUSED'
+    && orderPrice >= Number(coupon.minOrderPrice || 0);
+  const discountPrice = canUseCoupon ? Math.min(Number(coupon.discountPrice || 0), orderPrice) : 0;
   const deliveryPrice = DEFAULT_DELIVERY_PRICE;
   const totalAmount = orderPrice - discountPrice + deliveryPrice;
 
@@ -703,6 +706,12 @@ async function createProfileAddress(form) {
 function getSelectedCouponId() {
   const value = $('#orderCouponSelect')?.value;
   return value ? Number(value) : null;
+}
+
+function getSelectedOrderCoupon() {
+  const memberCouponId = getSelectedCouponId();
+  if (!memberCouponId) return null;
+  return state.orderCoupons.find((coupon) => Number(coupon.memberCouponId || coupon.id) === memberCouponId) || null;
 }
 
 function getSelectedAddressId() {
@@ -1100,17 +1109,34 @@ async function cancelOrder(orderId) {
 function renderCoupons(coupons, targetSelector = '#couponPanel') {
   const panel = $(targetSelector);
   if (!panel) return;
-  if (!coupons.length) {
+  const usableCoupons = coupons.filter(isUsableCoupon);
+  if (!usableCoupons.length) {
     panel.innerHTML = '보유 쿠폰이 없습니다.';
     return;
   }
-  panel.innerHTML = `<select class="readonly-select" size="${Math.min(coupons.length, 5)}" aria-label="내 쿠폰 목록">
-    ${coupons.map((coupon) => {
+  panel.innerHTML = `<div class="owned-coupon-list">
+    ${usableCoupons.map((coupon) => {
       const name = coupon.name || coupon.couponName || `쿠폰 #${coupon.memberCouponId || coupon.couponId}`;
       const status = coupon.couponStatus || coupon.status || '';
-      return `<option>${escapeHtml(name)} | ${formatPrice(coupon.discountPrice)} 할인 | 최소 ${formatPrice(coupon.minOrderPrice)} | ${escapeHtml(status)} | ${escapeHtml(formatDateTime(coupon.expirationAt))}</option>`;
+      return `<div class="owned-coupon-card">
+        <div class="owned-coupon-main">
+          <strong>${escapeHtml(name)}</strong>
+          <span>${formatPrice(coupon.discountPrice)} 할인 · 최소 ${formatPrice(coupon.minOrderPrice)}</span>
+        </div>
+        <div class="owned-coupon-meta">
+          <span>${escapeHtml(status || '-')}</span>
+          <small>${escapeHtml(formatDateTime(coupon.expirationAt))}</small>
+        </div>
+      </div>`;
     }).join('')}
-  </select>`;
+  </div>`;
+}
+
+function isUsableCoupon(coupon) {
+  const status = String(coupon.couponStatus || coupon.status || 'UNUSED');
+  const expirationAt = coupon.expirationAt ? new Date(coupon.expirationAt) : null;
+  const notExpired = !expirationAt || Number.isNaN(expirationAt.getTime()) || expirationAt > new Date();
+  return status === 'UNUSED' && notExpired;
 }
 
 async function fetchMyCoupons() {
@@ -1189,7 +1215,8 @@ async function loadCouponsForOrder() {
   if (!select) return;
   try {
     const coupons = await fetchMyCoupons();
-    select.innerHTML = '<option value="">쿠폰을 사용하지 않음</option>' + coupons.map((coupon) => {
+    state.orderCoupons = coupons.filter(isUsableCoupon);
+    select.innerHTML = '<option value="">쿠폰을 사용하지 않음</option>' + state.orderCoupons.map((coupon) => {
       const memberCouponId = coupon.memberCouponId || coupon.id;
       const name = coupon.name || coupon.couponName || `쿠폰 #${memberCouponId}`;
       return `<option value="${memberCouponId}">${escapeHtml(name)} · ${formatPrice(coupon.discountPrice)}</option>`;
@@ -1253,7 +1280,6 @@ function renderProfileAddressSummary(addresses, panel) {
   if (!addresses.length) {
     panel.innerHTML = `<div class="empty-action-panel">
       <span>등록된 배송지가 없습니다.</span>
-      <button class="primary-button small" type="button" data-open-address-manage>+ 배송지 추가</button>
     </div>`;
     return;
   }
@@ -1745,11 +1771,20 @@ async function loadAdminCoupons() {
       panel.innerHTML = '쿠폰 현황이 없습니다.';
       return;
     }
-    panel.innerHTML = coupons.map((coupon) => `<div class="simple-row">
-      <strong>${escapeHtml(coupon.name || `쿠폰 #${coupon.couponId}`)}</strong>
-      <span>총 ${escapeHtml(coupon.totalQuantity)} / 잔여 ${escapeHtml(coupon.remainingQuantity)} / 발급 ${escapeHtml(coupon.issuedQuantity)} / 사용 ${escapeHtml(coupon.usedQuantity)}</span>
-      <small>${formatDateTime(coupon.expirationAt)}</small>
-    </div>`).join('');
+    panel.innerHTML = `<div class="admin-coupon-list">
+      ${coupons.map((coupon) => `<div class="admin-coupon-card">
+        <div class="admin-coupon-main">
+          <strong>${escapeHtml(coupon.name || `쿠폰 #${coupon.couponId}`)}</strong>
+          <small>만료 ${formatDateTime(coupon.expirationAt)}</small>
+        </div>
+        <div class="admin-coupon-stats">
+          <span><b>총</b>${escapeHtml(coupon.totalQuantity)}</span>
+          <span><b>잔여</b>${escapeHtml(coupon.remainingQuantity)}</span>
+          <span><b>발급</b>${escapeHtml(coupon.issuedQuantity)}</span>
+          <span><b>사용</b>${escapeHtml(coupon.usedQuantity)}</span>
+        </div>
+      </div>`).join('')}
+    </div>`;
   } catch (error) {
     hideErrorToast(error);
   }
@@ -2229,7 +2264,7 @@ function bindEvents() {
       await api('/api/members/signup', { method: 'POST', body: JSON.stringify(formToObject(event.currentTarget)) });
       showToast('회원가입 성공');
       clearSignupForm();
-      event.currentTarget.classList.add('hidden');
+      openAuthModal('login');
     } catch (error) { hideErrorToast(error); }
   });
   $("#productSearchForm").addEventListener("submit", (event) => {
@@ -2299,6 +2334,8 @@ function bindEvents() {
     $('#submitOrderButton').textContent = '결제하기';
     if (state.pendingOrder?.type === 'CART') {
       await previewPendingOrder({ silent: true });
+    } else if (state.pendingOrder?.type === 'DIRECT') {
+      renderDirectOrderSummary(state.pendingOrder.items || []);
     }
   });
   $('#addressPanel').addEventListener('click', (event) => {
@@ -2424,8 +2461,7 @@ function bindEvents() {
         method: 'PUT',
         body: JSON.stringify({
           name: $('#profileEditName').value,
-          phoneNumber: $('#profileEditPhone').value,
-          nickname: $('#profileEditNickname').value
+          phoneNumber: $('#profileEditPhone').value
         })
       });
       showToast('회원정보가 수정되었습니다.');

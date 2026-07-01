@@ -393,6 +393,7 @@ h1, h2, h3 {
 .popular-search-list {
     display: grid;
     gap: 8px;
+    --popular-offset: 0;
     transform: translateY(calc(var(--popular-offset, 0) * -52px));
     transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
     will-change: transform;
@@ -528,13 +529,21 @@ h1, h2, h3 {
     color: #4f5965;
 }
 
+.owned-coupon-subtitle {
+    margin-top: 28px;
+}
+
 .available-coupon-list,
+.owned-coupon-list,
+.admin-coupon-list,
 .admin-refund-list {
     display: grid;
     gap: 10px;
 }
 
 .available-coupon-card,
+.owned-coupon-card,
+.admin-coupon-card,
 .admin-refund-row {
     display: flex;
     align-items: center;
@@ -546,6 +555,8 @@ h1, h2, h3 {
 }
 
 .available-coupon-card div,
+.owned-coupon-main,
+.admin-coupon-main,
 .admin-refund-row div:first-child {
     display: grid;
     gap: 5px;
@@ -553,14 +564,54 @@ h1, h2, h3 {
 }
 
 .available-coupon-card strong,
+.owned-coupon-card strong,
+.admin-coupon-card strong,
 .admin-refund-row strong {
     font-size: 16px;
 }
 
 .available-coupon-card span,
+.owned-coupon-card span,
+.owned-coupon-card small,
+.admin-coupon-card small,
 .admin-refund-row span,
 .available-coupon-card small,
 .admin-refund-row small {
+    color: #747b87;
+}
+
+.owned-coupon-meta {
+    display: grid;
+    gap: 5px;
+    justify-items: end;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.owned-coupon-meta span {
+    color: #747b87;
+    font-size: 13px;
+}
+
+.admin-coupon-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(70px, 1fr));
+    gap: 8px;
+    min-width: 420px;
+}
+
+.admin-coupon-stats span {
+    display: grid;
+    gap: 3px;
+    border: 1px solid #e4e8ee;
+    background: #f7f9fb;
+    padding: 8px 10px;
+    text-align: center;
+    color: #111820;
+}
+
+.admin-coupon-stats b {
+    font-size: 12px;
     color: #747b87;
 }
 
@@ -756,6 +807,15 @@ h1, h2, h3 {
 
 .address-manage-row {
     grid-template-columns: 1fr auto;
+    align-items: stretch;
+    margin-bottom: 12px;
+    border: 1px solid #dfe3e8;
+    background: #fff;
+    padding: 16px;
+}
+
+.address-manage-row:last-child {
+    margin-bottom: 0;
 }
 
 .simple-row:last-child {
@@ -832,7 +892,16 @@ h1, h2, h3 {
 }
 
 .order-address-box {
-    gap: 10px;
+    gap: 0;
+}
+
+.order-address-box .panel-title-row {
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.order-address-box .address-badge {
+    display: none;
 }
 
 .selected-address-box strong {
@@ -1035,6 +1104,23 @@ h1, h2, h3 {
 
     .profile-table .row, .console-form label, .simple-row, .inline-form, .product-search-form {
         grid-template-columns: 1fr;
+    }
+
+    .owned-coupon-card,
+    .admin-coupon-card {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .owned-coupon-meta {
+        justify-items: start;
+        text-align: left;
+        white-space: normal;
+    }
+
+    .admin-coupon-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-width: 0;
     }
 
     .order-coupon-row {
