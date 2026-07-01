@@ -1,5 +1,7 @@
 spring:
   config:
+    activate:
+      on-profile: prod
     import: optional:aws-parameterstore:/tuna/prod/
 
   datasource:
@@ -24,6 +26,8 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: 6379
+      ssl:
+        enabled: true
 
 jwt:
   secret: ${JWT_SECRET}
