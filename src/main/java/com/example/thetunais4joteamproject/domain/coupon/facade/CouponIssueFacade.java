@@ -38,7 +38,7 @@ public class CouponIssueFacade {
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("분산 락 획득 중 스레드가 중단되었습니다.");
+            throw BusinessException.from(ErrorCode.INTERNAL_SERVER_ERROR);
         } finally {
             // 4. 모든 비즈니스가 끝나고 트랜잭션이 완전히 커밋된 후 안전하게 락 해제
             if (lock.isHeldByCurrentThread()) {
