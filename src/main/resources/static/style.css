@@ -807,7 +807,7 @@ h1, h2, h3 {
 
 .address-manage-row {
     grid-template-columns: 1fr auto;
-    align-items: stretch;
+    align-items: center;
     margin-bottom: 12px;
     border: 1px solid #dfe3e8;
     background: #fff;
@@ -816,6 +816,17 @@ h1, h2, h3 {
 
 .address-manage-row:last-child {
     margin-bottom: 0;
+}
+
+.address-manage-row .row-actions {
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.address-manage-row .row-actions button {
+    min-width: 64px;
+    height: 44px;
+    padding: 0 14px;
 }
 
 .simple-row:last-child {
@@ -869,6 +880,10 @@ h1, h2, h3 {
     font-size: 13px;
 }
 
+.address-badge.general-badge {
+    color: #747b87;
+}
+
 .empty-badge {
     display: none;
 }
@@ -914,11 +929,14 @@ h1, h2, h3 {
     padding-right: 4px;
 }
 
+.address-scroll-list .simple-row {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
 .simple-row.selected-row {
     background: #f1f7ff;
     border-radius: 6px;
-    padding-left: 10px;
-    padding-right: 10px;
 }
 
 .payment-guide {

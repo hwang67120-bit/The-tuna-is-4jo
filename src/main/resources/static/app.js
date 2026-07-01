@@ -1303,7 +1303,7 @@ function renderOrderAddressSelection(addresses, panel) {
       const addressId = address.addressId || address.id;
       const isSelected = Number(addressId) === Number(selectedAddressId);
       return `<div class="simple-row ${isSelected ? 'selected-row' : ''}" data-address-row-id="${addressId}" data-address-text="${escapeHtml(getAddressText(address))}">
-        <strong>${escapeHtml(address.defaultAddress ? '기본 배송지' : `배송지 #${addressId}`)}</strong>
+        <strong>${escapeHtml(getAddressLabel(address))}</strong>
         <span>${escapeHtml(getAddressText(address))}</span>
         <div class="row-actions">
           <button class="outline-button" type="button" data-select-address-id="${addressId}">${isSelected ? '선택됨' : '선택'}</button>
@@ -1326,9 +1326,14 @@ function getAddressText(address) {
   return `${address.receiverName} / ${address.receiverPhone} / ${address.zipcode} ${address.address} ${address.detailAddress}`;
 }
 
+function getAddressLabel(address) {
+  if (address.defaultAddress) return '기본 배송지';
+  return '일반 배송지';
+}
+
 function renderAddressInfo(address) {
   return `<div class="address-info">
-    ${address.defaultAddress ? '<strong class="address-badge">기본 배송지</strong>' : '<strong class="address-badge empty-badge"></strong>'}
+    <strong class="address-badge ${address.defaultAddress ? '' : 'general-badge'}">${escapeHtml(getAddressLabel(address))}</strong>
     <div class="address-line"><span>주소</span><strong>${escapeHtml(address.address)} ${escapeHtml(address.detailAddress)}</strong></div>
     <div class="address-line"><span>연락처</span><strong>${escapeHtml(address.receiverPhone || '-')}</strong></div>
   </div>`;
@@ -1372,7 +1377,7 @@ function renderSelectedAddress(addressId) {
   const panel = $('#selectedAddressPanel');
   if (!panel) return;
   if (!row) {
-    panel.innerHTML = `선택된 배송지 #${escapeHtml(addressId)}`;
+    panel.innerHTML = '선택된 배송지';
     return;
   }
   panel.innerHTML = `<div class="selected-address-box">
@@ -2353,7 +2358,7 @@ function bindEvents() {
       $('#selectedAddressId').value = selectButton.dataset.selectAddressId;
       $('#selectedAddressPanel').classList.add('hidden');
       await loadAddresses('#addressPanel', true);
-      showToast(`배송지 #${selectButton.dataset.selectAddressId} 선택`);
+      showToast('배송지가 선택되었습니다.');
     }
     const defaultButton = event.target.closest('[data-default-address-id]');
     if (defaultButton) changeDefaultAddress(defaultButton.dataset.defaultAddressId, '#addressPanel', true);
