@@ -211,7 +211,7 @@ public class ProductService {
     /**
      * [주문 연동] 특정 옵션의 재고 차감 (비관적 락으로 동시성 안전 보장)
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void decreaseOptionStock(Long optionId, int quantity) {
         // 1. 실제 재고를 쥐고 있는 영속성 옵션 객체를 비관적 락으로 확보
         ProductOption option = productOptionRepository.findByIdWithLock(optionId)
