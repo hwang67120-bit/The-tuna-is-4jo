@@ -9,14 +9,14 @@
 | Language | Java 17 |
 | Framework | Spring Boot 4.0.6 |
 | Build | Gradle |
-| Database | MySQL, H2 |
+| Database | MySQL, H2(Test), AWS RDS(MySQL) |
 | ORM / Query | Spring Data JPA, Querydsl |
 | Security | Spring Security, JWT |
 | Realtime | WebSocket, STOMP, Redis Pub/Sub |
-| Cache / Lock | Redis, Redisson |
+| Cache / Lock | Redis, Redisson, Caffeine, AWS ElastiCache(Redis) |
 | Payment | PortOne |
 | Test | JUnit 5, Postman, k6 |
-| Infra | Docker, AWS EC2, GitHub Actions |
+| Infra / Deploy | Docker, AWS EC2, GitHub Actions |
 
 ## 기술 선택과 설계 고민
 
@@ -361,6 +361,7 @@ src/
 | 기능 | Method | API Path | 인증 | 요청 | 응답 |
 | --- | --- | --- | --- | --- | --- |
 | 환불 요청 | POST | `/api/refunds` | O | 환불 요청 정보 전달 | 환불 요청 결과 반환 |
+| 관리자 환불 목록 조회 | GET | `/api/admin/refunds` | 관리자 | 환불 목록 조회 요청 | 환불 목록 반환 |
 | 환불 승인 | POST | `/api/admin/refunds/{refundId}/approve` | 관리자 | 환불 ID 전달 | 환불 승인 결과 반환 |
 | 환불 거절 | POST | `/api/admin/refunds/{refundId}/reject` | 관리자 | 환불 ID와 거절 사유 전달 | 환불 거절 결과 반환 |
 
@@ -660,6 +661,7 @@ src/
 | `WebhookStatus` | 웹훅 처리 상태 | `RECEIVED`, `PROCESSED`, `IGNORED`, `FAILED` |
 
 > `ErrorCode` enum은 공통 예외 응답 표에서 관리합니다.
+
 
 
 
