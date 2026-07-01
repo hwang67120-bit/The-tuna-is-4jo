@@ -179,7 +179,7 @@ class CouponServiceTest {
         // given
         Long memberId = 1L;
         UseCouponRequest request = new UseCouponRequest(999L, 20000);
-        given(memberCouponRepository.findById(999L)).willReturn(Optional.empty());
+        given(memberCouponRepository.findByIdWithLock(999L)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> couponService.useCoupon(memberId, request))
@@ -197,7 +197,7 @@ class CouponServiceTest {
         MemberCoupon memberCoupon = MemberCoupon.of(2L, coupon); // 소유자는 2L
         ReflectionTestUtils.setField(memberCoupon, "id", 1L);
 
-        given(memberCouponRepository.findById(1L)).willReturn(Optional.of(memberCoupon));
+        given(memberCouponRepository.findByIdWithLock(1L)).willReturn(Optional.of(memberCoupon));
 
         // when & then
         assertThatThrownBy(() -> couponService.useCoupon(memberId, request))
@@ -215,7 +215,7 @@ class CouponServiceTest {
         MemberCoupon memberCoupon = MemberCoupon.of(memberId, coupon);
         ReflectionTestUtils.setField(memberCoupon, "id", 1L);
 
-        given(memberCouponRepository.findById(1L)).willReturn(Optional.of(memberCoupon));
+        given(memberCouponRepository.findByIdWithLock(1L)).willReturn(Optional.of(memberCoupon));
 
         // when & then
         assertThatThrownBy(() -> couponService.useCoupon(memberId, request))
@@ -233,7 +233,7 @@ class CouponServiceTest {
         MemberCoupon memberCoupon = MemberCoupon.of(memberId, coupon);
         ReflectionTestUtils.setField(memberCoupon, "id", 1L);
 
-        given(memberCouponRepository.findById(1L)).willReturn(Optional.of(memberCoupon));
+        given(memberCouponRepository.findByIdWithLock(1L)).willReturn(Optional.of(memberCoupon));
 
         // when & then
         assertThatThrownBy(() -> couponService.useCoupon(memberId, request))
@@ -269,7 +269,7 @@ class CouponServiceTest {
         MemberCoupon memberCoupon = MemberCoupon.of(memberId, coupon);
         ReflectionTestUtils.setField(memberCoupon, "id", 1L);
 
-        given(memberCouponRepository.findById(1L)).willReturn(Optional.of(memberCoupon));
+        given(memberCouponRepository.findByIdWithLock(1L)).willReturn(Optional.of(memberCoupon));
 
         // when
         couponService.useCoupon(memberId, request);
@@ -285,7 +285,7 @@ class CouponServiceTest {
         // given
         Long memberId = 1L;
         RestoreCouponRequest request = new RestoreCouponRequest(999L);
-        given(memberCouponRepository.findById(999L)).willReturn(Optional.empty());
+        given(memberCouponRepository.findByIdWithLock(999L)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> couponService.restoreCoupon(memberId, request))
@@ -303,7 +303,7 @@ class CouponServiceTest {
         MemberCoupon memberCoupon = MemberCoupon.of(2L, coupon); // 소유자는 2L
         ReflectionTestUtils.setField(memberCoupon, "id", 1L);
 
-        given(memberCouponRepository.findById(1L)).willReturn(Optional.of(memberCoupon));
+        given(memberCouponRepository.findByIdWithLock(1L)).willReturn(Optional.of(memberCoupon));
 
         // when & then
         assertThatThrownBy(() -> couponService.restoreCoupon(memberId, request))
@@ -321,7 +321,7 @@ class CouponServiceTest {
         MemberCoupon memberCoupon = MemberCoupon.of(memberId, coupon); // UNUSED 상태
         ReflectionTestUtils.setField(memberCoupon, "id", 1L);
 
-        given(memberCouponRepository.findById(1L)).willReturn(Optional.of(memberCoupon));
+        given(memberCouponRepository.findByIdWithLock(1L)).willReturn(Optional.of(memberCoupon));
 
         // when & then
         assertThatThrownBy(() -> couponService.restoreCoupon(memberId, request))
@@ -341,7 +341,7 @@ class CouponServiceTest {
         memberCoupon.use(20000);
         ReflectionTestUtils.setField(memberCoupon, "id", 1L);
 
-        given(memberCouponRepository.findById(1L)).willReturn(Optional.of(memberCoupon));
+        given(memberCouponRepository.findByIdWithLock(1L)).willReturn(Optional.of(memberCoupon));
 
         // when
         couponService.restoreCoupon(memberId, request);
@@ -362,7 +362,7 @@ class CouponServiceTest {
         memberCoupon.use(20000);
         ReflectionTestUtils.setField(memberCoupon, "id", memberCouponId);
 
-        given(memberCouponRepository.findById(memberCouponId)).willReturn(Optional.of(memberCoupon));
+        given(memberCouponRepository.findByIdWithLock(memberCouponId)).willReturn(Optional.of(memberCoupon));
 
         // when
         couponService.restoreCouponIfUsed(memberId, memberCouponId);
@@ -382,7 +382,7 @@ class CouponServiceTest {
         MemberCoupon memberCoupon = MemberCoupon.of(memberId, coupon);
         ReflectionTestUtils.setField(memberCoupon, "id", memberCouponId);
 
-        given(memberCouponRepository.findById(memberCouponId)).willReturn(Optional.of(memberCoupon));
+        given(memberCouponRepository.findByIdWithLock(memberCouponId)).willReturn(Optional.of(memberCoupon));
 
         // when
         couponService.restoreCouponIfUsed(memberId, memberCouponId);
