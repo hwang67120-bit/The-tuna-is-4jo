@@ -43,7 +43,7 @@ class ProductServiceTest {
     @DisplayName("상품 생성 시 존재하지 않는 카테고리 ID이면 CATEGORY_NOT_FOUND 예외를 발생시킨다.")
     void createProduct_ThrowsCategoryNotFound() {
         // given
-        CreateProductRequest request = CreateProductRequest.of(999L, "상품", 1000, "설명", Collections.emptyList());
+        CreateProductRequest request = CreateProductRequest.of(999L, "상품", 1000, "설명", null, Collections.emptyList());
         given(categoryRepository.findById(999L)).willReturn(Optional.empty());
 
         // when & then
@@ -58,7 +58,7 @@ class ProductServiceTest {
         // given
         Category category = mock(Category.class);
         CreateProductRequest.ProductOptionRequest optionReq = new CreateProductRequest.ProductOptionRequest("옵션1", 10, 0);
-        CreateProductRequest request = CreateProductRequest.of(1L, "새 상품", 15000, "상세설명", List.of(optionReq));
+        CreateProductRequest request = CreateProductRequest.of(1L, "새 상품", 15000, "상세설명", null, List.of(optionReq));
         
         given(categoryRepository.findById(1L)).willReturn(Optional.of(category));
 
@@ -113,7 +113,7 @@ class ProductServiceTest {
     void updateProduct_ThrowsCategoryNotFound() {
         // given
         Product product = mock(Product.class);
-        UpdateProductRequest request = UpdateProductRequest.of(999L, "수정된 상품", 20000, "수정된 설명");
+        UpdateProductRequest request = UpdateProductRequest.of(999L, "수정된 상품", 20000, "수정된 설명", null);
         
         given(productRepository.findById(1L)).willReturn(Optional.of(product));
         given(categoryRepository.findById(999L)).willReturn(Optional.empty());

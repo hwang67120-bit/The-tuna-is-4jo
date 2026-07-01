@@ -35,6 +35,7 @@ import com.example.thetunais4joteamproject.domain.payment.service.PaymentCommand
 import com.example.thetunais4joteamproject.domain.product.entity.Product;
 import com.example.thetunais4joteamproject.domain.product.entity.ProductOption;
 import com.example.thetunais4joteamproject.domain.product.repository.ProductOptionRepository;
+import com.example.thetunais4joteamproject.domain.product.service.ProductService;
 import com.example.thetunais4joteamproject.domain.user.entity.Member;
 import com.example.thetunais4joteamproject.domain.user.repository.MemberRepository;
 import com.example.thetunais4joteamproject.global.error.BusinessException;
@@ -63,7 +64,8 @@ class OrderFacadeTest {
 			memberRepository,
 			productOptionRepository,
 			couponService,
-			addressRepository
+			addressRepository,
+			mock(ProductService.class)
 		);
 
 		Long memberId = 1L;
@@ -127,7 +129,8 @@ class OrderFacadeTest {
 			memberRepository,
 			productOptionRepository,
 			couponService,
-			addressRepository
+			addressRepository,
+			mock(ProductService.class)
 		);
 
 		Long memberId = 1L;
@@ -173,6 +176,7 @@ class OrderFacadeTest {
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 		CouponService couponService = mock(CouponService.class);
 		AddressRepository addressRepository = mock(AddressRepository.class);
+		ProductService productService = mock(ProductService.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
@@ -181,7 +185,8 @@ class OrderFacadeTest {
 			memberRepository,
 			productOptionRepository,
 			couponService,
-			addressRepository
+			addressRepository,
+			productService
 		);
 
 		Long memberId = 1L;
@@ -237,7 +242,7 @@ class OrderFacadeTest {
 		assertThat(response.items()).hasSize(1);
 		assertThat(response.items().get(0).orderItemId()).isEqualTo(100L);
 
-		verify(cartItem.getProductOption()).decreaseStock(2);
+		verify(productService).decreaseOptionStock(cartItem.getProductOption().getId(), 2);
 		verify(orderService).createOrderItemsFromCartItems(order, List.of(cartItem));
 		verify(paymentCommandService).createPayment(order);
 	}
@@ -260,7 +265,8 @@ class OrderFacadeTest {
 			memberRepository,
 			productOptionRepository,
 			couponService,
-			addressRepository
+			addressRepository,
+			mock(ProductService.class)
 		);
 
 		Long memberId = 1L;
@@ -336,7 +342,8 @@ class OrderFacadeTest {
 			memberRepository,
 			productOptionRepository,
 			couponService,
-			addressRepository
+			addressRepository,
+			mock(ProductService.class)
 		);
 
 		Long memberId = 1L;
@@ -378,6 +385,7 @@ class OrderFacadeTest {
 		ProductOptionRepository productOptionRepository = mock(ProductOptionRepository.class);
 		CouponService couponService = mock(CouponService.class);
 		AddressRepository addressRepository = mock(AddressRepository.class);
+		ProductService productService = mock(ProductService.class);
 
 		OrderFacade orderFacade = new OrderFacade(
 			cartService,
@@ -386,7 +394,8 @@ class OrderFacadeTest {
 			memberRepository,
 			productOptionRepository,
 			couponService,
-			addressRepository
+			addressRepository,
+			productService
 		);
 
 		Long memberId = 1L;
@@ -435,7 +444,7 @@ class OrderFacadeTest {
 		assertThat(response.items()).hasSize(1);
 		assertThat(response.items().get(0).productOptionId()).isEqualTo(1000L);
 
-		verify(productOption).decreaseStock(2);
+		verify(productService).decreaseOptionStock(productOption.getId(), 2);
 		verify(orderService).createOrderItems(order, List.of(productOption), List.of(2));
 		verify(paymentCommandService).createPayment(order);
 	}
@@ -458,7 +467,8 @@ class OrderFacadeTest {
 			memberRepository,
 			productOptionRepository,
 			couponService,
-			addressRepository
+			addressRepository,
+			mock(ProductService.class)
 		);
 
 		Long memberId = 1L;
@@ -521,7 +531,8 @@ class OrderFacadeTest {
 			memberRepository,
 			productOptionRepository,
 			couponService,
-			addressRepository
+			addressRepository,
+			mock(ProductService.class)
 		);
 
 		Long memberId = 1L;
@@ -581,7 +592,8 @@ class OrderFacadeTest {
 			memberRepository,
 			productOptionRepository,
 			couponService,
-			addressRepository
+			addressRepository,
+			mock(ProductService.class)
 		);
 
 		Long memberId = 1L;
@@ -638,7 +650,8 @@ class OrderFacadeTest {
 			memberRepository,
 			productOptionRepository,
 			couponService,
-			addressRepository
+			addressRepository,
+			mock(ProductService.class)
 		);
 
 		Member member = mock(Member.class);
@@ -698,7 +711,8 @@ class OrderFacadeTest {
 			memberRepository,
 			productOptionRepository,
 			couponService,
-			addressRepository
+			addressRepository,
+			mock(ProductService.class)
 		);
 
 		Long memberId = 1L;
@@ -740,7 +754,8 @@ class OrderFacadeTest {
 			memberRepository,
 			productOptionRepository,
 			couponService,
-			addressRepository
+			addressRepository,
+			mock(ProductService.class)
 		);
 
 		Long memberId = 1L;
