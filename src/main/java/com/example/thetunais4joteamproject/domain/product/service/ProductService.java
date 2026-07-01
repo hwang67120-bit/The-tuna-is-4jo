@@ -23,8 +23,6 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +51,7 @@ public class ProductService {
             request.name(),
             request.price(),
             request.description(),
+            request.imageUrl(),
             ProductStatus.ON_SALE
         );
 
@@ -179,7 +178,8 @@ public class ProductService {
             category,
             request.name(),
             request.price(),
-            request.description()
+            request.description(),
+            request.imageUrl()
         );
 
         productSearchService.evictSearchCache();
@@ -209,12 +209,12 @@ public class ProductService {
     }
 
     /**
-     * [주문 연동] 특정 옵션의 재고 차감 (Facade 분산 락 안에서 안전하게 실행됨)
+     * [주문 연동] 특정 옵션의 재고 차감 (비관적 락으로 동시성 안전 보장)
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void decreaseOptionStock(Long optionId, int quantity) {
-        // 1. 실제 재고를 쥐고 있는 영속성 옵션 객체 확보
-        ProductOption option = productOptionRepository.findById(optionId)
+        // 1. 실제 재고를 쥐고 있는 영속성 옵션 객체를 비관적 락으로 확보
+        ProductOption option = productOptionRepository.findByIdWithLock(optionId)
                 .orElseThrow(() -> BusinessException.from(ErrorCode.OPTION_NOT_FOUND));
 
         // 2. 현재 재고와 차감 수량 비교 정밀 검증

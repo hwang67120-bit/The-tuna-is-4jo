@@ -21,6 +21,7 @@ import com.example.thetunais4joteamproject.domain.order.entity.DeliveryAddress;
 import com.example.thetunais4joteamproject.domain.order.entity.Order;
 import com.example.thetunais4joteamproject.domain.order.entity.OrderItem;
 import com.example.thetunais4joteamproject.domain.order.service.OrderService;
+import com.example.thetunais4joteamproject.domain.product.service.ProductService;
 import com.example.thetunais4joteamproject.domain.payment.entity.Payment;
 import com.example.thetunais4joteamproject.domain.payment.service.PaymentCommandService;
 import com.example.thetunais4joteamproject.domain.product.entity.ProductOption;
@@ -49,6 +50,7 @@ public class OrderFacade {
 	private final ProductOptionRepository productOptionRepository;
 	private final CouponService couponService;
 	private final AddressRepository addressRepository;
+	private final ProductService productService;
 
 	@Transactional(readOnly = true)
 	public OrderPreviewResponse previewOrder(Long memberId, List<Long> cartItemIds) {
@@ -282,7 +284,10 @@ public class OrderFacade {
 
 	private void decreaseCartItemStock(List<CartItem> cartItems) {
 		for (CartItem cartItem : cartItems) {
-			cartItem.getProductOption().decreaseStock(cartItem.getQuantity());
+			productService.decreaseOptionStock(
+				cartItem.getProductOption().getId(),
+				cartItem.getQuantity()
+			);
 		}
 	}
 
@@ -291,7 +296,10 @@ public class OrderFacade {
 		List<Integer> quantities
 	) {
 		for (int i = 0; i < productOptions.size(); i++) {
-			productOptions.get(i).decreaseStock(quantities.get(i));
+			productService.decreaseOptionStock(
+				productOptions.get(i).getId(),
+				quantities.get(i)
+			);
 		}
 	}
 

@@ -145,8 +145,8 @@ public class CouponService {
      */
     @Transactional
     public void useCoupon(Long memberId, UseCouponRequest request) {
-        // 1. 회원의 쿠폰함에 해당 쿠폰이 존재하는지 조회 (원판 Coupon 정보도 Lazy로 필요할 때 조인되도록 findById 활용)
-        MemberCoupon memberCoupon = memberCouponRepository.findById(request.memberCouponId())
+        // 1. 회원의 쿠폰함에 해당 쿠폰이 존재하는지 비관적 락으로 조회 (원판 Coupon 정보도 Lazy로 필요할 때 조인되도록 findByIdWithLock 활용)
+        MemberCoupon memberCoupon = memberCouponRepository.findByIdWithLock(request.memberCouponId())
             .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
 
         // 2. 소유권 방어선: 해당 쿠폰이 요청을 보낸 로그인 회원의 쿠폰이 맞는지 정밀 검증
@@ -175,8 +175,8 @@ public class CouponService {
      */
     @Transactional
     public void restoreCoupon(Long memberId, RestoreCouponRequest request) {
-        // 1. 회원의 쿠폰함 존재 여부 검증
-        MemberCoupon memberCoupon = memberCouponRepository.findById(request.memberCouponId())
+        // 1. 회원의 쿠폰함 존재 여부를 비관적 락으로 검증
+        MemberCoupon memberCoupon = memberCouponRepository.findByIdWithLock(request.memberCouponId())
             .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
 
         // 2. 소유권 방어선: 타인의 쿠폰 복구 요청 원천 차단
@@ -201,7 +201,7 @@ public class CouponService {
             return;
         }
 
-        MemberCoupon memberCoupon = memberCouponRepository.findById(memberCouponId)
+        MemberCoupon memberCoupon = memberCouponRepository.findByIdWithLock(memberCouponId)
             .orElseThrow(() -> BusinessException.from(ErrorCode.COUPON_NOT_FOUND));
 
         if (!memberCoupon.getMemberId().equals(memberId)) {
