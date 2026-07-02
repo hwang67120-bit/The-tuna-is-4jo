@@ -620,6 +620,12 @@ h1, h2, h3 {
     color: #111820;
 }
 
+.admin-refund-status {
+    font-weight: 700;
+    color: #4f5965;
+    white-space: nowrap;
+}
+
 .form-actions {
     padding: 16px 0;
     text-align: center;

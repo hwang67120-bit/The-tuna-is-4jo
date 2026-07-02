@@ -1052,7 +1052,7 @@ async function loadOrderHistory() {
 
     panel.innerHTML = orders.map((order) => `<div class="cart-row order-history-row">
       <strong>${escapeHtml(order.orderNumber)}<br><small>${formatDateTime(order.orderedAt)}</small></strong>
-      <span>${escapeHtml(order.orderStatus)}</span>
+      <span>${escapeHtml(getOrderHistoryStatusText(order))}</span>
       <strong>${formatPrice(order.totalAmount)}</strong>
       <button class="outline-button" type="button" data-order-detail-id="${order.orderId}">상세</button>
     </div>`).join('');
@@ -1060,6 +1060,12 @@ async function loadOrderHistory() {
     hideErrorToast(error);
   }
 }
+
+function getOrderHistoryStatusText(order) {
+  if (order.paymentStatus === 'REFUNDED') return 'REFUNDED';
+  return order.orderStatus || '-';
+}
+
 async function loadOrderDetail(orderId) {
   if (!requireLogin()) return;
 
@@ -1088,7 +1094,7 @@ function renderOrderDetail(order) {
     <button class="outline-button small-button" type="button" data-close-order-detail>닫기</button>
   </div>
     <div class="order-result-row"><strong>주문 번호</strong><span>${escapeHtml(order.orderNumber)}</span></div>
-    <div class="order-result-row"><strong>주문 상태</strong><span>${escapeHtml(order.orderStatus)}</span></div>
+    <div class="order-result-row"><strong>주문 상태</strong><span>${escapeHtml(getOrderHistoryStatusText(order))}</span></div>
     <div class="order-result-row"><strong>주문 일시</strong><span>${formatDateTime(order.orderedAt)}</span></div>
     <div class="order-result-row"><strong>배송지</strong><span>${addressText}</span></div>
     <h3>상품</h3>
@@ -1844,12 +1850,21 @@ function renderAdminRefunds(refunds) {
           <p>${escapeHtml(refund.reason || '')}</p>
         </div>
         <div class="inline-actions">
-          <button class="primary-button" type="button" data-admin-refund-approve="${escapeHtml(refund.refundId)}" ${canProcess ? '' : 'disabled'}>승인</button>
-          <button class="outline-button danger-button" type="button" data-admin-refund-reject="${escapeHtml(refund.refundId)}" ${canProcess ? '' : 'disabled'}>거절</button>
+          ${canProcess ? `
+            <button class="primary-button" type="button" data-admin-refund-approve="${escapeHtml(refund.refundId)}">승인</button>
+            <button class="outline-button danger-button" type="button" data-admin-refund-reject="${escapeHtml(refund.refundId)}">거절</button>
+          ` : `<span class="admin-refund-status">${escapeHtml(getAdminRefundStatusText(refund.status))}</span>`}
         </div>
       </div>`;
     }).join('')}
   </div>`;
+}
+
+function getAdminRefundStatusText(status) {
+  if (status === 'COMPLETED') return '환불 처리 완료';
+  if (status === 'REJECTED') return '환불 거절 완료';
+  if (status === 'FAILED') return '환불 처리 실패';
+  return status || '-';
 }
 
 async function loadAdminRefunds({ resetResult = true } = {}) {
