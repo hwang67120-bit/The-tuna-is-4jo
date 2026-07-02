@@ -23,26 +23,26 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class WebhookController {
 
-    private final PortOneWebhookVerifier portOneWebhookVerifier;
-    private final WebhookHandler webhookHandler;
+	private final PortOneWebhookVerifier portOneWebhookVerifier;
+	private final WebhookHandler webhookHandler;
 
-    @PostMapping("/webhook")
-    public ResponseEntity<ApiResponse<Void>> receiveWebhook(
-        @RequestBody String body,
-        @RequestHeader("webhook-id") String webhookId,
-        @RequestHeader("webhook-signature") String signature,
-        @RequestHeader("webhook-timestamp") String timestamp
-    ) {
-        log.info("Webhook 진입");
-        try {
-            Webhook webhook = portOneWebhookVerifier.verify(body, webhookId, signature, timestamp);
-            webhookHandler.handle(webhookId, webhook, body);
+	@PostMapping("/webhook")
+	public ResponseEntity<ApiResponse<Void>> receiveWebhook(
+		@RequestBody String body,
+		@RequestHeader("webhook-id") String webhookId,
+		@RequestHeader("webhook-signature") String signature,
+		@RequestHeader("webhook-timestamp") String timestamp
+	) {
+		log.info("Webhook 진입");
+		try {
+			Webhook webhook = portOneWebhookVerifier.verify(body, webhookId, signature, timestamp);
+			webhookHandler.handle(webhookId, webhook, body);
 
-            return ResponseEntity.ok(ApiResponse.ok(null));
+			return ResponseEntity.ok(ApiResponse.ok(null));
 
-        } catch (WebhookVerificationException e) {
-            log.warn("[Webhook] signature verification failed. webhookId={}", webhookId, e);
-            throw BusinessException.from(ErrorCode.WEBHOOK_VERIFICATION_FAILED);
-        }
-    }
+		} catch (WebhookVerificationException e) {
+			log.warn("[Webhook] signature verification failed. webhookId={}", webhookId, e);
+			throw BusinessException.from(ErrorCode.WEBHOOK_VERIFICATION_FAILED);
+		}
+	}
 }

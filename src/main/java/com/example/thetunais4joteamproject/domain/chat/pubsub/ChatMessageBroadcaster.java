@@ -4,5 +4,5 @@ import com.example.thetunais4joteamproject.domain.chat.dto.ChatMessageResponse;
 
 public interface ChatMessageBroadcaster {
 
-    void broadcast(ChatMessageResponse chatMessageResponse);
+	void broadcast(ChatMessageResponse chatMessageResponse);
 }

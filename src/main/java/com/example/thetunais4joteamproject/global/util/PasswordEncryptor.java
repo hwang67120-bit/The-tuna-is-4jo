@@ -5,69 +5,71 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
+
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+
 import org.springframework.stereotype.Component;
 
 @Component
 public class PasswordEncryptor {
 
-    private static final int SALT_LENGTH = 16;
-    private static final int ITERATION_COUNT = 120000;
-    private static final int KEY_LENGTH = 256;
-    private static final String ALGORITHM = "PBKDF2WithHmacSHA256";
-    private static final String DELIMITER = ":";
+	private static final int SALT_LENGTH = 16;
+	private static final int ITERATION_COUNT = 120000;
+	private static final int KEY_LENGTH = 256;
+	private static final String ALGORITHM = "PBKDF2WithHmacSHA256";
+	private static final String DELIMITER = ":";
 
-    private final SecureRandom secureRandom = new SecureRandom();
+	private final SecureRandom secureRandom = new SecureRandom();
 
-    public String encrypt(String rawPassword) {
-        byte[] salt = createSalt();
-        byte[] hash = hash(rawPassword, salt);
+	public String encrypt(String rawPassword) {
+		byte[] salt = createSalt();
+		byte[] hash = hash(rawPassword, salt);
 
-        return ITERATION_COUNT
-                + DELIMITER
-                + Base64.getEncoder().encodeToString(salt)
-                + DELIMITER
-                + Base64.getEncoder().encodeToString(hash);
-    }
+		return ITERATION_COUNT
+			+ DELIMITER
+			+ Base64.getEncoder().encodeToString(salt)
+			+ DELIMITER
+			+ Base64.getEncoder().encodeToString(hash);
+	}
 
-    public boolean matches(String rawPassword, String encryptedPassword) {
-        try {
-            String[] passwordParts = encryptedPassword.split(DELIMITER);
-            if (passwordParts.length != 3) {
-                return false;
-            }
+	public boolean matches(String rawPassword, String encryptedPassword) {
+		try {
+			String[] passwordParts = encryptedPassword.split(DELIMITER);
+			if (passwordParts.length != 3) {
+				return false;
+			}
 
-            byte[] salt = Base64.getDecoder().decode(passwordParts[1]);
-            byte[] savedHash = Base64.getDecoder().decode(passwordParts[2]);
-            byte[] rawHash = hash(rawPassword, salt);
+			byte[] salt = Base64.getDecoder().decode(passwordParts[1]);
+			byte[] savedHash = Base64.getDecoder().decode(passwordParts[2]);
+			byte[] rawHash = hash(rawPassword, salt);
 
-            return MessageDigest.isEqual(savedHash, rawHash);
-        } catch (IllegalArgumentException exception) {
-            return false;
-        }
-    }
+			return MessageDigest.isEqual(savedHash, rawHash);
+		} catch (IllegalArgumentException exception) {
+			return false;
+		}
+	}
 
-    private byte[] createSalt() {
-        byte[] salt = new byte[SALT_LENGTH];
-        secureRandom.nextBytes(salt);
+	private byte[] createSalt() {
+		byte[] salt = new byte[SALT_LENGTH];
+		secureRandom.nextBytes(salt);
 
-        return salt;
-    }
+		return salt;
+	}
 
-    private byte[] hash(String rawPassword, byte[] salt) {
-        try {
-            PBEKeySpec keySpec = new PBEKeySpec(
-                    rawPassword.toCharArray(),
-                    salt,
-                    ITERATION_COUNT,
-                    KEY_LENGTH
-            );
-            SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance(ALGORITHM);
+	private byte[] hash(String rawPassword, byte[] salt) {
+		try {
+			PBEKeySpec keySpec = new PBEKeySpec(
+				rawPassword.toCharArray(),
+				salt,
+				ITERATION_COUNT,
+				KEY_LENGTH
+			);
+			SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance(ALGORITHM);
 
-            return secretKeyFactory.generateSecret(keySpec).getEncoded();
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException exception) {
-            throw new IllegalStateException("Password encryption failed", exception);
-        }
-    }
+			return secretKeyFactory.generateSecret(keySpec).getEncoded();
+		} catch (NoSuchAlgorithmException | InvalidKeySpecException exception) {
+			throw new IllegalStateException("Password encryption failed", exception);
+		}
+	}
 }

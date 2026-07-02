@@ -1,6 +1,7 @@
 package com.example.thetunais4joteamproject.global.config;
 
 import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
@@ -20,59 +21,59 @@ import org.springframework.web.socket.handler.WebSocketHandlerDecorator;
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    private static final Logger log = LoggerFactory.getLogger(WebSocketConfig.class);
+	private static final Logger log = LoggerFactory.getLogger(WebSocketConfig.class);
 
-    private final JwtChannelInterceptor jwtChannelInterceptor;
+	private final JwtChannelInterceptor jwtChannelInterceptor;
 
-    @Override
-    public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic");
-        registry.setApplicationDestinationPrefixes("/app");
-    }
+	@Override
+	public void configureMessageBroker(MessageBrokerRegistry registry) {
+		registry.enableSimpleBroker("/topic");
+		registry.setApplicationDestinationPrefixes("/app");
+	}
 
-    @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws/chat")
-                .setAllowedOriginPatterns("*");
-    }
+	@Override
+	public void registerStompEndpoints(StompEndpointRegistry registry) {
+		registry.addEndpoint("/ws/chat")
+			.setAllowedOriginPatterns("*");
+	}
 
-    @Override
-    public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(jwtChannelInterceptor);
-    }
+	@Override
+	public void configureClientInboundChannel(ChannelRegistration registration) {
+		registration.interceptors(jwtChannelInterceptor);
+	}
 
-    @Override
-    public void configureWebSocketTransport(WebSocketTransportRegistration registry) {
-        registry.addDecoratorFactory(this::createLoggingWebSocketHandler);
-    }
+	@Override
+	public void configureWebSocketTransport(WebSocketTransportRegistration registry) {
+		registry.addDecoratorFactory(this::createLoggingWebSocketHandler);
+	}
 
-    private WebSocketHandler createLoggingWebSocketHandler(WebSocketHandler webSocketHandler) {
-        return new WebSocketHandlerDecorator(webSocketHandler) {
+	private WebSocketHandler createLoggingWebSocketHandler(WebSocketHandler webSocketHandler) {
+		return new WebSocketHandlerDecorator(webSocketHandler) {
 
-            @Override
-            public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-                log.info("WebSocket connected. sessionId={}, remoteAddress={}",
-                        session.getId(),
-                        session.getRemoteAddress()
-                );
-                super.afterConnectionEstablished(session);
-            }
+			@Override
+			public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+				log.info("WebSocket connected. sessionId={}, remoteAddress={}",
+					session.getId(),
+					session.getRemoteAddress()
+				);
+				super.afterConnectionEstablished(session);
+			}
 
-            @Override
-            public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
-                log.info("WebSocket disconnected. sessionId={}, code={}, reason={}",
-                        session.getId(),
-                        closeStatus.getCode(),
-                        closeStatus.getReason()
-                );
-                super.afterConnectionClosed(session, closeStatus);
-            }
+			@Override
+			public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
+				log.info("WebSocket disconnected. sessionId={}, code={}, reason={}",
+					session.getId(),
+					closeStatus.getCode(),
+					closeStatus.getReason()
+				);
+				super.afterConnectionClosed(session, closeStatus);
+			}
 
-            @Override
-            public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-                log.warn("WebSocket transport error. sessionId={}", session.getId(), exception);
-                super.handleTransportError(session, exception);
-            }
-        };
-    }
+			@Override
+			public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
+				log.warn("WebSocket transport error. sessionId={}", session.getId(), exception);
+				super.handleTransportError(session, exception);
+			}
+		};
+	}
 }

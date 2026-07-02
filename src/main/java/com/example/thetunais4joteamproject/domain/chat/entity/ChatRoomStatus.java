@@ -4,11 +4,11 @@ import java.util.List;
 
 public enum ChatRoomStatus {
 
-    WAITING,
-    IN_PROGRESS,
-    CLOSED;
+	WAITING,
+	IN_PROGRESS,
+	CLOSED;
 
-    public static List<ChatRoomStatus> activeStatuses() {
-        return List.of(WAITING, IN_PROGRESS);
-    }
+	public static List<ChatRoomStatus> activeStatuses() {
+		return List.of(WAITING, IN_PROGRESS);
+	}
 }

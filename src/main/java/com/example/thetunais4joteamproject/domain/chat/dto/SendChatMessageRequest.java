@@ -4,10 +4,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record SendChatMessageRequest(
-        @NotNull
-        Long chatRoomId,
+	@NotNull
+	Long chatRoomId,
 
-        @NotBlank
-        String content
+	@NotBlank
+	String content
 ) {
 }

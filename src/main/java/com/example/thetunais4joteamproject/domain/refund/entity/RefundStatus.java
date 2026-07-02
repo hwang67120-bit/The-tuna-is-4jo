@@ -19,10 +19,9 @@ public enum RefundStatus {
 
 	public boolean canTransitionTo(RefundStatus nextStatus) {
 		return switch (this) {
-			case REQUESTED ->
-				nextStatus == COMPLETED ||
-					nextStatus == REJECTED ||
-					nextStatus == FAILED;
+			case REQUESTED -> nextStatus == COMPLETED ||
+				nextStatus == REJECTED ||
+				nextStatus == FAILED;
 
 			case REJECTED, COMPLETED, FAILED -> false;
 		};

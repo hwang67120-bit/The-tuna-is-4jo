@@ -306,7 +306,8 @@ class OrderFacadeTest {
 			.thenReturn(Optional.of(address));
 		when(cartService.getPreviewItems(memberId, cartItemIds)).thenReturn(List.of(cartItem));
 		when(couponService.calculateDiscountPrice(memberId, memberCouponId, 23000)).thenReturn(5000);
-		when(orderService.createOrder(eq(member), eq(memberCouponId), eq(23000), eq(5000), eq(3000), eq(21000), any(DeliveryAddress.class)))
+		when(orderService.createOrder(eq(member), eq(memberCouponId), eq(23000), eq(5000), eq(3000), eq(21000),
+			any(DeliveryAddress.class)))
 			.thenReturn(order);
 		when(orderService.createOrderItemsFromCartItems(order, List.of(cartItem))).thenReturn(List.of(orderItem));
 		when(paymentCommandService.createPayment(order)).thenReturn(payment);
@@ -321,7 +322,8 @@ class OrderFacadeTest {
 		assertThat(response.totalAmount()).isEqualTo(21000);
 
 		verify(couponService).calculateDiscountPrice(memberId, memberCouponId, 23000);
-		verify(orderService).createOrder(eq(member), eq(memberCouponId), eq(23000), eq(5000), eq(3000), eq(21000), any(DeliveryAddress.class));
+		verify(orderService).createOrder(eq(member), eq(memberCouponId), eq(23000), eq(5000), eq(3000), eq(21000),
+			any(DeliveryAddress.class));
 	}
 
 	@Test
