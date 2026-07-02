@@ -35,6 +35,7 @@ public class SecurityConfig {
 				.requestMatchers("/ws/chat", "/ws/chat/**").permitAll()
 				.requestMatchers("/actuator/health").permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/members/signup", "/api/members/login").permitAll()
+				.requestMatchers(HttpMethod.POST, "/webhooks/webhook").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/members/email-check").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
