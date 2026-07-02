@@ -1,6 +1,5 @@
 package com.example.thetunais4joteamproject.domain.payment.service;
 
-
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -95,7 +94,6 @@ public class PaymentCommandService {
 		return payment;
 	}
 
-
 	public Payment getPayment(Long paymentId) {
 		return paymentRepository.findById(paymentId)
 			.orElseThrow(() -> BusinessException.from(ErrorCode.PAYMENT_NOT_FOUND));
@@ -119,7 +117,8 @@ public class PaymentCommandService {
 
 	private void validatePortOnePaymentId(Payment payment, String portOnePaymentId) {
 		if (!payment.getPortonePaymentId().equals(portOnePaymentId)) {
-			log.warn("결제 승인 거부 - portOnePaymentId 불일치: portOnePaymentId={}, DB={}", payment.getPortonePaymentId(), portOnePaymentId);
+			log.warn("결제 승인 거부 - portOnePaymentId 불일치: portOnePaymentId={}, DB={}", payment.getPortonePaymentId(),
+				portOnePaymentId);
 			throw BusinessException.from(ErrorCode.PORTONE_PAYMENT_NOT_FOUND);
 		}
 	}

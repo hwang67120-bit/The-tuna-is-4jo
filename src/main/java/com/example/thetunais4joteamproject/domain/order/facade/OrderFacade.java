@@ -238,9 +238,9 @@ public class OrderFacade {
 	private DeliveryAddress getDeliveryAddress(Long memberId, Long memberAddressId) {
 		Address address = memberAddressId != null
 			? addressRepository.findByIdAndMemberId(memberAddressId, memberId)
-				.orElseThrow(() -> BusinessException.from(ErrorCode.ADDRESS_NOT_FOUND))
+			.orElseThrow(() -> BusinessException.from(ErrorCode.ADDRESS_NOT_FOUND))
 			: addressRepository.findFirstByMemberIdAndDefaultAddressTrue(memberId)
-				.orElseThrow(() -> BusinessException.from(ErrorCode.ADDRESS_NOT_FOUND));
+			.orElseThrow(() -> BusinessException.from(ErrorCode.ADDRESS_NOT_FOUND));
 
 		return DeliveryAddress.from(address);
 	}

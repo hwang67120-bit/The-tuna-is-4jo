@@ -10,8 +10,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 public class TheTunaIs4joTeamProjectApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(TheTunaIs4joTeamProjectApplication.class, args);
-    }
+	public static void main(String[] args) {
+		SpringApplication.run(TheTunaIs4joTeamProjectApplication.class, args);
+	}
 
 }

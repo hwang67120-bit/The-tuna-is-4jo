@@ -11,7 +11,9 @@ import com.example.thetunais4joteamproject.domain.user.dto.UpdateMemberInfoReque
 import com.example.thetunais4joteamproject.domain.user.dto.UpdateMemberInfoResponse;
 import com.example.thetunais4joteamproject.domain.user.service.MemberService;
 import com.example.thetunais4joteamproject.global.common.ApiResponse;
+
 import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,66 +30,66 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/members")
 public class MemberController {
 
-    private final MemberService memberService;
+	private final MemberService memberService;
 
-    public MemberController(MemberService memberService) {
-        this.memberService = memberService;
-    }
+	public MemberController(MemberService memberService) {
+		this.memberService = memberService;
+	}
 
-    @GetMapping("/email-check")
-    public ResponseEntity<ApiResponse<GetMemberEmailCheckResponse>> getEmailAvailability(
-            @RequestParam String email
-    ) {
-        GetMemberEmailCheckResponse response = memberService.getEmailAvailability(email);
+	@GetMapping("/email-check")
+	public ResponseEntity<ApiResponse<GetMemberEmailCheckResponse>> getEmailAvailability(
+		@RequestParam String email
+	) {
+		GetMemberEmailCheckResponse response = memberService.getEmailAvailability(email);
 
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
+		return ResponseEntity.ok(ApiResponse.ok(response));
+	}
 
-    @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginMemberResponse>> login(
-            @Valid @RequestBody LoginMemberRequest request
-    ) {
-        LoginMemberResponse response = memberService.login(request);
+	@PostMapping("/login")
+	public ResponseEntity<ApiResponse<LoginMemberResponse>> login(
+		@Valid @RequestBody LoginMemberRequest request
+	) {
+		LoginMemberResponse response = memberService.login(request);
 
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
+		return ResponseEntity.ok(ApiResponse.ok(response));
+	}
 
-    @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<LogoutMemberResponse>> logout(
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader
-    ) {
-        LogoutMemberResponse response = memberService.logout(authorizationHeader);
+	@PostMapping("/logout")
+	public ResponseEntity<ApiResponse<LogoutMemberResponse>> logout(
+		@RequestHeader(value = "Authorization", required = false) String authorizationHeader
+	) {
+		LogoutMemberResponse response = memberService.logout(authorizationHeader);
 
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
+		return ResponseEntity.ok(ApiResponse.ok(response));
+	}
 
-    @GetMapping("/info")
-    public ResponseEntity<ApiResponse<GetMemberInfoResponse>> getInfo(
-            @AuthenticationPrincipal Long memberId
-    ) {
-        GetMemberInfoResponse response = memberService.getInfo(memberId);
+	@GetMapping("/info")
+	public ResponseEntity<ApiResponse<GetMemberInfoResponse>> getInfo(
+		@AuthenticationPrincipal Long memberId
+	) {
+		GetMemberInfoResponse response = memberService.getInfo(memberId);
 
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
+		return ResponseEntity.ok(ApiResponse.ok(response));
+	}
 
-    @PutMapping("/info")
-    public ResponseEntity<ApiResponse<UpdateMemberInfoResponse>> updateInfo(
-            @AuthenticationPrincipal Long memberId,
-            @Valid @RequestBody UpdateMemberInfoRequest request
-    ) {
-        UpdateMemberInfoResponse response = memberService.updateInfo(memberId, request);
+	@PutMapping("/info")
+	public ResponseEntity<ApiResponse<UpdateMemberInfoResponse>> updateInfo(
+		@AuthenticationPrincipal Long memberId,
+		@Valid @RequestBody UpdateMemberInfoRequest request
+	) {
+		UpdateMemberInfoResponse response = memberService.updateInfo(memberId, request);
 
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
+		return ResponseEntity.ok(ApiResponse.ok(response));
+	}
 
-    @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<CreateMemberResponse>> create(
-            @Valid @RequestBody CreateMemberRequest request
-    ) {
-        CreateMemberResponse response = memberService.create(request);
+	@PostMapping("/signup")
+	public ResponseEntity<ApiResponse<CreateMemberResponse>> create(
+		@Valid @RequestBody CreateMemberRequest request
+	) {
+		CreateMemberResponse response = memberService.create(request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(response));
-    }
+		return ResponseEntity
+			.status(HttpStatus.CREATED)
+			.body(ApiResponse.ok(response));
+	}
 }

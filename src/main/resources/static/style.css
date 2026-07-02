@@ -1487,6 +1487,7 @@ h1, h2, h3 {
     color: #fff;
     font-weight: 900;
 }
+
 .cart-actions {
     display: flex;
     justify-content: flex-end;
@@ -1514,10 +1515,12 @@ h1, h2, h3 {
     flex-wrap: wrap;
     margin-top: 18px;
 }
+
 .inline-check input {
     width: 18px;
     height: 18px;
 }
+
 .order-detail-panel {
     border-color: #b7c7dc;
 }
@@ -1535,6 +1538,7 @@ h1, h2, h3 {
 .order-detail-panel h3:first-child {
     margin-top: 0;
 }
+
 .product-search-form {
     display: grid;
     grid-template-columns: minmax(220px, 1fr) auto auto;

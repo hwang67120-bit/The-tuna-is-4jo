@@ -11,15 +11,15 @@ import io.portone.sdk.server.webhook.WebhookVerifier;
 @Component
 public class PortOneWebhookVerifier {
 
-    private final WebhookVerifier webhookVerifier;
+	private final WebhookVerifier webhookVerifier;
 
-    public PortOneWebhookVerifier(PortOneProperties properties) {
-        this.webhookVerifier = new WebhookVerifier(properties.getWebhookSecret());
-    }
+	public PortOneWebhookVerifier(PortOneProperties properties) {
+		this.webhookVerifier = new WebhookVerifier(properties.getWebhookSecret());
+	}
 
-    // 검증 시에만 webhook 객체 반환
-    public Webhook verify(String body, String webhookId, String signature, String timestamp) throws
-        WebhookVerificationException {
-        return webhookVerifier.verify(body, webhookId, signature, timestamp);
-    }
+	// 검증 시에만 webhook 객체 반환
+	public Webhook verify(String body, String webhookId, String signature, String timestamp) throws
+		WebhookVerificationException {
+		return webhookVerifier.verify(body, webhookId, signature, timestamp);
+	}
 }

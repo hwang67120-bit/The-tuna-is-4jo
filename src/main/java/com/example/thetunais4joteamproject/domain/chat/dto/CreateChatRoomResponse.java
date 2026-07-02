@@ -4,11 +4,11 @@ import com.example.thetunais4joteamproject.domain.chat.entity.ChatRoom;
 import com.example.thetunais4joteamproject.domain.chat.entity.ChatRoomStatus;
 
 public record CreateChatRoomResponse(
-        Long chatRoomId,
-        ChatRoomStatus status
+	Long chatRoomId,
+	ChatRoomStatus status
 ) {
 
-    public static CreateChatRoomResponse from(ChatRoom chatRoom) {
-        return new CreateChatRoomResponse(chatRoom.getId(), chatRoom.getStatus());
-    }
+	public static CreateChatRoomResponse from(ChatRoom chatRoom) {
+		return new CreateChatRoomResponse(chatRoom.getId(), chatRoom.getStatus());
+	}
 }

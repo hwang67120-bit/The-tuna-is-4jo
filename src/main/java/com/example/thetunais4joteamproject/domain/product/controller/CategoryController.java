@@ -26,44 +26,44 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CategoryController {
 
-    private final CategoryService categoryService;
+	private final CategoryService categoryService;
 
-    /**
-     * 카테고리 목록 조회
-     */
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getCategories() {
-        List<CategoryResponse> responseData = categoryService.getCategories();
+	/**
+	 * 카테고리 목록 조회
+	 */
+	@GetMapping
+	public ResponseEntity<ApiResponse<List<CategoryResponse>>> getCategories() {
+		List<CategoryResponse> responseData = categoryService.getCategories();
 
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(responseData));
-    }
+		return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(responseData));
+	}
 
-    /**
-     * 카테고리 생성 (Admin 전용)
-     */
-    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Long>> createCategory(
-        @Valid
-        @RequestBody
+	/**
+	 * 카테고리 생성 (Admin 전용)
+	 */
+	@PostMapping
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<ApiResponse<Long>> createCategory(
+		@Valid
+		@RequestBody
 		CreateCategoryRequest createCategoryRequest
-    ) {
-        Long categoryId = categoryService.createCategory(createCategoryRequest);
+	) {
+		Long categoryId = categoryService.createCategory(createCategoryRequest);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(categoryId));
-    }
+		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(categoryId));
+	}
 
-    /**
-     * 카테고리 삭제 (Admin 전용)
-     */
-    @DeleteMapping("/{categoryId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> deleteCategory(
-        @PathVariable
-        Long categoryId
-    ) {
-        categoryService.deleteCategory(categoryId);
+	/**
+	 * 카테고리 삭제 (Admin 전용)
+	 */
+	@DeleteMapping("/{categoryId}")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<ApiResponse<Void>> deleteCategory(
+		@PathVariable
+		Long categoryId
+	) {
+		categoryService.deleteCategory(categoryId);
 
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("카테고리가 삭제되었습니다."));
-    }
+		return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("카테고리가 삭제되었습니다."));
+	}
 }

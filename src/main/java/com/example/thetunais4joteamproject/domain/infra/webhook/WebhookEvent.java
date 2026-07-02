@@ -21,52 +21,52 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class WebhookEvent extends BaseTimeEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Column(name = "webhook_id", nullable = false, unique = true, length = 200)
-    private String webhookId;
+	@Column(name = "webhook_id", nullable = false, unique = true, length = 200)
+	private String webhookId;
 
-    @Column(nullable = false, length = 100)
-    private String type;
+	@Column(nullable = false, length = 100)
+	private String type;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private WebhookStatus status;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private WebhookStatus status;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String payload;
+	@Column(nullable = false, columnDefinition = "TEXT")
+	private String payload;
 
-    @Column(name = "finished_at")
-    private LocalDateTime finishedAt;
+	@Column(name = "finished_at")
+	private LocalDateTime finishedAt;
 
-    @Column(name = "failure_reason", length = 500)
-    private String failureReason;
+	@Column(name = "failure_reason", length = 500)
+	private String failureReason;
 
-    public WebhookEvent(String webhookId, String type, String payload) {
-        this.webhookId = webhookId;
-        this.type = type;
-        this.status = WebhookStatus.RECEIVED;
-        this.payload = payload;
-    }
+	public WebhookEvent(String webhookId, String type, String payload) {
+		this.webhookId = webhookId;
+		this.type = type;
+		this.status = WebhookStatus.RECEIVED;
+		this.payload = payload;
+	}
 
-    public void markAsProcessed() {
-        this.status = WebhookStatus.PROCESSED;
-        this.finishedAt = LocalDateTime.now();
-        this.failureReason = null;
-    }
+	public void markAsProcessed() {
+		this.status = WebhookStatus.PROCESSED;
+		this.finishedAt = LocalDateTime.now();
+		this.failureReason = null;
+	}
 
-    public void markAsIgnored(String reason) {
-        this.status = WebhookStatus.IGNORED;
-        this.finishedAt = LocalDateTime.now();
-        this.failureReason = reason;
-    }
+	public void markAsIgnored(String reason) {
+		this.status = WebhookStatus.IGNORED;
+		this.finishedAt = LocalDateTime.now();
+		this.failureReason = reason;
+	}
 
-    public void markAsFailed(String reason) {
-        this.status = WebhookStatus.FAILED;
-        this.finishedAt = LocalDateTime.now();
-        this.failureReason = reason;
-    }
+	public void markAsFailed(String reason) {
+		this.status = WebhookStatus.FAILED;
+		this.finishedAt = LocalDateTime.now();
+		this.failureReason = reason;
+	}
 
 }
