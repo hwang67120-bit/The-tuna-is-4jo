@@ -30,7 +30,7 @@ public class SecurityConfig {
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.exceptionHandling(exception -> exception.accessDeniedHandler(customAccessDeniedHandler))
 			.authorizeHttpRequests(auth -> auth
-				.requestMatchers("/", "/index.html", "/style.css", "/app.js", "/favicon.ico").permitAll()
+				.requestMatchers("/", "/cart", "/profile", "/orders", "/admin", "/order", "/products/**", "/index.html", "/style.css", "/app.js", "/favicon.ico").permitAll()
 				.requestMatchers("/uploads/**").permitAll()
 				.requestMatchers("/ws/chat", "/ws/chat/**").permitAll()
 				.requestMatchers("/actuator/health").permitAll()

@@ -30,7 +30,7 @@ public class CategoryService {
     public List<CategoryResponse> getCategories() {
         return categoryRepository.findAll()
             .stream()
-            .sorted(Comparator.comparing(Category::getName))
+            .sorted(Comparator.comparing(Category::getId))
             .map(CategoryResponse::from)
             .toList();
     }

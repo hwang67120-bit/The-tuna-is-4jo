@@ -29,20 +29,17 @@
         <p class="eyebrow">SAVER MARKET</p>
         <h1>지금 확인할 상품</h1>
       </div>
-      <div class="hero-actions">
+      <div id="categoryFilterPanel" class="hero-actions">
         <button class="pill" type="button" data-category="all">전체</button>
-        <button class="pill" type="button" data-category="1">상의</button>
-        <button class="pill" type="button" data-category="2">하의</button>
       </div>
     </div>
     <form id="productSearchForm" class="product-search-form">
       <input name="keyword" placeholder="상품명 검색" autocomplete="off" required>
       <button class="primary-button" type="submit">검색</button>
-      <button class="outline-button" type="button" id="clearProductSearchButton">전체 보기</button>
     </form>
     <div class="section-heading compact">
       <h2>인기검색어</h2>
-      <button id="refreshPopularSearchButton" class="outline-button" type="button">새로고침</button>
+      <button class="outline-button" type="button" id="popularSearchToggleButton">전체 보기</button>
     </div>
     <div id="popularSearchPanel" class="popular-search-card"></div>
     <div id="productGrid" class="product-grid"></div>
@@ -112,7 +109,6 @@
       <div class="row"><strong>이메일</strong><span id="profileEmail">-</span></div>
       <div class="row"><strong>회원 권한</strong><span id="profileRole">-</span></div>
       <div class="row"><strong>전화번호</strong><span id="profilePhoneText">-</span></div>
-      <div class="row"><strong>닉네임</strong><span id="profileNicknameText">-</span></div>
     </div>
 
     <div class="section-heading compact split-heading">
@@ -127,7 +123,7 @@
     </div>
     <h3 class="coupon-subtitle">발급 가능 쿠폰</h3>
     <div id="availableCouponPanel" class="available-coupon-panel table-panel compact-panel"></div>
-    <h3 class="coupon-subtitle">보유 쿠폰</h3>
+    <h3 class="coupon-subtitle owned-coupon-subtitle">보유 쿠폰</h3>
     <div id="couponPanel" class="table-panel"></div>
 
   </section>
@@ -235,7 +231,7 @@
             <label><span>만료 일시</span><input name="expirationAt" type="datetime-local" required></label>
             <button class="primary-button" type="submit">쿠폰 생성</button>
           </form>
-          <div class="section-heading compact">
+          <div class="section-heading compact split-heading">
             <h2>발급 현황</h2>
             <button id="loadAdminCouponsButton" class="outline-button" type="button">조회</button>
           </div>
@@ -286,7 +282,6 @@
     <form id="profileEditForm" class="auth-form">
       <input id="profileEditName" name="name" placeholder="이름" required>
       <input id="profileEditPhone" name="phoneNumber" placeholder="휴대폰 번호" required>
-      <input id="profileEditNickname" name="nickname" placeholder="닉네임">
       <div class="password-field">
         <input id="profileEditPassword" name="password" type="password" placeholder="비밀번호 변경" autocomplete="new-password">
         <button class="password-toggle" type="button" data-password-toggle="profileEditPassword" aria-label="비밀번호 보기">보기</button>
