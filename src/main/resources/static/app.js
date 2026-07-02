@@ -130,15 +130,27 @@ function formatDateTime(value) {
 }
 
 function getRouteView() {
-  const route = window.location.hash.replace('#', '');
-  return ['cart', 'profile', 'orders'].includes(route) ? route : 'home';
+  const hashRoute = window.location.hash.replace('#', '');
+  if (hashRoute) {
+    return ['cart', 'profile', 'orders', 'admin'].includes(hashRoute) ? hashRoute : 'home';
+  }
+  const route = window.location.pathname.replace(/^\/+/, '');
+  return ['cart', 'profile', 'orders', 'admin'].includes(route) ? route : 'home';
 }
 
-function setRouteHash(name) {
-  if (!['home', 'cart', 'profile', 'orders'].includes(name)) return;
-  const nextHash = name === 'home' ? '' : `#${name}`;
-  if (window.location.hash !== nextHash) {
-    window.history.replaceState(null, '', nextHash || window.location.pathname);
+function getViewPath(name, routeParams = {}) {
+  if (name === 'home') return '/';
+  if (name === 'detail' && routeParams.productId) return `/products/${routeParams.productId}`;
+  if (name === 'order') return '/order';
+  if (['cart', 'profile', 'orders', 'admin'].includes(name)) return `/${name}`;
+  return '';
+}
+
+function setRoutePath(name, routeParams = {}) {
+  const nextPath = getViewPath(name, routeParams);
+  if (!nextPath) return;
+  if (window.location.pathname !== nextPath || window.location.hash) {
+    window.history.replaceState(null, '', nextPath);
   }
 }
 
@@ -226,7 +238,7 @@ async function api(path, options = {}) {
   return payload;
 }
 
-function showView(name) {
+function showView(name, options = {}) {
   if ((name === 'cart' || name === 'profile' || name === 'orders') && !state.token) {
     showToast('로그인이 필요합니다.');
     openAuthModal('login');
@@ -238,7 +250,9 @@ function showView(name) {
   }
   $$('.view').forEach((view) => view.classList.add('hidden'));
   $(`#${name}View`).classList.remove('hidden');
-  setRouteHash(name);
+  if (options.updateRoute !== false) {
+    setRoutePath(name, options.routeParams);
+  }
   if (name === 'home') {
     loadCategoryFilters();
     loadProducts();
@@ -253,7 +267,21 @@ function showView(name) {
   }
 }
 
-function restoreRoute() {
+async function restoreRoute() {
+  const productMatch = window.location.pathname.match(/^\/products\/(\d+)$/);
+  if (productMatch) {
+    await loadProductDetail(Number(productMatch[1]), { updateRoute: false });
+    return;
+  }
+  if (window.location.pathname === '/order') {
+    if (state.pendingOrder) {
+      await renderOrderForm({ updateRoute: false });
+      return;
+    }
+    showToast('주문할 상품을 먼저 선택해 주세요.');
+    showView('home');
+    return;
+  }
   showView(getRouteView());
 }
 
@@ -394,14 +422,15 @@ function renderProducts(products) {
   grid.innerHTML = products.map((product) => {
     const id = product.id ?? product.productId;
     const name = product.name ?? product.productName;
+    const status = product.status ?? product.saleStatus ?? 'ON_SALE';
     const imgUrl = product.imageUrl || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500';
     return `<article class="product-card">
       <div class="product-thumb">
         <img src="${imgUrl}" alt="${escapeHtml(name)}" style="width:100%; height:100%; object-fit:cover; border-radius: 8px;">
       </div>
       <div class="product-card-body">
-        <span class="badge">${product.status || 'ON_SALE'}</span>
-        <h3>${name}</h3>
+        <span class="badge">${escapeHtml(status)}</span>
+        <h3>${escapeHtml(name)}</h3>
         <div class="price">${formatPrice(product.price)}</div>
         <button class="outline-button" type="button" data-detail-id="${id}">상세 보기</button>
       </div>
@@ -409,11 +438,11 @@ function renderProducts(products) {
   }).join('');
 }
 
-async function loadProductDetail(productId) {
+async function loadProductDetail(productId, options = {}) {
   try {
     const payload = await api(`/api/products/${productId}`, { method: 'GET' });
     renderProductDetail(payload.data);
-    showView('detail');
+    showView('detail', { updateRoute: options.updateRoute, routeParams: { productId } });
   } catch (error) {
     hideErrorToast(error);
   }
@@ -578,12 +607,12 @@ function getSelectedCartItems() {
   });
 }
 
-async function renderOrderForm() {
+async function renderOrderForm(options = {}) {
   const pendingOrder = state.pendingOrder;
   if (!pendingOrder) return;
 
   state.orderPreviewed = false;
-  showView('order');
+  showView('order', { updateRoute: options.updateRoute });
   renderPendingOrderItems(pendingOrder.items || []);
   $('#orderSummaryPrice').textContent = '주문 생성 후 확인';
   $('#orderSummaryDiscount').textContent = '-0원';
@@ -2200,6 +2229,7 @@ async function closeSupportChat(chatRoomId) {
   }
 }
 function bindEvents() {
+  window.addEventListener('popstate', restoreRoute);
   $('#supportToggleButton').addEventListener('click', () => {
     $('#supportWidget').classList.toggle('hidden');
     renderSupportState();
