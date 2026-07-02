@@ -1,0 +1,164 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+  push:
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+  EC2_INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
+
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  JWT_ACCESS_TOKEN_EXPIRATION: ${{ vars.JWT_ACCESS_TOKEN_EXPIRATION }}
+  ADMIN_WHITELIST_EMAILS: ${{ secrets.ADMIN_WHITELIST_EMAILS }}
+
+  REDISSON_ADDRESS: redis://localhost:6379
+
+  PORTONE_API_SECRET: ${{ secrets.PORTONE_API_SECRET }}
+  PORTONE_CHANNEL_KEY: ${{ secrets.PORTONE_CHANNEL_KEY }}
+  PORTONE_STORE_ID: ${{ secrets.PORTONE_STORE_ID }}
+  PORTONE_WEBHOOK_SECRET: ${{ secrets.PORTONE_WEBHOOK_SECRET }}
+
+jobs:
+  build-test-and-image:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x gradlew
+
+      - name: Run Tests
+        run: ./gradlew test --no-daemon
+
+      - name: Build Boot Jar
+        run: ./gradlew bootJar -x test --no-daemon
+
+      - name: Set Docker Image Tag
+        id: image
+        run: echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ✅ 수정: PR은 빌드만, push는 빌드+푸시 — 이중 빌드 제거
+      - name: Configure AWS Credentials
+        if: github.event_name == 'push'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        if: github.event_name == 'push'
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ✅ 수정: PR은 push=false로 빌드 검증만, push 이벤트는 ECR까지 푸시
+      #         기존의 8단계(PR용 빌드) + 11단계(push용 빌드) 이중 빌드를 하나로 통합
+      - name: Build and Push ARM64 Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ${{ github.event_name == 'push' && format('{0}/{1}:{2}', steps.ecr.outputs.registry, env.ECR_REPOSITORY, steps.image.outputs.tag) || format('tuna-app:{0}', steps.image.outputs.tag) }}
+            ${{ github.event_name == 'push' && format('{0}/{1}:latest', steps.ecr.outputs.registry, env.ECR_REPOSITORY) || 'tuna-app:latest' }}
+          # ✅ 추가: GitHub Actions 캐시로 빌드 시간 단축
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ✅ 수정: Deploy to EC2 with SSM — waiter 타임아웃 문제 해결
+      - name: Deploy to EC2 with SSM
+        if: github.event_name == 'push'
+        env:
+          ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        run: |
+          IMAGE_URI="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${EC2_INSTANCE_ID}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy ${IMAGE_URI}" \
+            --parameters commands="[
+              \"set -eo pipefail\",
+              \"aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}\",
+              \"docker pull ${IMAGE_URI}\",
+              \"docker stop tuna-app || true\",
+              \"docker rm tuna-app || true\",
+              \"docker run -d --name tuna-app --restart unless-stopped -p 80:8080 -e SPRING_PROFILES_ACTIVE=prod -e TZ=Asia/Seoul ${IMAGE_URI}\",
+              \"for attempt in \$(seq 1 30); do if curl -fsS http://localhost/actuator/health | grep -q UP; then echo Healthy; exit 0; fi; echo \\\"Waiting... attempt \${attempt}/30\\\"; sleep 5; done\",
+              \"docker logs --tail 200 tuna-app\",
+              \"exit 1\"
+            ]" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM Command ID: ${COMMAND_ID}"
+
+          # ✅ 핵심 수정: aws ssm wait 제거 → 직접 폴링으로 교체
+          #    기존 wait 명령어는 기본 60초 타임아웃으로 배포 완료 전에 실패했음
+          #    40회 × 15초 = 최대 10분 대기
+          STATUS="InProgress"
+          for attempt in $(seq 1 40); do
+            sleep 15
+
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "${COMMAND_ID}" \
+              --instance-id "${EC2_INSTANCE_ID}" \
+              --query "Status" \
+              --output text \
+              --cli-read-timeout 30 \
+              --cli-connect-timeout 10)
+
+            echo "[${attempt}/40] Status: ${STATUS}"
+
+            if [ "${STATUS}" = "Success" ] \
+              || [ "${STATUS}" = "Failed" ] \
+              || [ "${STATUS}" = "Cancelled" ] \
+              || [ "${STATUS}" = "TimedOut" ]; then
+              break
+            fi
+          done
+
+          # 최종 로그 출력
+          aws ssm get-command-invocation \
+            --command-id "${COMMAND_ID}" \
+            --instance-id "${EC2_INSTANCE_ID}" \
+            --query "{Status:Status,Output:StandardOutputContent,Error:StandardErrorContent}" \
+            --output text
+
+          test "${STATUS}" = "Success"

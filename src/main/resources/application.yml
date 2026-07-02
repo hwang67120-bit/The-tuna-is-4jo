@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: The-tuna-is-4jo-team-project
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  cloud:
+    aws:
+      region:
+        static: ap-northeast-2
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  sql:
+    init:
+      mode: never
+
+server:
+  port: 8080
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+jwt:
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION}
+
+admin:
+  whitelist:
+    emails: ${ADMIN_WHITELIST_EMAILS}
+
+portone:
+  base-url: https://api.portone.io
+
+redisson:
+  address: ${REDISSON_ADDRESS}

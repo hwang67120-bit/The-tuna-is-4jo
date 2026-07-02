@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>PortOne 결제 테스트</title>
+</head>
+<body>
+<h2>PortOne 결제 테스트</h2>
+
+<button onclick="requestPayment()">결제하기</button>
+
+<script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+<script>
+    async function requestPayment() {
+        const paymentId = crypto.randomUUID();
+
+        const response = await PortOne.requestPayment({
+            storeId: "store-44517e1d-7df0-4450-b11e-fba0dbb13943",
+            channelKey: "channel-key-c1101c29-c1a2-47c4-b4c0-cf7757fab117",
+            paymentId: paymentId,
+            orderName: "테스트 상품",
+            totalAmount: 1000,
+            currency: "KRW",
+            payMethod: "CARD",
+            customer: {
+                fullName: "테스트유저",
+                phoneNumber: "01012345678",
+                email: "test@test.com"
+            }
+        });
+
+        if (response.code) {
+            alert("결제 실패: " + response.message);
+            console.log(response);
+            return;
+        }
+
+        console.log("결제 성공:", response);
+
+        // 결제 완료 후 서버에 결제 확정 요청
+        const confirmResponse = await fetch("/api/payments/confirm", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer 여기에_JWT"
+            },
+            body: JSON.stringify({
+                paymentId: paymentId,
+                portonePaymentId: paymentId
+            })
+        });
+
+        const result = await confirmResponse.json();
+        console.log("서버 결제 확정 결과:", result);
+
+        alert("결제 완료");
+    }
+</script>
+</body>
+</html>

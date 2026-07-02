@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAVER</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+    <button class="brand" type="button" data-view="home">SAVER</button>
+    <nav class="main-nav"></nav>
+    <div class="session-bar">
+        <span id="sessionLabel" class="hidden"></span>
+        <button class="outline-button hidden" type="button" data-auth-only data-view="profile">내 정보</button>
+        <button class="outline-button hidden" type="button" data-auth-only data-view="orders">주문 내역</button>
+        <button class="outline-button hidden" type="button" data-admin-only data-view="admin">관리자 콘솔</button>
+        <button id="loginOpenButton" class="outline-button" type="button">로그인</button>
+        <button id="signupOpenButton" class="primary-button" type="button">회원가입</button>
+        <button id="logoutButton" class="outline-button hidden" type="button">로그아웃</button>
+        <button class="outline-button" type="button" data-view="cart">장바구니</button>
+    </div>
+</header>
+
+<main>
+    <section id="homeView" class="view">
+        <div class="hero-strip">
+            <div>
+                <p class="eyebrow">SAVER MARKET</p>
+                <h1>지금 확인할 상품</h1>
+            </div>
+            <div id="categoryFilterPanel" class="hero-actions">
+                <button class="pill" type="button" data-category="all">전체</button>
+            </div>
+        </div>
+        <form id="productSearchForm" class="product-search-form">
+            <input name="keyword" placeholder="상품명 검색" autocomplete="off" required>
+            <button class="primary-button" type="submit">검색</button>
+        </form>
+        <div class="section-heading compact">
+            <h2>인기검색어</h2>
+            <button class="outline-button" type="button" id="popularSearchToggleButton">전체 보기</button>
+        </div>
+        <div id="popularSearchPanel" class="popular-search-card"></div>
+        <div id="productGrid" class="product-grid"></div>
+    </section>
+
+    <section id="detailView" class="view hidden">
+        <button class="text-button" type="button" data-view="home">← 상품 목록</button>
+        <div id="productDetail" class="detail-layout"></div>
+    </section>
+
+    <section id="cartView" class="view hidden">
+        <div class="section-heading">
+            <h2>장바구니</h2>
+        </div>
+        <div id="cartPanel" class="table-panel"></div>
+        <div id="cartOrderBar" class="cart-order-bar hidden">
+            <span id="cartSelectedSummary"></span>
+            <button id="goToOrderButton" class="primary-button" type="button">선택 상품 주문하기</button>
+        </div>
+    </section>
+
+    <section id="orderView" class="view hidden">
+        <button class="text-button" type="button" data-view="cart">← 장바구니로</button>
+        <div class="section-heading">
+            <h2>주문 내역</h2>
+        </div>
+        <div id="orderItemsPanel" class="table-panel"></div>
+
+        <div class="section-heading compact">
+            <h2>배송지</h2>
+        </div>
+        <div id="addressPanel" class="table-panel compact-panel"></div>
+        <input id="selectedAddressId" type="hidden">
+        <div id="selectedAddressPanel" class="table-panel compact-panel"></div>
+
+        <div class="section-heading compact"><h2>쿠폰 적용</h2></div>
+        <div class="order-coupon-row">
+            <select id="orderCouponSelect">
+                <option value="">쿠폰을 사용하지 않음</option>
+            </select>
+        </div>
+
+        <div class="order-summary">
+            <div class="row"><span>상품금액</span><strong id="orderSummaryPrice">0원</strong></div>
+            <div class="row"><span>할인금액</span><strong id="orderSummaryDiscount">-0원</strong></div>
+            <div class="row"><span>배송비</span><strong id="orderSummaryDelivery">0원</strong></div>
+            <div class="row total"><span>총 결제금액</span><strong id="orderSummaryTotal">0원</strong></div>
+        </div>
+
+        <div class="form-actions">
+            <button id="submitOrderButton" class="primary-button" type="button">결제하기</button>
+        </div>
+    </section>
+
+    <section id="orderResultView" class="view hidden">
+        <div class="section-heading"><h2 id="orderResultTitle">주문이 생성되었습니다</h2></div>
+        <div id="orderResultPanel" class="table-panel"></div>
+    </section>
+
+    <section id="profileView" class="view hidden">
+        <div class="section-heading">
+            <h2>회원정보</h2>
+            <button id="openProfileEditButton" class="outline-button" type="button">회원정보 수정</button>
+        </div>
+        <div class="profile-table">
+            <div class="row"><strong>이름</strong><span id="profileNameText">-</span></div>
+            <div class="row"><strong>이메일</strong><span id="profileEmail">-</span></div>
+            <div class="row"><strong>회원 권한</strong><span id="profileRole">-</span></div>
+            <div class="row"><strong>전화번호</strong><span id="profilePhoneText">-</span></div>
+        </div>
+
+        <div class="section-heading compact split-heading">
+            <h2>배송지</h2>
+            <button id="openAddressManageButton" class="outline-button" type="button">배송지 관리</button>
+        </div>
+        <div id="profileAddressSummaryPanel" class="table-panel compact-panel"></div>
+
+        <div class="section-heading compact split-heading">
+            <h2>내 쿠폰</h2>
+            <button id="openCouponIssueButton" class="outline-button" type="button">새로고침</button>
+        </div>
+        <h3 class="coupon-subtitle">발급 가능 쿠폰</h3>
+        <div id="availableCouponPanel" class="available-coupon-panel table-panel compact-panel"></div>
+        <h3 class="coupon-subtitle owned-coupon-subtitle">보유 쿠폰</h3>
+        <div id="couponPanel" class="table-panel"></div>
+
+    </section>
+
+    <section id="ordersView" class="view hidden">
+        <div class="section-heading">
+            <h2>주문 내역</h2>
+            <button id="refreshOrderHistoryButton" class="outline-button" type="button">새로고침</button>
+        </div>
+        <div id="orderHistoryPanel" class="table-panel"></div>
+    </section>
+
+    <section id="adminView" class="view hidden">
+        <div class="admin-shell">
+            <aside class="admin-menu">
+                <strong>SAVER Admin</strong>
+                <button class="active" type="button" data-admin-panel="productManagePanel">상품 관리</button>
+                <button type="button" data-admin-panel="productCreatePanel">상품 등록</button>
+                <button type="button" data-admin-panel="categoryPanel">카테고리</button>
+                <button type="button" data-admin-panel="couponAdminPanel">쿠폰</button>
+                <button type="button" data-admin-panel="refundAdminPanel">환불</button>
+                <button type="button" data-view="home">상품목록</button>
+            </aside>
+            <div class="admin-content">
+                <section id="productCreatePanel" class="admin-panel hidden">
+                    <h2>상품등록</h2>
+                    <div class="notice-box"><strong>!</strong><span>상품 기본정보와 최초 옵션을 함께 등록합니다.</span></div>
+                    <form id="productCreateForm" class="console-form">
+                        <h3>기본정보</h3>
+                        <label><span>카테고리</span><select name="categoryId" required>
+                            <option value="">카테고리를 선택해 주세요</option>
+                        </select></label>
+                        <label><span>상품명</span><input name="name" required placeholder="오버핏 후드티"></label>
+                        <label><span>판매가</span><input name="price" type="number" min="0" required
+                                                      placeholder="39000"></label>
+                        <label><span>상세설명</span><textarea name="description" rows="5" placeholder="상세설명..."></textarea></label>
+                        <label><span>이미지 URL</span><input name="imageUrl" placeholder="https://images.unsplash.com/..."></label>
+                        <label><span>이미지 파일</span><input name="imageFile" type="file" accept="image/*"></label>
+                        <h3>최초 옵션</h3>
+                        <label><span>옵션명</span><input name="optionName" required placeholder="블랙 / L"></label>
+                        <label><span>재고 수량</span><input name="optionStock" type="number" min="0" required
+                                                        placeholder="10"></label>
+                        <label><span>추가 금액</span><input name="additionalPrice" type="number" min="0" value="0" required></label>
+                        <button class="primary-button" type="submit">상품 등록</button>
+                    </form>
+                </section>
+                <section id="productManagePanel" class="admin-panel">
+                    <div class="section-heading compact">
+                        <h2>상품 관리</h2>
+                        <button id="loadAdminProductsButton" class="outline-button" type="button">목록 새로고침</button>
+                    </div>
+                    <div class="admin-product-layout">
+                        <div>
+                            <div id="adminProductListPanel" class="table-panel compact-panel"></div>
+                        </div>
+                        <div>
+                            <div id="adminProductDetailPanel" class="table-panel compact-panel">상품을 선택하면 수정, 삭제, 재고, 옵션
+                                관리가 표시됩니다.
+                            </div>
+                            <form id="productUpdateForm" class="console-form admin-edit-form hidden">
+                                <h3>상품 정보 수정</h3>
+                                <label><span>상품 ID</span><input name="productId" type="number" min="1" required
+                                                                readonly></label>
+                                <label><span>카테고리</span><select name="categoryId" required>
+                                    <option value="">카테고리를 선택해 주세요</option>
+                                </select></label>
+                                <label><span>상품명</span><input name="name" required></label>
+                                <label><span>판매가</span><input name="price" type="number" min="0" required></label>
+                                <label><span>상세설명</span><textarea name="description" rows="4"></textarea></label>
+                                <label><span>이미지 URL</span><input name="imageUrl"
+                                                                  placeholder="https://images.unsplash.com/..."></label>
+                                <label><span>이미지 파일</span><input name="imageFile" type="file" accept="image/*"></label>
+                                <div class="row-actions">
+                                    <button class="primary-button" type="submit">상품 수정</button>
+                                    <button id="adminDeleteSelectedProductButton" class="outline-button danger-button"
+                                            type="button">상품 삭제
+                                    </button>
+                                </div>
+                            </form>
+                            <form id="stockForm" class="console-form admin-edit-form hidden">
+                                <h3>대표 재고 설정</h3>
+                                <label><span>상품 ID</span><input name="productId" type="number" min="1" required
+                                                                readonly></label>
+                                <label><span>재고 수량</span><input name="stockQuantity" type="number" min="0"
+                                                                required></label>
+                                <button class="outline-button" type="submit">재고 수정</button>
+                            </form>
+                            <div id="optionLookupPanel" class="table-panel compact-panel hidden"></div>
+                            <form id="optionForm" class="console-form admin-edit-form hidden">
+                                <h3>옵션 상태 변경</h3>
+                                <label><span>상품 ID</span><input name="productId" type="number" min="1" required
+                                                                readonly></label>
+                                <label><span>옵션 ID</span><input name="optionId" type="number" min="1" required readonly></label>
+                                <label><span>옵션 재고</span><input name="optionStock" type="number" min="0"
+                                                                required></label>
+                                <label><span>추가 금액</span><input name="additionalPrice" type="number" min="0" value="0"
+                                                                required></label>
+                                <label><span>판매 상태</span><select name="status">
+                                    <option>ON_SALE</option>
+                                    <option>SOLDOUT</option>
+                                    <option>DISCONTINUED</option>
+                                </select></label>
+                                <button class="outline-button" type="submit">옵션 수정</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+                <section id="categoryPanel" class="admin-panel hidden">
+                    <h2>카테고리</h2>
+                    <form id="categoryCreateForm" class="console-form">
+                        <label><span>카테고리명</span><input name="name" required></label>
+                        <button class="outline-button" type="submit">카테고리 생성</button>
+                    </form>
+                    <form id="categoryDeleteForm" class="console-form danger-form">
+                        <label><span>카테고리</span><select name="categoryId" required>
+                            <option value="">삭제할 카테고리를 선택해 주세요</option>
+                        </select></label>
+                        <button class="outline-button danger-button" type="submit">카테고리 삭제</button>
+                    </form>
+                </section>
+                <section id="couponAdminPanel" class="admin-panel hidden">
+                    <h2>쿠폰</h2>
+                    <form id="couponCreateForm" class="console-form">
+                        <label><span>쿠폰명</span><input name="name" required></label>
+                        <label><span>할인 금액</span><input name="discountPrice" type="number" min="1" required></label>
+                        <label><span>최소 주문 금액</span><input name="minOrderPrice" type="number" min="0" required></label>
+                        <label><span>발급 수량</span><input name="totalQuantity" type="number" min="1" required></label>
+                        <label><span>만료 일시</span><input name="expirationAt" type="datetime-local" required></label>
+                        <button class="primary-button" type="submit">쿠폰 생성</button>
+                    </form>
+                    <div class="section-heading compact split-heading">
+                        <h2>발급 현황</h2>
+                        <button id="loadAdminCouponsButton" class="outline-button" type="button">조회</button>
+                    </div>
+                    <div id="adminCouponPanel" class="table-panel"></div>
+                </section>
+                <section id="refundAdminPanel" class="admin-panel hidden">
+                    <div class="section-heading compact split-heading">
+                        <h2>환불 요청</h2>
+                        <button id="loadAdminRefundsButton" class="outline-button" type="button">새로고침</button>
+                    </div>
+                    <div id="adminRefundListPanel" class="table-panel compact-panel"></div>
+                    <div id="adminRefundResultPanel" class="table-panel compact-panel hidden"></div>
+                </section>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div id="authModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="auth-panel">
+        <button id="authCloseButton" class="close-button" type="button">&times;</button>
+        <h2>SAVER</h2>
+        <form id="loginForm" class="auth-form">
+            <input name="email" type="email" placeholder="이메일" required>
+            <input name="password" type="password" placeholder="비밀번호" required>
+            <button class="login-button" type="submit">로그인</button>
+        </form>
+        <label id="keepLoginLabel" class="keep-login"><input type="checkbox"> 로그인 상태 유지</label>
+        <div id="authLinks" class="auth-links">
+            <button type="button" id="showSignupButton">회원가입</button>
+        </div>
+        <form id="signupForm" class="auth-form hidden">
+            <input name="email" type="email" placeholder="이메일" required>
+            <div class="password-field">
+                <input id="signupPassword" name="password" type="password" placeholder="비밀번호"
+                       autocomplete="new-password" required>
+                <button class="password-toggle" type="button" data-password-toggle="signupPassword"
+                        aria-label="비밀번호 보기">보기
+                </button>
+            </div>
+            <input name="name" placeholder="이름" required>
+            <input name="phoneNumber" placeholder="010-1234-5678" required>
+            <button class="outline-button full" type="submit">회원가입</button>
+            <button id="showLoginButton" class="text-button auth-switch-button" type="button">로그인으로 돌아가기</button>
+        </form>
+    </div>
+</div>
+
+<div id="profileEditModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="edit-panel">
+        <button id="profileEditCloseButton" class="close-button" type="button">&times;</button>
+        <h2>회원정보 수정</h2>
+        <form id="profileEditForm" class="auth-form">
+            <input id="profileEditName" name="name" placeholder="이름" required>
+            <input id="profileEditPhone" name="phoneNumber" placeholder="휴대폰 번호" required>
+            <div class="password-field">
+                <input id="profileEditPassword" name="password" type="password" placeholder="비밀번호 변경"
+                       autocomplete="new-password">
+                <button class="password-toggle" type="button" data-password-toggle="profileEditPassword"
+                        aria-label="비밀번호 보기">보기
+                </button>
+            </div>
+            <button class="login-button" type="submit">수정 완료</button>
+        </form>
+    </div>
+</div>
+
+<div id="addressManageModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="edit-panel address-manage-panel">
+        <button id="addressManageCloseButton" class="close-button" type="button">&times;</button>
+        <div class="panel-title-row">
+            <h2>배송지 관리</h2>
+        </div>
+        <div id="profileAddressPanel" class="table-panel compact-panel"></div>
+        <div class="address-add-actions">
+            <button class="primary-button" type="button" data-open-address-form>+ 배송지 추가</button>
+        </div>
+        <form id="profileAddressForm" class="console-form hidden">
+            <label><span>받는 사람</span><input name="receiverName" required placeholder="홍길동"></label>
+            <label><span>연락처</span><input name="receiverPhone" required placeholder="01012345678"></label>
+            <label><span>우편번호</span><input name="zipcode" required placeholder="12345"></label>
+            <label><span>주소</span><input name="address" required placeholder="서울시 강남구 ..."></label>
+            <label><span>상세주소</span><input name="detailAddress" required placeholder="101동 1001호"></label>
+            <label class="inline-check"><span>기본 배송지</span><input name="defaultAddress" type="checkbox" checked></label>
+            <div class="form-actions inline-actions">
+                <button id="saveAddressButton" class="primary-button" type="submit">배송지 저장</button>
+                <button id="cancelAddressFormButton" class="outline-button" type="button">취소</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="orderDetailModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div id="orderDetailPanel" class="edit-panel order-detail-panel"></div>
+</div>
+
+
+<aside id="supportWidget" class="support-widget hidden" aria-label="문의 위젯">
+    <div class="support-card">
+        <div class="support-header">
+            <div class="support-logo">P</div>
+            <div>
+                <strong>SAVER 문의</strong>
+                <button id="supportHoursButton" class="support-link" type="button">운영시간 보기</button>
+            </div>
+        </div>
+        <section id="supportHomePanel" class="support-panel">
+            <div id="supportGreeting" class="support-greeting">
+                <div class="support-small-logo">P</div>
+                <div><strong>SAVER 문의</strong>
+                    <p>안녕하세요.<br>궁금한 점을 남겨주시면 확인 후 답변드릴게요.</p></div>
+            </div>
+            <form id="supportCreateForm" class="support-form">
+                <input name="title" maxlength="100" placeholder="문의 제목" required>
+                <textarea name="content" rows="4" placeholder="문의 내용을 입력해 주세요" required></textarea>
+                <button class="support-primary" type="submit">문의하기</button>
+            </form>
+            <div id="supportAdminPanel" class="support-admin hidden">
+                <div class="support-section-title"><span>관리자 문의 목록</span>
+                    <button id="supportRefreshButton" type="button">새로고침</button>
+                </div>
+                <div id="supportChatList" class="support-chat-list"></div>
+                <div id="supportChatDetail" class="support-chat-detail"></div>
+            </div>
+            <div id="supportTime" class="support-time">오전 10:00부터 운영해요</div>
+        </section>
+        <section id="supportTalkPanel" class="support-panel hidden">
+            <div id="supportTalkContent" class="support-empty">생성된 문의가 여기에 표시됩니다.</div>
+        </section>
+        <nav class="support-tabs">
+            <button class="active" type="button" data-support-tab="home">홈</button>
+            <button type="button" data-support-tab="talk">대화</button>
+        </nav>
+    </div>
+</aside>
+<button id="supportToggleButton" class="support-toggle" type="button" aria-label="문의 열기">●</button>
+<div id="toast" class="toast hidden"></div>
+<script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
