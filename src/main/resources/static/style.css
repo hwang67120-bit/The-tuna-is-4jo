@@ -1342,6 +1342,11 @@ h1, h2, h3 {
     background: #fff8f4;
 }
 
+.support-chat-list button.active {
+    border-color: #ff8d5a;
+    background: #fff3ed;
+}
+
 .support-chat-list span, .support-message span, .support-created span {
     color: #777;
     font-size: 12px;

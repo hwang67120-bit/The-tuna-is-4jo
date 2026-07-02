@@ -1852,9 +1852,14 @@ function renderAdminRefunds(refunds) {
   </div>`;
 }
 
-async function loadAdminRefunds() {
+async function loadAdminRefunds({ resetResult = true } = {}) {
   if (!requireAdmin()) return;
   try {
+    if (resetResult) {
+      const resultPanel = $('#adminRefundResultPanel');
+      resultPanel.classList.add('hidden');
+      resultPanel.innerHTML = '';
+    }
     const payload = await api('/api/admin/refunds', { method: 'GET' });
     renderAdminRefunds(payload.data || payload || []);
   } catch (error) {
@@ -1866,9 +1871,11 @@ async function approveRefundById(refundId) {
   if (!requireAdmin()) return;
   try {
     const payload = await api(`/api/admin/refunds/${refundId}/approve`, { method: 'POST' });
-    $('#adminRefundResultPanel').innerHTML = renderRefund(payload.data || payload);
+    const resultPanel = $('#adminRefundResultPanel');
+    resultPanel.innerHTML = renderRefund(payload.data || payload);
+    resultPanel.classList.remove('hidden');
     showToast('환불이 승인되었습니다.');
-    await loadAdminRefunds();
+    await loadAdminRefunds({ resetResult: false });
   } catch (error) {
     hideErrorToast(error);
   }
@@ -1883,9 +1890,11 @@ async function rejectRefundById(refundId) {
       method: 'POST',
       body: JSON.stringify({ rejectionReason })
     });
-    $('#adminRefundResultPanel').innerHTML = renderRefund(payload.data || payload);
+    const resultPanel = $('#adminRefundResultPanel');
+    resultPanel.innerHTML = renderRefund(payload.data || payload);
+    resultPanel.classList.remove('hidden');
     showToast('환불이 거절되었습니다.');
-    await loadAdminRefunds();
+    await loadAdminRefunds({ resetResult: false });
   } catch (error) {
     hideErrorToast(error);
   }
@@ -2130,7 +2139,7 @@ async function loadSupportChatList() {
       $('#supportChatDetail').innerHTML = '';
       return;
     }
-    list.innerHTML = chatRooms.map((room) => `<button type="button" data-support-room-id="${room.chatRoomId}" data-support-room-status="${escapeHtml(room.status)}"><strong>${escapeHtml(room.title)}</strong><span>#${room.chatRoomId} · ${escapeHtml(room.status)} · ${formatDateTime(room.createdAt)}</span></button>`).join('');
+    list.innerHTML = chatRooms.map((room) => `<button type="button" data-support-room-id="${room.chatRoomId}" data-support-room-status="${escapeHtml(room.status)}"><strong>${escapeHtml(room.title || '문의 내역')}</strong></button>`).join('');
   } catch (error) {
     hideErrorToast(error);
   }
@@ -2147,9 +2156,7 @@ async function loadUserSupportHistory() {
       panel.innerHTML = '<div class="support-empty">진행 중인 문의가 없습니다.</div>';
       return;
     }
-    const savedRoomId = String(state.supportChatRoomId || '');
-    const selectedRoom = chatRooms.find((room) => String(room.chatRoomId) === savedRoomId) || chatRooms[0];
-    await loadUserSupportDetail(selectedRoom.chatRoomId);
+    panel.innerHTML = renderUserSupportHistory(chatRooms);
   } catch (error) {
     hideErrorToast(error);
   }
@@ -2161,13 +2168,32 @@ async function loadUserSupportDetail(chatRoomId) {
     const room = payload.data;
     state.supportChatRoomId = String(room.chatRoomId);
     localStorage.setItem('saverSupportChatRoomId', state.supportChatRoomId);
-    $('#supportTalkContent').innerHTML = renderUserSupportDetail(room);
+    $$('[data-user-support-room-id]').forEach((button) => {
+      button.classList.toggle('active', String(button.dataset.userSupportRoomId) === String(room.chatRoomId));
+    });
+    const detailPanel = $('#supportUserChatDetail') || $('#supportTalkContent');
+    detailPanel.dataset.openRoomId = String(room.chatRoomId);
+    detailPanel.innerHTML = renderUserSupportDetail(room);
     if (room.status !== 'CLOSED') {
       connectSupportRoom(room.chatRoomId);
     }
   } catch (error) {
     hideErrorToast(error);
   }
+}
+
+function renderUserSupportHistory(chatRooms) {
+  return `<div class="support-user-history">
+    <div class="support-section-title"><span>내 문의 목록</span></div>
+    <div class="support-chat-list support-user-chat-list">
+      ${chatRooms.map((room) => (
+        `<button type="button" data-user-support-room-id="${escapeHtml(room.chatRoomId)}">
+          <strong>${escapeHtml(room.title || '문의 내역')}</strong>
+        </button>`
+      )).join('')}
+    </div>
+    <div id="supportUserChatDetail" class="support-chat-detail"></div>
+  </div>`;
 }
 
 function renderUserSupportDetail(room) {
@@ -2193,11 +2219,16 @@ async function loadSupportChatDetail(chatRoomId, shouldJoin = true) {
     const payload = await api(`/api/chats/${chatRoomId}`, { method: 'GET' });
     const room = payload.data;
     const messages = room.messages || [];
+    $$('[data-support-room-id]').forEach((button) => {
+      button.classList.toggle('active', String(button.dataset.supportRoomId) === String(room.chatRoomId));
+    });
     const closeButton = state.role === 'ADMIN' && room.status !== 'CLOSED'
       ? `<button class="outline-button small-button" type="button" data-support-close-id="${room.chatRoomId}">닫기</button>`
       : '';
     const replyForm = room.status === 'CLOSED' ? '<div class="support-empty compact">종료된 문의입니다.</div>' : renderSupportReplyForm(room.chatRoomId);
-    $('#supportChatDetail').innerHTML = `<div class="support-detail-card">
+    const detailPanel = $('#supportChatDetail');
+    detailPanel.dataset.openRoomId = String(room.chatRoomId);
+    detailPanel.innerHTML = `<div class="support-detail-card">
       <div class="support-detail-head">
         <div>
           <strong>${escapeHtml(room.title || '문의 내역')}</strong>
@@ -2255,7 +2286,27 @@ function bindEvents() {
   });
   $('#supportChatList').addEventListener('click', (event) => {
     const button = event.target.closest('[data-support-room-id]');
-    if (button) loadSupportChatDetail(button.dataset.supportRoomId, button.dataset.supportRoomStatus !== 'CLOSED');
+    if (!button) return;
+    const detailPanel = $('#supportChatDetail');
+    if (detailPanel?.dataset.openRoomId === String(button.dataset.supportRoomId) && detailPanel.innerHTML.trim()) {
+      button.classList.remove('active');
+      detailPanel.innerHTML = '';
+      delete detailPanel.dataset.openRoomId;
+      return;
+    }
+    loadSupportChatDetail(button.dataset.supportRoomId, button.dataset.supportRoomStatus !== 'CLOSED');
+  });
+  $('#supportTalkContent').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-user-support-room-id]');
+    if (!button) return;
+    const detailPanel = $('#supportUserChatDetail');
+    if (detailPanel?.dataset.openRoomId === String(button.dataset.userSupportRoomId) && detailPanel.innerHTML.trim()) {
+      button.classList.remove('active');
+      detailPanel.innerHTML = '';
+      delete detailPanel.dataset.openRoomId;
+      return;
+    }
+    loadUserSupportDetail(button.dataset.userSupportRoomId);
   });
   $('#supportChatDetail').addEventListener('click', (event) => {
     const button = event.target.closest('[data-support-close-id]');
