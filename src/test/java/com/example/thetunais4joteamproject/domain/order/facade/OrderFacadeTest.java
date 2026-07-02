@@ -718,9 +718,11 @@ class OrderFacadeTest {
 		Long memberId = 1L;
 		Member member = mock(Member.class);
 		Order order = createOrder(10L, member, "ORD-1234567890", 23000, 0, 3000, 26000);
+		Payment payment = createPayment(20L, order, "pay-test", 26000);
 
 		when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
 		when(orderService.getOrders(memberId)).thenReturn(List.of(order));
+		when(paymentCommandService.getPaymentByOrderId(order.getId())).thenReturn(payment);
 
 		// when
 		List<GetOrderResponse> response = orderFacade.getAll(memberId);
@@ -730,10 +732,12 @@ class OrderFacadeTest {
 		assertThat(response.get(0).orderId()).isEqualTo(10L);
 		assertThat(response.get(0).orderNumber()).isEqualTo("ORD-1234567890");
 		assertThat(response.get(0).orderStatus()).isEqualTo("PENDING_PAYMENT");
+		assertThat(response.get(0).paymentStatus()).isEqualTo("PENDING");
 		assertThat(response.get(0).totalAmount()).isEqualTo(26000);
 
 		verify(memberRepository).findById(memberId);
 		verify(orderService).getOrders(memberId);
+		verify(paymentCommandService).getPaymentByOrderId(order.getId());
 	}
 
 	@Test
