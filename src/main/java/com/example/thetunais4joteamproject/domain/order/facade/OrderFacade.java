@@ -157,7 +157,8 @@ public class OrderFacade {
 		List<GetOrderResponse> responses = new ArrayList<>();
 
 		for (Order order : orders) {
-			responses.add(GetOrderResponse.from(order));
+			Payment payment = paymentCommandService.getPaymentByOrderId(order.getId());
+			responses.add(GetOrderResponse.from(order, payment));
 		}
 
 		return responses;

@@ -620,6 +620,12 @@ h1, h2, h3 {
     color: #111820;
 }
 
+.admin-refund-status {
+    font-weight: 700;
+    color: #4f5965;
+    white-space: nowrap;
+}
+
 .form-actions {
     padding: 16px 0;
     text-align: center;
@@ -1340,6 +1346,11 @@ h1, h2, h3 {
 .support-chat-list button:hover {
     border-color: #ffb08c;
     background: #fff8f4;
+}
+
+.support-chat-list button.active {
+    border-color: #ff8d5a;
+    background: #fff3ed;
 }
 
 .support-chat-list span, .support-message span, .support-created span {
